@@ -1,6 +1,6 @@
 # KrishiVault: guide for Claude
 
-Read `docs/HANDOFF.md` before starting work: it holds the plan, the prototype scope, what is real and what is not, and the prioritized to-do list. This file is the short version.
+Read `docs/HANDOFF.md` before starting work: it holds the plan, the prototype scope, what is real and what is not, and the prioritized to-do list. `docs/PLAN_DETAILS.md` has the rest: how the modules move together, the demo story, call rules, the phone-line voice pipeline and security, risks, and the judging-criteria map. This file is the short version.
 
 ## What KrishiVault is
 
