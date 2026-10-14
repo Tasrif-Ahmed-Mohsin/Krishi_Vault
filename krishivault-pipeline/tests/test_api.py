@@ -129,3 +129,11 @@ def test_old_misleading_endpoints_are_gone(client):
 @pytest.mark.skipif(tts_service.ready, reason="only checks the no-key path")
 def test_speak_without_key(client):
     assert client.post("/api/voice/speak", json={"text": "পরীক্ষা"}).status_code == 503
+
+
+def test_booking_and_lot_reach_partner_screens(client):
+    b = client.post("/api/storage/book", json={"sacks": 36, "farmer_name": "Demo"}).json()
+    assert b["for"] == "cold_storage" and b["ref"].isdigit()
+    lot = client.post("/api/market/lot", json={"kg": 3000, "price_today": 16, "farmer_name": "Demo"}).json()
+    assert lot["for"] == "buyer"
+    assert client.post("/api/storage/book", json={"sacks": 3, "farmer_name": "x", "cold_storage_id": "zz"}).status_code == 404

@@ -1,1239 +1,1073 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KrishiVault | Intelligent Post-Harvest Decision System</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #070c11;
-      --card-bg: rgba(16, 26, 36, 0.75);
-      --card-border: rgba(45, 75, 100, 0.35);
-      --card-hover: rgba(23, 38, 52, 0.85);
-      --primary: #10b981;
-      --primary-glow: rgba(16, 185, 129, 0.25);
-      --primary-dark: #059669;
-      --accent: #06b6d4;
-      --amber: #f59e0b;
-      --red: #ef4444;
-      --text: #f1f5f9;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
-      --font-en: 'Outfit', sans-serif;
-      --font-bn: 'Hind Siliguri', 'Outfit', sans-serif;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      background-color: var(--bg);
-      background-image: 
-        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%),
-        radial-gradient(at 50% 50%, rgba(15, 23, 42, 0.5) 0px, transparent 100%);
-      background-attachment: fixed;
-      color: var(--text);
-      font-family: var(--font-en);
-      min-height: 100vh;
-      line-height: 1.5;
-    }
-
-    .bn { font-family: var(--font-bn); }
-
-    /* Top Navigation */
-    header {
-      border-bottom: 1px solid var(--card-border);
-      background: rgba(7, 12, 17, 0.85);
-      backdrop-filter: blur(16px);
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      padding: 0.85rem 2rem;
-    }
-
-    .nav-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .logo-badge {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #10b981, #06b6d4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      box-shadow: 0 0 20px var(--primary-glow);
-    }
-
-    .brand h1 {
-      font-size: 1.35rem;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .brand h1 span {
-      background: linear-gradient(90deg, #34d399, #38bdf8);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .brand-sub {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #34d399;
-      padding: 0.35rem 0.85rem;
-      border-radius: 9999px;
-      font-size: 0.8rem;
-      font-weight: 500;
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 8px #10b981;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
-    }
-
-    /* Tab Switcher */
-    .tabs-nav {
-      display: flex;
-      gap: 0.5rem;
-      background: rgba(15, 23, 42, 0.6);
-      padding: 0.35rem;
-      border-radius: 12px;
-      border: 1px solid var(--card-border);
-    }
-
-    .tab-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      padding: 0.5rem 1.1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: 500;
-      font-size: 0.88rem;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .tab-btn.active {
-      background: var(--primary);
-      color: #042f2e;
-      font-weight: 600;
-      box-shadow: 0 2px 10px var(--primary-glow);
-    }
-
-    .tab-btn:hover:not(.active) {
-      color: var(--text);
-      background: rgba(255, 255, 255, 0.05);
-    }
-
-    /* Main Container */
-    main {
-      max-width: 1400px;
-      margin: 2rem auto;
-      padding: 0 1.5rem;
-    }
-
-    .tab-content {
-      display: none;
-    }
-
-    .tab-content.active {
-      display: block;
-      animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Grid Layout for Simulator */
-    .sim-grid {
-      display: grid;
-      grid-template-columns: 420px 1fr;
-      gap: 2rem;
-      align-items: start;
-    }
-
-    @media (max-width: 1024px) {
-      .sim-grid { grid-template-columns: 1fr; }
-    }
-
-    /* Cards */
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 1.5rem;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.4), transparent);
-    }
-
-    .card-header {
-      margin-bottom: 1.25rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .card-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    /* Presets */
-    .preset-bar {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .preset-chip {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--card-border);
-      color: var(--text-muted);
-      padding: 0.35rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.78rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .preset-chip:hover, .preset-chip.active {
-      background: rgba(16, 185, 129, 0.15);
-      border-color: var(--primary);
-      color: #34d399;
-    }
-
-    /* Form Controls */
-    .form-group {
-      margin-bottom: 1.15rem;
-    }
-
-    .form-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--text-muted);
-      margin-bottom: 0.4rem;
-    }
-
-    .form-label span.val {
-      color: #34d399;
-      font-weight: 600;
-    }
-
-    .form-input, .form-select {
-      width: 100%;
-      background: rgba(8, 14, 20, 0.7);
-      border: 1px solid var(--card-border);
-      color: var(--text);
-      padding: 0.65rem 0.85rem;
-      border-radius: 10px;
-      font-family: inherit;
-      font-size: 0.9rem;
-      transition: border-color 0.2s;
-    }
-
-    .form-input:focus, .form-select:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-    }
-
-    /* Range slider */
-    input[type=range] {
-      width: 100%;
-      accent-color: var(--primary);
-    }
-
-    /* Toggle switches */
-    .toggle-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.75rem 0;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .toggle-label {
-      font-size: 0.88rem;
-      color: var(--text);
-    }
-
-    .toggle-sub {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-    }
-
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 44px;
-      height: 24px;
-    }
-
-    .switch input { opacity: 0; width: 0; height: 0; }
-
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #334155;
-      transition: .3s;
-      border-radius: 24px;
-    }
-
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      transition: .3s;
-      border-radius: 50%;
-    }
-
-    input:checked + .slider { background-color: var(--primary); }
-    input:checked + .slider:before { transform: translateX(20px); }
-
-    /* Submit Button */
-    .btn-submit {
-      width: 100%;
-      background: linear-gradient(135deg, #10b981, #059669);
-      border: none;
-      color: #042f2e;
-      padding: 0.85rem;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: 0.95rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      box-shadow: 0 4px 15px var(--primary-glow);
-      transition: all 0.2s;
-      margin-top: 1rem;
-    }
-
-    .btn-submit:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-    }
-
-    /* Results Header / Recommendation Hero */
-    .hero-rec {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.1));
-      border: 1px solid rgba(16, 185, 129, 0.4);
-      border-radius: 16px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      position: relative;
-    }
-
-    .hero-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 0.75rem;
-    }
-
-    .rec-badge {
-      background: #10b981;
-      color: #042f2e;
-      padding: 0.35rem 0.85rem;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .hero-proceeds {
-      font-size: 2.2rem;
-      font-weight: 800;
-      color: #34d399;
-      letter-spacing: -1px;
-    }
-
-    .hero-proceeds span {
-      font-size: 1rem;
-      font-weight: 500;
-      color: var(--text-muted);
-    }
-
-    .hero-text-bn {
-      font-size: 1.05rem;
-      color: #e2e8f0;
-      margin-top: 0.5rem;
-      line-height: 1.6;
-    }
-
-    /* Scenario Cards Grid */
-    .scenarios-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.25rem;
-    }
-
-    .scenario-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 1.25rem;
-      transition: all 0.25s ease;
-      position: relative;
-    }
-
-    .scenario-card:hover {
-      border-color: rgba(52, 211, 153, 0.5);
-      background: var(--card-hover);
-      transform: translateY(-3px);
-    }
-
-    .scenario-card.recommended {
-      border-color: var(--primary);
-      box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
-    }
-
-    .scenario-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.85rem;
-    }
-
-    .scenario-name {
-      font-size: 0.95rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .scenario-rank {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.08);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
-
-    .scenario-card.recommended .scenario-rank {
-      background: var(--primary);
-      color: #042f2e;
-    }
-
-    .scenario-amount {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 0.5rem;
-    }
-
-    .scenario-desc {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      line-height: 1.5;
-      margin-bottom: 0.85rem;
-    }
-
-    .scenario-pill {
-      display: inline-block;
-      padding: 0.25rem 0.6rem;
-      border-radius: 6px;
-      font-size: 0.72rem;
-      font-weight: 600;
-    }
-
-    .pill-feasible { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-    .pill-infeasible { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-
-    /* Voice Lab Tab */
-    .voice-lab-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-    }
-
-    @media (max-width: 1024px) {
-      .voice-lab-grid { grid-template-columns: 1fr; }
-    }
-
-    .audio-player-box {
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 1.25rem;
-      margin-top: 1.25rem;
-    }
-
-    audio {
-      width: 100%;
-      height: 40px;
-      margin-top: 0.75rem;
-      border-radius: 8px;
-    }
-
-    .entity-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      background: rgba(6, 182, 212, 0.15);
-      border: 1px solid rgba(6, 182, 212, 0.3);
-      color: #38bdf8;
-      padding: 0.25rem 0.65rem;
-      border-radius: 8px;
-      font-size: 0.78rem;
-      margin: 0.2rem;
-    }
-
-    .sms-preview {
-      background: #0f172a;
-      border-left: 3px solid #10b981;
-      padding: 0.85rem 1rem;
-      border-radius: 0 10px 10px 0;
-      font-size: 0.88rem;
-      margin-top: 1rem;
-      color: #cbd5e1;
-    }
-
-    /* Market Tab Table */
-    .market-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.88rem;
-    }
-
-    .market-table th {
-      text-align: left;
-      padding: 0.75rem 1rem;
-      color: var(--text-dim);
-      border-bottom: 1px solid var(--card-border);
-      font-weight: 500;
-    }
-
-    .market-table td {
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      color: var(--text-muted);
-    }
-
-    .market-table tr:hover td {
-      background: rgba(255, 255, 255, 0.02);
-      color: var(--text);
-    }
-
-    .badge-price {
-      font-weight: 700;
-      color: #34d399;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:,">
+<title>KrishiVault Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green-darkest: #1b2f21; --green-dark: #2a4a36; --green-mid: #3a7050; --green-light: #5e9e6e;
+    --green-pale: #c8dece; --green-faint: #ecf3ee;
+    --cream: #f7f5ef; --cream-dark: #ece8dc; --paper: #fffdf8; --line: #d9d3c2;
+    --gold: #b8943e; --gold-light: #d4b96a; --gold-faint: #f6efdc;
+    --red: #a8392b; --red-faint: #f8e9e6;
+    --text: #1a2a1f; --text-body: #3d4f42; --muted: #6f8174;
+    /* chart roles (validated: blue/orange pass the colour-blind checks on the paper surface) */
+    --series: #2f7d4a; --series-band: rgba(47,125,74,.16);
+    --gain: #2a78d6; --loss: #d9622b; --grid: #ebe6d8; --axis: #c9c2ad;
+    --bevel: inset 0 1px 0 rgba(255,255,255,.85), inset 0 -1px 0 rgba(27,47,33,.06), 0 1px 2px rgba(27,47,33,.08);
+    --bevel-raised: inset 0 1px 0 #fff, inset 0 -2px 0 rgba(27,47,33,.10), 0 1px 1px rgba(27,47,33,.12);
+    --pressed: inset 0 2px 4px rgba(27,47,33,.22);
+    --font: 'Outfit', 'Noto Sans Bengali', system-ui, sans-serif;
+    --font-bn: 'Noto Sans Bengali', 'Outfit', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; border-radius: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--cream); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.5; }
+  .bn { font-family: var(--font-bn); }
+  small, .small { font-size: .8rem; color: var(--muted); }
+  a { color: var(--green-dark); }
+  h1, h2, h3 { line-height: 1.25; }
+
+  header.top { background: var(--green-darkest); color: var(--cream); border-bottom: 3px solid var(--gold); }
+  .top-inner { max-width: 1240px; margin: 0 auto; padding: 14px 16px; display: flex; gap: 10px 16px; align-items: center; flex-wrap: wrap; }
+  .brand { font-weight: 700; font-size: 1.3rem; }
+  .brand .bn { color: var(--gold-light); font-weight: 600; font-size: 1.05rem; margin-left: 6px; }
+  .top-sub { font-size: .88rem; color: var(--green-pale); flex: 1 1 260px; }
+  .demo-flag { font-size: .72rem; font-weight: 700; letter-spacing: .5px; background: var(--gold); color: var(--green-darkest); padding: 3px 8px; box-shadow: inset 0 1px 0 rgba(255,255,255,.4), inset 0 -1px 0 rgba(0,0,0,.15); }
+  .top-link { color: var(--cream); font-weight: 600; font-size: .9rem; border: 1px solid rgba(255,255,255,.3); padding: 6px 10px; text-decoration: none; background: rgba(255,255,255,.06); box-shadow: inset 0 1px 0 rgba(255,255,255,.15); }
+
+  /* Page tabs: part of the page (scroll away), not a floating bar */
+  nav.tabs { max-width: 1240px; margin: 0 auto; padding: 12px 16px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 6px; }
+  nav.tabs a { display: block; text-decoration: none; padding: 8px 10px; background: linear-gradient(var(--paper), var(--cream-dark)); border: 1px solid var(--line); color: var(--text-body); box-shadow: var(--bevel-raised); font-size: .88rem; font-weight: 600; }
+  nav.tabs a .bn { display: block; font-weight: 400; font-size: .76rem; color: var(--muted); }
+  nav.tabs a[aria-current="page"] { background: var(--green-dark); color: #fff; border-color: var(--green-darkest); box-shadow: var(--pressed); }
+  nav.tabs a[aria-current="page"] .bn { color: var(--green-pale); }
+
+  .season-bar { max-width: 1240px; margin: 12px auto 0; padding: 0 16px; }
+  .season-inner { background: var(--gold-faint); border: 1px solid #e2d3a8; box-shadow: var(--bevel); padding: 10px 12px; display: flex; gap: 8px 14px; flex-wrap: wrap; align-items: center; }
+  .season-inner label { font-weight: 600; font-size: .88rem; color: #5b4a1f; }
+  .season-inner select { min-width: 0; flex: 1 1 260px; max-width: 520px; }
+  .season-inner .small { flex: 1 1 100%; color: #6d5520; }
+
+  main { max-width: 1240px; margin: 0 auto; padding: 14px 16px 40px; }
+  section.page { display: none; }
+  section.page.active { display: block; }
+  .page-title { margin: 6px 0 4px; font-size: 1.35rem; color: var(--green-darkest); }
+  .page-title .bn { font-size: 1rem; color: var(--muted); font-weight: 600; margin-left: 6px; }
+  .lead { margin: 0 0 14px; color: var(--text-body); max-width: 900px; }
+
+  .grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+  .grid > * { min-width: 0; }
+  @media (min-width: 900px) { .grid.two { grid-template-columns: 1fr 1fr; } .grid.side { grid-template-columns: minmax(300px, 380px) 1fr; align-items: start; } }
+  .panel { background: var(--paper); border: 1px solid var(--line); box-shadow: var(--bevel); min-width: 0; }
+  .panel > h2 { margin: 0; padding: 10px 14px; font-size: .98rem; font-weight: 700; color: var(--green-dark); background: linear-gradient(var(--cream), var(--cream-dark)); border-bottom: 1px solid var(--line); box-shadow: inset 0 1px 0 #fff; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .panel > h2 .bn { font-weight: 600; font-size: .82rem; color: var(--muted); }
+  .panel-body { padding: 12px 14px; }
+  .panel-body > :first-child { margin-top: 0; }
+  .panel-body > :last-child { margin-bottom: 0; }
+
+  .tiles { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); margin-bottom: 14px; }
+  .tile { background: var(--paper); border: 1px solid var(--line); box-shadow: var(--bevel); padding: 10px 12px; min-width: 0; }
+  .tile .label { font-size: .78rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+  .tile .value { font-size: 1.45rem; font-weight: 700; color: var(--green-darkest); line-height: 1.2; margin: 2px 0; }
+  .tile .sub { font-size: .82rem; color: var(--text-body); }
+
+  label.f { display: block; font-size: .82rem; font-weight: 600; color: var(--text-body); margin: 0 0 3px; }
+  .form { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .form .wide { grid-column: 1 / -1; }
+  input, select { font: inherit; font-size: .93rem; padding: 7px 8px; border: 1px solid var(--line); background: #fff; color: var(--text); box-shadow: inset 0 1px 2px rgba(27,47,33,.08); width: 100%; min-width: 0; }
+  input:focus, select:focus, .btn:focus-visible, nav.tabs a:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .row { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+  .row > * { flex: 1 1 120px; min-width: 0; }
+  .form.sale { grid-template-columns: 1.3fr 1fr 1fr auto; gap: 6px; }
+  .btn { font: inherit; font-size: .9rem; font-weight: 600; padding: 8px 12px; border: 1px solid #c9c2ad; cursor: pointer; color: var(--green-darkest); background: linear-gradient(var(--paper), var(--cream-dark)); box-shadow: var(--bevel-raised); }
+  .btn:active { box-shadow: var(--pressed); }
+  .btn.primary { color: #fff; border-color: var(--green-darkest); background: linear-gradient(var(--green-mid), var(--green-dark)); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), inset 0 -2px 0 rgba(0,0,0,.2); }
+  .btn.small { font-size: .8rem; padding: 4px 8px; }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+  details.more { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
+  details.more summary { cursor: pointer; font-weight: 600; font-size: .88rem; color: var(--green-dark); }
+
+  .tag { display: inline-block; font-size: .68rem; font-weight: 700; letter-spacing: .4px; padding: 1px 6px; border: 1px solid; vertical-align: 1px; white-space: nowrap; }
+  .tag.demo { background: var(--gold-faint); border-color: #e2d3a8; color: #6d5520; }
+  .tag.real { background: var(--green-faint); border-color: var(--green-pale); color: var(--green-dark); }
+  .tag.warn { background: var(--red-faint); border-color: #e7c4bd; color: var(--red); }
+  .tag.info { background: #eef4fc; border-color: #c7dbf4; color: #1c5cab; }
+
+  .rec { border: 1px solid var(--green-pale); border-left: 5px solid var(--green-mid); background: var(--green-faint); padding: 12px 14px; box-shadow: var(--bevel); margin-bottom: 12px; }
+  .rec.sell_now { border-left-color: var(--loss); background: #fdf1ea; border-color: #f0cdb9; }
+  .rec.store { border-left-color: var(--gain); background: #eef4fc; border-color: #c7dbf4; }
+  .rec h3 { margin: 0 0 4px; font-size: 1.2rem; color: var(--green-darkest); }
+  .rec .bn { font-size: 1.05rem; color: var(--text-body); }
+  .rec ul { margin: 8px 0 0; padding-left: 18px; }
+
+  .options { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 12px; }
+  .opt { border: 1px solid var(--line); background: var(--paper); padding: 10px 12px; box-shadow: var(--bevel); }
+  .opt.on { border-color: var(--green-mid); box-shadow: var(--bevel), inset 0 3px 0 var(--green-mid); }
+  .opt h4 { margin: 0 0 2px; font-size: .95rem; }
+  .opt .bn { font-size: .85rem; color: var(--muted); }
+  .opt .money { font-size: 1.3rem; font-weight: 700; margin: 6px 0 2px; }
+  .opt dl { margin: 6px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: .84rem; }
+  .opt dt { color: var(--muted); }
+  .opt dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  .up { color: #1c5cab; font-weight: 600; } .down { color: #b4481c; font-weight: 600; }
+
+  .table-wrap { overflow-x: auto; max-width: 100%; border: 1px solid var(--line); }
+  table { border-collapse: collapse; width: 100%; font-size: .85rem; background: var(--paper); }
+  th, td { padding: 6px 8px; border-bottom: 1px solid var(--cream-dark); text-align: left; vertical-align: top; }
+  th { background: var(--cream); font-weight: 600; color: var(--text-body); white-space: nowrap; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.best td { background: var(--green-faint); }
+  tr.off td { color: var(--muted); }
+
+  .note { font-size: .84rem; color: var(--text-body); background: var(--cream); border: 1px solid var(--line); padding: 8px 10px; margin: 10px 0 0; }
+  .note.honest { background: var(--gold-faint); border-color: #e2d3a8; color: #5b4a1f; }
+  .err { color: var(--red); font-size: .88rem; margin: 6px 0 0; }
+  .ok { color: var(--green-dark); font-size: .88rem; margin: 6px 0 0; }
+  .muted { color: var(--muted); }
+  ul.plain { margin: 6px 0; padding-left: 18px; }
+  pre.req { white-space: pre-wrap; word-break: break-word; background: var(--cream); border: 1px solid var(--line); padding: 8px; font-size: .78rem; max-height: 180px; overflow: auto; }
+
+  /* charts */
+  .chart { position: relative; width: 100%; min-height: 60px; }
+  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .chart text { font-family: var(--font); fill: var(--muted); font-size: 11px; }
+  .chart .lbl { fill: var(--text-body); font-weight: 600; }
+  .tip { position: absolute; pointer-events: none; background: var(--green-darkest); color: #fff; font-size: .8rem; padding: 6px 8px; box-shadow: 0 2px 8px rgba(0,0,0,.25); z-index: 5; white-space: nowrap; display: none; line-height: 1.4; }
+  .tip b { color: var(--gold-light); }
+  .legend { display: flex; gap: 6px 14px; flex-wrap: wrap; font-size: .8rem; color: var(--text-body); margin: 6px 0 0; }
+  .legend i { display: inline-block; width: 12px; height: 12px; vertical-align: -1px; margin-right: 4px; border: 1px solid rgba(0,0,0,.15); }
+
+  .progress { position: relative; height: 18px; background: var(--cream-dark); border: 1px solid var(--line); box-shadow: inset 0 1px 2px rgba(0,0,0,.08); margin: 8px 0 22px; }
+  .progress .fill { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(var(--green-light), var(--green-mid)); }
+  .progress .mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--gold); }
+  .progress .mark span { position: absolute; top: 22px; left: -30px; width: 64px; text-align: center; font-size: .7rem; color: #6d5520; }
+
+  .events { display: grid; gap: 8px; }
+  .event { border: 1px solid var(--line); border-left: 4px solid var(--gold); background: var(--paper); padding: 8px 10px; box-shadow: var(--bevel); font-size: .88rem; }
+  .event .head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: .78rem; color: var(--muted); }
+  .event .sum { font-family: var(--font-bn); font-size: .95rem; color: var(--text); margin: 2px 0; }
+  .role-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .role-tabs button[aria-pressed="true"] { background: var(--green-dark); color: #fff; border-color: var(--green-darkest); box-shadow: var(--pressed); }
+  .story { columns: 2 320px; column-gap: 24px; }
+  .story p { margin: 0 0 10px; break-inside: avoid; }
+  footer { max-width: 1240px; margin: 0 auto; padding: 0 16px 30px; font-size: .8rem; color: var(--muted); }
+</style>
 </head>
 <body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">KrishiVault <span class="bn">কৃষিভল্ট</span></div>
+    <div class="top-sub">Store or sell, and until when: potato after harvest, Bogura. Forecasts, the storage engine, buyers, bank loans, group storage and export.</div>
+    <span class="demo-flag" title="Partners, banks, buyers and export prices on these screens are made up">DEMO PARTNERS</span>
+    <a class="top-link" href="/call">Call preview ☎</a>
+  </div>
+</header>
 
-  <!-- Navigation Bar -->
-  <header>
-    <div class="nav-container">
-      <div class="brand">
-        <div class="logo-badge">🥔</div>
-        <div>
-          <h1>Krishi<span>Vault</span> <span class="bn" style="font-size:1.1rem; color:#94a3b8; font-weight:400;">(কৃষিভল্ট)</span></h1>
-          <div class="brand-sub">Post-Harvest AI Decision Engine & Voice Telephony</div>
+<nav class="tabs" aria-label="Pages">
+  <a href="#overview" data-page="overview">Season overview<span class="bn">মৌসুমের অবস্থা</span></a>
+  <a href="#store" data-page="store">Store or sell<span class="bn">রাখব না বেচব</span></a>
+  <a href="#forecast" data-page="forecast">Forecasts<span class="bn">পূর্বাভাস</span></a>
+  <a href="#buyers" data-page="buyers">Buyers<span class="bn">ক্রেতা</span></a>
+  <a href="#loan" data-page="loan">Bank loan<span class="bn">বস্তা জামানতে ঋণ</span></a>
+  <a href="#group" data-page="group">Group storage<span class="bn">একসাথে হিমাগার</span></a>
+  <a href="#export" data-page="export">Export<span class="bn">রপ্তানি</span></a>
+  <a href="#profit" data-page="profit">Profit calculator<span class="bn">লাভের হিসাব</span></a>
+  <a href="#partners" data-page="partners">Partner screens<span class="bn">অংশীদারদের পর্দা</span></a>
+</nav>
+
+<div class="season-bar">
+  <div class="season-inner">
+    <label for="season">Season</label>
+    <select id="season">
+      <option value="next">Next harvest: March 2027 (forecast)</option>
+      <option value="now">Today: October 2026, potatoes already in cold storage</option>
+      <option value="big">Replay March 2025: the big crop (real prices since)</option>
+      <option value="normal">Replay March 2024: a normal crop (real prices since)</option>
+    </select>
+    <label for="whatif">Crop size</label>
+    <select id="whatif" style="flex:0 1 220px">
+      <option value="">As forecast</option>
+      <option value="-10">What if 10% smaller</option>
+      <option value="-5">What if 5% smaller</option>
+      <option value="5">What if 5% bigger</option>
+      <option value="10">What if 10% bigger</option>
+    </select>
+    <span class="small" id="seasonNote"></span>
+  </div>
+</div>
+
+<main>
+<!-- ============================================================ OVERVIEW -->
+<section class="page" id="page-overview">
+  <h1 class="page-title">Season overview <span class="bn">মৌসুমের অবস্থা</span></h1>
+  <p class="lead">How big the crop is likely to be, where prices may go after the harvest, and what that means for a farmer who stores in a cold storage. Ranges show what 8 in 10 simulated outcomes fall within.</p>
+  <div class="tiles" id="ovTiles"></div>
+  <div class="grid two">
+    <div class="panel"><h2>Price outlook after the harvest <span class="bn">দামের পূর্বাভাস</span></h2>
+      <div class="panel-body"><div class="chart" id="ovPrice"></div>
+        <div class="legend"><span><i style="background:var(--series)"></i>Middle path (৳/kg)</span><span><i style="background:var(--series-band)"></i>8 in 10 paths</span><span><i style="background:transparent;border:1px dashed var(--muted)"></i>Price today</span></div>
+        <p class="note" id="ovPriceNote"></p></div></div>
+    <div class="panel"><h2>Storing 36 sacks: gain over selling today <span class="bn">রাখলে কত লাভ/ক্ষতি</span></h2>
+      <div class="panel-body"><div class="chart" id="ovGain"></div>
+        <div class="legend"><span><i style="background:var(--gain)"></i>More than selling today</span><span><i style="background:var(--loss)"></i>Less than selling today</span><span>│ range: 8 in 10 paths</span></div>
+        <p class="note" id="ovGainNote"></p></div></div>
+  </div>
+  <div class="panel" style="margin-top:14px"><h2>Why farmers lose money in cold storage <span class="bn">কেন কৃষকের ক্ষতি হয়</span></h2>
+    <div class="panel-body story">
+      <p><b>Rent is flat.</b> A cold storage charges about ৳250 for an 84 kg sack for the season, up to 9 months. One month or nine, the rent is the same.</p>
+      <p><b>Farmers sell too early.</b> Afraid that prices will fall further, many sell within 1 to 3 months. They have paid the full rent, but the price has not risen yet. The cold storage empties early and fills again: it gains, the farmer loses.</p>
+      <p><b>Big crops make it worse.</b> When the country grows more potato than usual (2016-17, 2024-25), prices stay low all year. Storing then loses money; in a normal or small crop year, prices can nearly double by November.</p>
+      <p><b>Traders hold the advantage.</b> Traders buy in bulk at the haat, store, and release potatoes across the country when prices rise. They have the cash and the information; farmers usually store only seed potato.</p>
+      <p><b>What KrishiVault does:</b> it forecasts the crop and the price with honest ranges, compares selling now with storing to every month, shows the price at which storing pays, finds better buyers, lets the stored sacks back a bank loan instead of a forced sale, and groups neighbours for cheaper storage and transport.</p>
+    </div></div>
+</section>
+
+<!-- ============================================================ STORE OR SELL -->
+<section class="page" id="page-store">
+  <h1 class="page-title">Store or sell, and until when <span class="bn">রাখব না বেচব, কবে বেচব</span></h1>
+  <p class="lead">The storage engine compares selling today with storing for every month until the cold storage empties in December, after rent, weight loss, sacks, carrying, selling costs and loan interest. It recommends one of three options and says how sure it is.</p>
+  <div class="grid side">
+    <div class="panel"><h2>The farmer's potatoes <span class="bn">কৃষকের তথ্য</span></h2>
+      <div class="panel-body">
+        <form id="planForm" class="form" autocomplete="off">
+          <div><label class="f" for="pQty">Quantity</label><input id="pQty" type="number" min="1" step="any" value="80"></div>
+          <div><label class="f" for="pUnit">Unit</label><select id="pUnit"><option value="maund">maund (মণ)</option><option value="sack">sack, 84 kg (বস্তা)</option><option value="kg">kg</option></select></div>
+          <div><label class="f" for="pPrice">Price offered today (৳/kg)</label><input id="pPrice" type="number" min="1" step="0.5" value="16"></div>
+          <div><label class="f" for="pStored">Already in cold storage?</label><select id="pStored"><option value="no">No (just harvested)</option><option value="cold">Yes, since March</option></select></div>
+          <div><label class="f" for="pCash">Cash needed (৳)</label><input id="pCash" type="number" min="0" step="500" value="0"></div>
+          <div><label class="f" for="pDays">Within (days)</label><input id="pDays" type="number" min="0" step="1" value="0"></div>
+          <div><label class="f" for="pLoan">Loan if storing</label><select id="pLoan"><option value="cheapest">Cheapest that fits</option><option value="cold_storage">Cold-storage advance</option><option value="bank">Bank loan</option><option value="none">No loan</option></select></div>
+          <div><label class="f" for="pCost">Own cost (৳/kg, optional)</label><input id="pCost" type="number" min="0" step="0.5" placeholder="e.g. 15.6"></div>
+          <details class="more wide"><summary>Costs and assumptions (change to the farmer's own)</summary>
+            <div class="form" style="margin-top:8px" id="termsBox"></div>
+            <p class="small">Field notes: 84 kg sack, ৳250 rent for up to 9 months, cold-storage advance ৳200-300 a sack. Losses, sack, carrying and selling costs, and loan rates are working assumptions to check in the pilot.</p>
+          </details>
+          <div class="wide row"><button class="btn primary" type="submit">Work it out</button><a class="btn" href="/call" style="text-decoration:none;text-align:center">Same question by phone ☎</a></div>
+        </form>
+        <p class="err" id="planErr"></p>
+      </div></div>
+    <div id="planOut"><div class="panel"><div class="panel-body muted">Working it out…</div></div></div>
+  </div>
+</section>
+
+<!-- ============================================================ FORECASTS -->
+<section class="page" id="page-forecast">
+  <h1 class="page-title">Production and price forecasts <span class="bn">উৎপাদন ও দামের পূর্বাভাস</span></h1>
+  <p class="lead">Production comes from 13 seasons of BBS statistics; prices from WFP town-market reports. Both forecasts give a range, not a promise.</p>
+  <div class="grid two">
+    <div class="panel"><h2>Potato production <span class="bn">আলুর উৎপাদন</span></h2>
+      <div class="panel-body">
+        <div class="form">
+          <div><label class="f" for="fDist">Area</label><select id="fDist"><option value="">Bangladesh</option></select></div>
+          <div><label class="f" for="fSeason">Season</label><select id="fSeason"><option value="2025">2025-26 (harvested 2026)</option><option value="2026" selected>2026-27 (next harvest)</option><option value="2027">2027-28</option></select></div>
+          <div><label class="f" for="fArea">Planted area if known (ha)</label><input id="fArea" type="number" min="0" step="100" placeholder="from DAE"></div>
+          <div><label class="f" for="fWeather">Weather adjustment (%)</label><input id="fWeather" type="number" step="1" value="0"></div>
         </div>
+        <div class="tiles" id="prodTiles" style="margin-top:12px"></div>
+        <div class="chart" id="prodChart"></div>
+        <div class="legend"><span><i style="background:var(--series)"></i>BBS production</span><span><i style="background:repeating-linear-gradient(45deg,var(--series) 0 2px,#fff 2px 5px)"></i>Forecast, with range</span><span><i style="background:transparent;border:1px dashed var(--muted)"></i>Trend</span></div>
+        <p class="note">Big gaps above the trend (2016-17, 2024-25) were the glut years. Weather is not in the model yet; it can be entered by hand.</p>
+      </div></div>
+    <div class="panel"><h2>Price outlook <span class="bn">দামের পূর্বাভাস</span></h2>
+      <div class="panel-body">
+        <div class="form">
+          <div><label class="f" for="foPrice">Price today (৳/kg)</label><input id="foPrice" type="number" min="1" step="0.5" value="16"></div>
+        </div>
+        <div class="chart" id="foChart" style="margin-top:10px"></div>
+        <div class="table-wrap" style="margin-top:10px"><table id="foTable"></table></div>
+        <p class="note" id="foNote"></p>
+      </div></div>
+  </div>
+  <div class="grid two" style="margin-top:14px">
+    <div class="panel"><h2>Market prices so far (WFP, national middle) <span class="bn">বাজারদর</span></h2>
+      <div class="panel-body"><div class="chart" id="histChart"></div>
+        <div class="legend"><span><i style="background:var(--series)"></i>Month with 4+ market reports (used)</span><span><i style="background:#fff;border:2px solid var(--muted)"></i>Fewer reports (not used)</span></div>
+        <p class="note">Retail prices in town markets, not farm-gate prices. One market that repeated the same price for months was dropped as a frozen report.</p></div></div>
+    <div class="panel"><h2>How the price model works <span class="bn">মডেল</span></h2>
+      <div class="panel-body" id="modelCard"></div></div>
+  </div>
+  <div class="panel" style="margin-top:14px"><h2>Regional prices and supply <span class="bn">অঞ্চলভেদে দাম ও সরবরাহ</span></h2>
+    <div class="panel-body grid two">
+      <div><h3 style="margin:0 0 6px;font-size:.95rem">Price level by district (1.00 = national)</h3><div class="chart" id="regChart"></div>
+        <div class="legend"><span><i style="background:var(--gain)"></i>Cheaper than national</span><span><i style="background:var(--loss)"></i>Dearer than national</span></div>
+        <p class="small">Districts with 5 or more WFP reports since February 2024; few reports are pulled towards 1.00.</p></div>
+      <div><h3 style="margin:0 0 6px;font-size:.95rem">Biggest producing districts (BBS 2024-25)</h3><div class="table-wrap"><table id="supplyTable"></table></div></div>
+    </div></div>
+</section>
+
+<!-- ============================================================ BUYERS -->
+<section class="page" id="page-buyers">
+  <h1 class="page-title">Buyers and offers <span class="bn">ক্রেতা ও দর</span></h1>
+  <p class="lead">A higher price is not always more money. Offers are ranked by the money left in the farmer's hand after transport, grading losses and the wait for payment. <b>No paid placement:</b> a partner's fee never changes the order.</p>
+  <div class="grid side">
+    <div class="panel"><h2>The lot <span class="bn">লট</span></h2><div class="panel-body">
+      <div class="form">
+        <div><label class="f" for="bQty">Quantity (kg)</label><input id="bQty" type="number" min="1" value="3000"></div>
+        <div><label class="f" for="bPrice">Haat price today (৳/kg)</label><input id="bPrice" type="number" min="1" step="0.5" value="16"></div>
       </div>
-
-      <div class="tabs-nav">
-        <button class="tab-btn active" onclick="switchTab('sim')">
-          <span>🌾</span> Harvest Simulator
-        </button>
-        <button class="tab-btn" onclick="switchTab('voice')">
-          <span>🎙️</span> AI Voice Lab
-        </button>
-        <button class="tab-btn" onclick="switchTab('market')">
-          <span>📈</span> Market & Prices
-        </button>
-        <button class="tab-btn" onclick="switchTab('network')">
-          <span>🏪</span> Buyers & Storage
-        </button>
+      <h3 style="font-size:.9rem;margin:12px 0 4px">Add an offer the farmer has</h3>
+      <div class="form">
+        <div class="wide"><label class="f" for="oName">Who</label><input id="oName" placeholder="e.g. trader from the next village"></div>
+        <div><label class="f" for="oPrice">Price (৳/kg)</label><input id="oPrice" type="number" min="1" step="0.5"></div>
+        <div><label class="f" for="oTrans">Farmer's transport (৳/kg)</label><input id="oTrans" type="number" min="0" step="0.1" value="0"></div>
+        <div><label class="f" for="oDays">Pays after (days)</label><input id="oDays" type="number" min="0" value="0"></div>
+        <div class="wide row"><button class="btn" id="oAdd" type="button">Add offer</button><button class="btn primary" id="bGo" type="button">Compare</button></div>
       </div>
+      <div id="ownOffers" class="small" style="margin-top:6px"></div>
+      <h3 style="font-size:.9rem;margin:14px 0 4px">Send the lot to buyers</h3>
+      <div class="form"><div><label class="f" for="bName">Farmer</label><input id="bName" value="Demo farmer"></div><div><label class="f" for="bPhone">Phone</label><input id="bPhone" placeholder="01XXXXXXXXX"></div>
+        <div class="wide"><button class="btn" id="bSend" type="button">Send to the buyers' screen</button></div></div>
+      <p class="small" id="bSendOut"></p>
+    </div></div>
+    <div class="panel"><h2>Offers, best first <span class="bn">সবচেয়ে ভালো দর আগে</span></h2><div class="panel-body" id="offersOut">…</div></div>
+  </div>
+</section>
 
-      <div class="status-pill">
-        <div class="status-dot"></div>
-        <span>Live System</span>
+<!-- ============================================================ LOAN -->
+<section class="page" id="page-loan">
+  <h1 class="page-title">A bank loan against stored potatoes <span class="bn">বস্তা জামানতে ব্যাংক ঋণ</span></h1>
+  <p class="lead">Cash needs force early sales. With the sacks in cold storage as security, a bank can lend instead. KrishiVault does not lend: it checks the receipt with the cold storage, values the crop carefully, works out the repayment risk and sends the application. The bank decides. All banks here are <span class="tag demo">DEMO</span>.</p>
+  <div class="grid side">
+    <div class="panel"><h2>How much can be borrowed <span class="bn">কত ঋণ</span></h2><div class="panel-body">
+      <div class="form">
+        <div><label class="f" for="lSacks">Sacks in cold storage</label><input id="lSacks" type="number" min="1" value="36"></div>
+        <div><label class="f" for="lPrice">Price today (৳/kg)</label><input id="lPrice" type="number" min="1" step="0.5" value="16"></div>
+        <div><label class="f" for="lMonths">For (months)</label><input id="lMonths" type="number" min="1" max="9" value="8"></div>
+        <div><label class="f" for="lAmount">Amount wanted (৳, optional)</label><input id="lAmount" type="number" min="0" step="1000"></div>
+        <div class="wide"><button class="btn primary" id="lGo" type="button">Compare lenders</button></div>
       </div>
-    </div>
-  </header>
-
-  <main>
-    <!-- ============================================================ -->
-    <!-- TAB 1: HARVEST DECISION SIMULATOR                            -->
-    <!-- ============================================================ -->
-    <div id="tab-sim" class="tab-content active">
-      <div class="sim-grid">
-        <!-- Input Form Card -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">👨‍🌾 Farmer Constraints</div>
-            <span style="font-size:0.75rem; color:var(--text-dim);">Real-world Parameters</span>
-          </div>
-
-          <!-- Presets -->
-          <div class="preset-bar">
-            <button class="preset-chip active" onclick="loadPreset('abdur_rahim')">Abdur Rahim (Bogura)</button>
-            <button class="preset-chip" onclick="loadPreset('mohammad_ali')">Mohammad Ali (Rangpur)</button>
-            <button class="preset-chip" onclick="loadPreset('dadon_case')">Dadon Loan Case</button>
-          </div>
-
-          <form id="simForm" onsubmit="event.preventDefault(); runSimulation();">
-            <div class="form-group">
-              <label class="form-label">Target District</label>
-              <select id="district" class="form-select" onchange="updateDistrictPrices()">
-                <option value="Bogura" selected>Bogura (বগুড়া)</option>
-                <option value="Rangpur">Rangpur (রংপুর)</option>
-                <option value="Dinajpur">Dinajpur (দিনাজপুর)</option>
-                <option value="Rajshahi">Rajshahi (রাজশাহী)</option>
-                <option value="Munshiganj">Munshiganj (মুন্সীগঞ্জ)</option>
-                <option value="Dhaka">Dhaka (ঢাকা)</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <div class="form-label">
-                <span>Harvest Quantity</span>
-                <span class="val" id="qtyDisplay">100 মণ (3,732 kg)</span>
-              </div>
-              <input type="range" id="quantityMaunds" min="10" max="500" step="5" value="100" oninput="updateQtyDisplay(this.value)">
-            </div>
-
-            <div class="form-group">
-              <div class="form-label">
-                <span>Urgent Cash Need</span>
-                <span class="val" id="cashDisplay">৳30,000</span>
-              </div>
-              <input type="range" id="cashNeeded" min="5000" max="150000" step="2500" value="30000" oninput="updateCashDisplay(this.value)">
-            </div>
-
-            <div class="form-group">
-              <div class="form-label">
-                <span>Debt / Cash Deadline</span>
-                <span class="val" id="deadlineDisplay">4 Days</span>
-              </div>
-              <input type="range" id="deadlineDays" min="1" max="30" step="1" value="4" oninput="updateDeadlineDisplay(this.value)">
-            </div>
-
-            <div class="form-group">
-              <div class="form-label">
-                <span>Local Faria/Buyer Offer</span>
-                <span class="val" id="offerDisplay">৳19.00 / kg</span>
-              </div>
-              <input type="range" id="offerPrice" min="12" max="32" step="0.5" value="19.0" oninput="updateOfferDisplay(this.value)">
-            </div>
-
-            <div class="toggle-row">
-              <div>
-                <div class="toggle-label">Cold Storage Access</div>
-                <div class="toggle-sub">Has space/booking in local hub</div>
-              </div>
-              <label class="switch">
-                <input type="checkbox" id="hasStorage" checked>
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <div class="toggle-row">
-              <div>
-                <div class="toggle-label">Bound by Dadon (দাদন)?</div>
-                <div class="toggle-sub">Advance cash loan from arhatdar</div>
-              </div>
-              <label class="switch">
-                <input type="checkbox" id="hasDadon" onchange="toggleDadonRow(this.checked)">
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <div class="form-group" id="dadonAmountRow" style="display:none; margin-top:0.75rem;">
-              <label class="form-label">Dadon Debt Balance (৳)</label>
-              <input type="number" id="dadonAmount" class="form-input" value="20000" step="1000">
-            </div>
-
-            <button type="submit" class="btn-submit" id="simSubmitBtn">
-              <span>⚡</span> Run Decision Optimization
-            </button>
-          </form>
-        </div>
-
-        <!-- Output Cards -->
-        <div id="simResults">
-          <!-- Hero Banner -->
-          <div class="hero-rec">
-            <div class="hero-top">
-              <div class="rec-badge" id="recBadge">RECOMMENDED STRATEGY</div>
-              <div style="font-size:0.85rem; color:var(--text-muted);" id="recRisk">Confidence: 95% | Risk: Low</div>
-            </div>
-            <div class="hero-proceeds" id="heroProceeds">৳80,247 <span>Net Expected In Pocket</span></div>
-            <p class="hero-text-bn bn" id="heroTextBn">
-              লোডিং... দয়া করে 'Run Decision Optimization' চাপুন।
-            </p>
-          </div>
-
-          <!-- 4 Scenarios Side-by-Side -->
-          <div class="scenarios-grid" id="scenariosGrid">
-            <!-- Injected via JS -->
-          </div>
-        </div>
+      <h3 style="font-size:.9rem;margin:14px 0 4px">Apply</h3>
+      <div class="form">
+        <div><label class="f" for="aName">Farmer</label><input id="aName" value="Demo farmer"></div>
+        <div><label class="f" for="aPhone">Phone</label><input id="aPhone" placeholder="01XXXXXXXXX"></div>
+        <div><label class="f" for="aReceipt">Cold-storage receipt no.</label><input id="aReceipt" placeholder="from the booking"></div>
+        <div><label class="f" for="aCs">Cold storage</label><select id="aCs"></select></div>
+        <div><label class="f" for="aBank">Lender</label><select id="aBank"></select></div>
+        <div class="wide"><button class="btn" id="aGo" type="button">Send the application</button></div>
       </div>
-    </div>
+      <p class="small" id="aOut"></p>
+    </div></div>
+    <div><div class="panel"><h2>Lenders compared <span class="bn">ঋণদাতা</span></h2><div class="panel-body" id="loanOut">…</div></div>
+      <div class="panel" style="margin-top:14px"><h2>What the bank sees <span class="bn">ব্যাংকের জন্য তথ্য</span></h2><div class="panel-body" id="loanPack">Pick a lender above.</div></div></div>
+  </div>
+</section>
 
-    <!-- ============================================================ -->
-    <!-- TAB 2: AI VOICE & TELEPHONY LAB (GEMINI + TTS)               -->
-    <!-- ============================================================ -->
-    <div id="tab-voice" class="tab-content">
-      <div class="voice-lab-grid">
-        <!-- Caller Simulation Card -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">📞 Telephony IVR Simulator</div>
-            <span class="status-pill" style="font-size:0.75rem;">Gemini 3.5 + Google TTS</span>
-          </div>
+<!-- ============================================================ GROUP -->
+<section class="page" id="page-group">
+  <h1 class="page-title">Group storage <span class="bn">একসাথে হিমাগারে রাখা</span></h1>
+  <p class="lead">Neighbours combine their sacks into one order. Sharing a truck saves money straight away. A cold storage may offer a lower rent for a big order; that saving counts <b>only after the cold storage agrees</b> on its screen, never before.</p>
+  <div id="groupPools" class="grid two"></div>
+  <div class="grid side" style="margin-top:14px">
+    <div class="panel"><h2>Alone or in the group? <span class="bn">একা না দলে</span></h2><div class="panel-body">
+      <div class="form">
+        <div class="wide"><label class="f" for="gPool">Group</label><select id="gPool"></select></div>
+        <div><label class="f" for="gSacks">Sacks</label><input id="gSacks" type="number" min="1" value="40"></div>
+        <div><label class="f" for="gName">Farmer</label><input id="gName" value="Demo farmer"></div>
+        <div class="wide row"><button class="btn primary" id="gGo" type="button">Compare</button><button class="btn" id="gJoin" type="button">Join the group</button></div>
+      </div><p class="small" id="gOut"></p></div></div>
+    <div class="panel"><h2>Cost for this farmer <span class="bn">খরচের তুলনা</span></h2><div class="panel-body" id="groupCmp">…</div></div>
+  </div>
+</section>
 
-          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">
-            Test how KrishiVault receives raw spoken Bengali voice transcripts from rural farmers, parses dialect entities, runs decision math, and synthesizes audio.
-          </p>
-
-          <div class="form-group">
-            <label class="form-label">Caller Phone</label>
-            <input type="text" id="voicePhone" class="form-input" value="+8801711998877">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Farmer Name</label>
-            <input type="text" id="voiceCallerName" class="form-input" value="আব্দুর রহিম">
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Quick Transcripts Sample</label>
-            <select class="form-select" onchange="document.getElementById('voiceTranscript').value = this.value">
-              <option value="হামার শিবগঞ্জের জমিতে ৮০ মণ আলু উঠছে বাহে। পোলাপানের স্কুলের বেতন আর মহাজনের সার বাবদ জরুরি ২৫ হাজার টেকা নাগবে ৪ দিনের মইধ্যে। স্থানীয় ফড়িয়া ১৮ টেকা কেজি দিবার চায়। আড়তদারের কাছে ২০ হাজার টেকা দাদন নেওয়া আছে।">
-                Dialect 1: Bogura Shibganj (Dadon Loan + School Fees)
-              </option>
-              <option value="রংপুরের মিঠাপুকুরে ৪০ বস্তা আলু উঠাইছি। কালকের মধ্যে জরুরি ১০ হাজার টাকা লাগবে। হিমাগারে কোনো জায়গা পাই নাই।">
-                Dialect 2: Rangpur Mithapukur (Urgent 24h + Sacks)
-              </option>
-              <option value="আমার দেড়শো মণ আলু আছে। কোনো তাড়া নেই, দাম বাড়লে বিক্রি করব। মহাস্থানগড় হিমাগারে জায়গা বুকিং দেওয়া আছে।">
-                Dialect 3: Bogura Commercial (150 Maunds + Storage Booking)
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Spoken Transcript</label>
-            <textarea id="voiceTranscript" class="form-input bn" rows="4" style="resize:vertical;">হামার শিবগঞ্জের জমিতে ৮০ মণ আলু উঠছে বাহে। পোলাপানের স্কুলের বেতন আর মহাজনের সার বাবদ জরুরি ২৫ হাজার টেকা নাগবে ৪ দিনের মইধ্যে। স্থানীয় ফড়িয়া ১৮ টেকা কেজি দিবার চায়। আড়তদারের কাছে ২০ হাজার টেকা দাদন নেওয়া আছে।</textarea>
-          </div>
-
-          <button class="btn-submit" onclick="runVoiceSimulation()" id="voiceSimBtn">
-            <span>🎙️</span> Process Spoken Transcript & Synthesize Audio
-          </button>
-        </div>
-
-        <!-- Voice Lab Output -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">🔊 Audio & Dialog Output</div>
-            <span style="font-size:0.75rem; color:#38bdf8;" id="geminiModelTag">Model: Gemini 3.5 Flash</span>
-          </div>
-
-          <div style="margin-bottom:1rem;">
-            <div style="font-size:0.8rem; color:var(--text-dim); margin-bottom:0.4rem;">PARSED ENTITIES (DIALECT NORMALIZATION):</div>
-            <div id="entityTagsContainer">
-              <span class="entity-tag">🌾 80 maunds</span>
-              <span class="entity-tag">💰 ৳25,000 need</span>
-              <span class="entity-tag">⏱️ 4 days</span>
-              <span class="entity-tag">⚠️ Dadon: ৳20,000</span>
-            </div>
-          </div>
-
-          <div class="form-label">Spoken Natural Bengali Guidance:</div>
-          <div class="bn" id="spokenTextBn" style="background:rgba(0,0,0,0.3); border:1px solid var(--card-border); padding:1rem; border-radius:10px; font-size:0.95rem; line-height:1.7; min-height:90px;">
-            আসসালামু আলাইকুম আব্দুর রহিম ভাই। আপনার তথ্যের ভিত্তিতে আমরা বিশ্লেষণ সম্পন্ন করেছি...
-          </div>
-
-          <!-- HTML5 Live Audio Player -->
-          <div class="audio-player-box">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:0.82rem; font-weight:600; color:#34d399;">🎧 Live Google Cloud TTS Audio</span>
-              <span style="font-size:0.75rem; color:var(--text-dim);" id="audioMeta">Wavenet / Chirp3-HD</span>
-            </div>
-            <audio id="audioPlayer" controls>
-              <source src="/audio/advice_আব্দুর_রহিম.mp3" type="audio/mpeg">
-              Your browser does not support the audio element.
-            </audio>
-          </div>
-
-          <div class="sms-preview">
-            <div style="font-size:0.75rem; color:#34d399; font-weight:700; margin-bottom:0.25rem;">📱 SMS TO FARMER'S FEATURE PHONE:</div>
-            <div class="bn" id="smsTextBn">কৃষিভল্ট পরামর্শ: SELL_NOW। প্রত্যাশিত নিট আয়: ৳80,247 টাকা। সহায়তার জন্য কল করুন 16123।</div>
-          </div>
-        </div>
+<!-- ============================================================ EXPORT -->
+<section class="page" id="page-export">
+  <h1 class="page-title">Export market intelligence <span class="bn">রপ্তানির সুযোগ</span></h1>
+  <p class="lead">Where to buy in Bangladesh (real BBS and WFP data) and which foreign markets pay after every cost. A high quoted price is not a profit: sorting, the truck to the port, papers, freight, insurance, duty and rejected potatoes all come off. Foreign prices and costs are <span class="tag demo">DEMO FIGURES</span> until real quotes replace them.</p>
+  <div class="grid two">
+    <div class="panel"><h2>Markets after every cost <span class="bn">খরচের পর লাভ</span></h2><div class="panel-body">
+      <div class="form">
+        <div><label class="f" for="xPrice">Farm-gate price (৳/kg)</label><input id="xPrice" type="number" min="1" step="0.5" value="16"></div>
+        <div><label class="f" for="xDist">Buy in</label><select id="xDist"></select></div>
+        <div><label class="f" for="xQty">Tonnes</label><input id="xQty" type="number" min="1" value="26"></div>
+        <div style="align-self:end"><button class="btn primary" id="xGo" type="button">Work it out</button></div>
       </div>
-    </div>
+      <p class="note" id="xLesson" style="margin-top:12px"></p>
+      <div class="chart" id="xChart" style="margin-top:10px"></div>
+      <div class="legend"><span><i style="background:var(--gain)"></i>Margin left (৳/kg)</span><span><i style="background:var(--loss)"></i>Loss after costs</span></div>
+      <div id="xTable" style="margin-top:10px"></div>
+    </div></div>
+    <div class="panel"><h2>Where to buy: big crop, low price <span class="bn">কোথা থেকে কেনা</span></h2><div class="panel-body">
+      <div class="table-wrap"><table id="srcTable"></table></div>
+      <p class="small">Production: BBS 2024-25. Price level: WFP reports (1.00 = national; blank = no reports). Distances are approximate road distances.</p>
+      <div id="gapNote"></div>
+    </div></div>
+  </div>
+</section>
 
-    <!-- ============================================================ -->
-    <!-- TAB 3: MARKET PRICES & TIME-SERIES FORECASTS                 -->
-    <!-- ============================================================ -->
-    <div id="tab-market" class="tab-content">
-      <div style="display:grid; grid-template-columns:1fr 2fr; gap:2rem;">
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">📈 Regional Price Forecast</div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Select Region</label>
-            <select id="marketDistrictSelect" class="form-select" onchange="loadDistrictForecast(this.value)">
-              <option value="Bogura">Bogura</option>
-              <option value="Rangpur">Rangpur</option>
-              <option value="Dinajpur">Dinajpur</option>
-              <option value="Rajshahi">Rajshahi</option>
-              <option value="Munshiganj">Munshiganj</option>
-              <option value="Dhaka">Dhaka</option>
-            </select>
-          </div>
-
-          <div id="forecastBox" style="margin-top:1.5rem;">
-            <!-- Forecast Pills -->
-            <div style="padding:1rem; background:rgba(0,0,0,0.25); border-radius:12px; margin-bottom:0.75rem; border-left:3px solid #10b981;">
-              <div style="display:flex; justify-content:space-between;">
-                <span style="font-weight:600; font-size:0.85rem;">7-Day Forecast</span>
-                <span style="color:#34d399; font-weight:700;" id="fc7">৳23.10 / kg</span>
-              </div>
-              <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.25rem;">Confidence Range: ৳21.70 – ৳24.50 (88%)</div>
-            </div>
-
-            <div style="padding:1rem; background:rgba(0,0,0,0.25); border-radius:12px; margin-bottom:0.75rem; border-left:3px solid #06b6d4;">
-              <div style="display:flex; justify-content:space-between;">
-                <span style="font-weight:600; font-size:0.85rem;">14-Day Forecast</span>
-                <span style="color:#38bdf8; font-weight:700;" id="fc14">৳24.20 / kg</span>
-              </div>
-              <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.25rem;">Confidence Range: ৳22.00 – ৳26.40 (82%)</div>
-            </div>
-
-            <div style="padding:1rem; background:rgba(0,0,0,0.25); border-radius:12px; border-left:3px solid #f59e0b;">
-              <div style="display:flex; justify-content:space-between;">
-                <span style="font-weight:600; font-size:0.85rem;">30-Day Lean Transition</span>
-                <span style="color:#fbbf24; font-weight:700;" id="fc30">৳27.50 / kg</span>
-              </div>
-              <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.25rem;">Confidence Range: ৳23.40 – ৳31.60 (78%)</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">🗂️ Historical WFP & DAM Market Database</div>
-            <span style="font-size:0.75rem; color:var(--text-muted);" id="marketTableCount">347 Records</span>
-          </div>
-          <div style="overflow-x:auto; max-height:450px;">
-            <table class="market-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Market</th>
-                  <th>District</th>
-                  <th>Retail Avg (৳)</th>
-                  <th>Wholesale (৳)</th>
-                  <th>Source</th>
-                </tr>
-              </thead>
-              <tbody id="marketTableBody">
-                <!-- Injected via JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
+<!-- ============================================================ PROFIT -->
+<section class="page" id="page-profit">
+  <h1 class="page-title">Profit calculator <span class="bn">লাভের হিসাব</span></h1>
+  <p class="lead">Everything the farmer spent, earned and kept, per kg, per 84 kg sack, per maund and for the whole harvest. The example is one bigha in Bogura: replace it with the farmer's own figures.</p>
+  <div class="grid side">
+    <div class="panel"><h2>Costs and sales <span class="bn">খরচ ও বিক্রি</span></h2><div class="panel-body">
+      <div class="form">
+        <div><label class="f" for="prLand">Land</label><input id="prLand" type="number" min="0.01" step="0.01" value="1"></div>
+        <div><label class="f" for="prUnit">Unit</label><select id="prUnit"><option value="bigha">bigha (33 decimals)</option><option value="acre">acre</option><option value="decimal">decimal</option><option value="hectare">hectare</option></select></div>
+        <div><label class="f" for="prHarvest">Harvest (kg)</label><input id="prHarvest" type="number" min="1" value="3000"></div>
+        <div><label class="f" for="prHarvestPrice">Price at harvest (৳/kg)</label><input id="prHarvestPrice" type="number" min="0" step="0.5" value="14"></div>
       </div>
-    </div>
+      <h3 style="font-size:.9rem;margin:12px 0 4px">Growing costs (৳)</h3><div class="form" id="prGrow"></div>
+      <h3 style="font-size:.9rem;margin:12px 0 4px">After-harvest costs (৳)</h3><div class="form" id="prAfter"></div>
+      <h3 style="font-size:.9rem;margin:12px 0 4px">Sales</h3><div id="prSales"></div>
+      <div class="row" style="margin-top:6px"><button class="btn small" id="prAddSale" type="button">+ Add a sale</button></div>
+      <div class="form" style="margin-top:10px"><div><label class="f" for="prUnsold">Unsold potatoes, value (৳/kg)</label><input id="prUnsold" type="number" min="0" step="0.5" placeholder="0 = count as lost"></div>
+        <div style="align-self:end"><button class="btn primary" id="prGo" type="button">Calculate</button></div></div>
+    </div></div>
+    <div class="panel"><h2>The result <span class="bn">ফলাফল</span></h2><div class="panel-body" id="prOut">…</div></div>
+  </div>
+</section>
 
-    <!-- ============================================================ -->
-    <!-- TAB 4: BUYERS & COLD STORAGE NETWORK                         -->
-    <!-- ============================================================ -->
-    <div id="tab-network" class="tab-content">
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem;">
-        <!-- Cold Storages -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">❄️ Verified Cold Storage Hubs</div>
-            <span style="font-size:0.75rem; color:#34d399;">5 Tracked Hubs</span>
-          </div>
-          <div id="coldStorageList" style="display:flex; flex-direction:column; gap:0.75rem;">
-            <!-- Injected via JS -->
-          </div>
-        </div>
+<!-- ============================================================ PARTNERS -->
+<section class="page" id="page-partners">
+  <h1 class="page-title">Partner screens <span class="bn">অংশীদারদের পর্দা</span></h1>
+  <p class="lead">What partners see straight after a farmer's call or a request on this dashboard. Every partner here is <span class="tag demo">DEMO</span>; phone numbers are masked. The list refreshes every few seconds.</p>
+  <div class="role-tabs" id="roleTabs">
+    <button class="btn" data-role="cold_storage" aria-pressed="true">Cold storage</button>
+    <button class="btn" data-role="bank" aria-pressed="false">Bank</button>
+    <button class="btn" data-role="buyer" aria-pressed="false">Buyer</button>
+    <button class="btn" data-role="helper" aria-pressed="false">KrishiVault helper</button>
+  </div>
+  <div class="grid two">
+    <div class="panel"><h2>Requests <span class="bn">অনুরোধ</span></h2><div class="panel-body"><div class="events" id="evList">…</div></div></div>
+    <div class="panel"><h2 id="roleSideTitle">To act on</h2><div class="panel-body" id="roleSide">…</div></div>
+  </div>
+</section>
+</main>
+<footer>KrishiVault prototype. Real data: BBS potato production 2012-13 to 2024-25; WFP potato prices February 2024 to July 2026. Field notes: 84 kg sack, ৳250 flat rent for up to 9 months, cold-storage advances ৳200-300 a sack. Everything marked DEMO is made up. SMS is a dry run unless the server is set to live; phone calls are a preview only.</footer>
 
-        <!-- Buyers -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">💼 Institutional Buyer Network</div>
-            <span style="font-size:0.75rem; color:#38bdf8;">Active Bids</span>
-          </div>
-          <div id="buyerList" style="display:flex; flex-direction:column; gap:0.75rem;">
-            <!-- Injected via JS -->
-          </div>
-        </div>
-      </div>
-    </div>
-  </main>
+<script>
+'use strict';
+/* ------------------------------------------------------------------ helpers */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = (n, d = 0) => Number(n).toLocaleString('en-IN', {maximumFractionDigits: d, minimumFractionDigits: d});
+const tk = n => (n < 0 ? '−' : '') + '৳' + num(Math.abs(Math.round(n)));
+const tkSigned = n => (n > 0 ? '+' : n < 0 ? '−' : '') + '৳' + num(Math.abs(Math.round(n)));
+const pct = p => Math.round(p * 100) + '%';
+const lakhT = t => num(t / 100000, 1) + ' lakh t';
+const val = id => { const v = $(id).value; return v === '' ? null : Number(v); };
+async function api(path, body) {
+  const opts = body === undefined ? {} : {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)};
+  const r = await fetch(path, opts);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const d = j.detail;
+    throw new Error(typeof d === 'string' ? d : Array.isArray(d) ? d.map(x => (x.loc || []).slice(-1)[0] + ': ' + x.msg).join('; ') : 'Request failed (' + r.status + ')');
+  }
+  return j;
+}
+const demoTag = demo => demo ? '<span class="tag demo">DEMO</span>' : '<span class="tag real">REAL</span>';
 
-  <script>
-    // Tab Switching
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      
-      const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
-      if (activeBtn) activeBtn.classList.add('active');
-      
-      const activeTab = document.getElementById('tab-' + tabId);
-      if (activeTab) activeTab.classList.add('active');
+/* ------------------------------------------------------------------ the season (shared by every page) */
+const SEASONS = {
+  next:   {month: 3, year: 2027, stored: 'no',   price: 16, label: 'March 2027', note: 'The next harvest. Crop size is not known yet, so the range is wide.'},
+  now:    {month: 10, year: 2026, stored: 'cold', price: 22, label: 'October 2026', note: 'Potatoes stored since March. Rent is owed either way; two months are left before the cold storages empty.'},
+  big:    {month: 3, year: 2025, stored: 'no',   price: 14, label: 'March 2025', note: 'The 2024-25 crop was 6% above the trend. Prices then stayed flat all year (WFP).'},
+  normal: {month: 3, year: 2024, stored: 'no',   price: 18, label: 'March 2024', note: 'The 2023-24 crop was close to the trend. Prices then nearly doubled by November (WFP).'},
+};
+const season = () => SEASONS[$('#season').value];
+const whatIf = () => $('#whatif').value === '' ? null : Number($('#whatif').value);
+function seasonChanged() {
+  const s = season();
+  $('#seasonNote').textContent = s.note + ' Example farm-gate price ৳' + s.price + '/kg (change it on each page).';
+  for (const id of ['#pPrice', '#foPrice', '#bPrice', '#lPrice', '#xPrice']) $(id).value = s.price;
+  $('#pStored').value = s.stored;
+  try { localStorage.setItem('kv-season', $('#season').value); } catch (e) {}
+  loaded.clear();
+  showPage(currentPage());
+}
 
-      if (tabId === 'market') loadMarketData();
-      if (tabId === 'network') loadNetworkData();
+/* ------------------------------------------------------------------ charts (SVG) */
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function scale(d0, d1, r0, r1) { const k = (r1 - r0) / ((d1 - d0) || 1); return v => r0 + (v - d0) * k; }
+function ticks(min, max, n = 5) {
+  const span = max - min || 1, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= step0) || step0;
+  const out = [], start = Math.floor(min / step + 1e-9) * step, end = Math.ceil(max / step - 1e-9) * step;
+  for (let v = start; v <= end + step * 1e-6; v += step) out.push(+v.toFixed(10));
+  return out.length > 1 ? out : [start, start + step];
+}
+function frame(box, h, pad) {
+  box.innerHTML = '';
+  const w = Math.max(300, box.clientWidth || 600);
+  const svg = el('svg', {viewBox: `0 0 ${w} ${h}`, role: 'img'}, box);
+  const tip = document.createElement('div'); tip.className = 'tip'; box.appendChild(tip);
+  return {svg, w, h, x0: pad.l, x1: w - pad.r, y0: h - pad.b, y1: pad.t, tip};
+}
+function showTip(f, box, html, x, y) {
+  f.tip.innerHTML = html; f.tip.style.display = 'block';
+  const bw = box.clientWidth, tw = f.tip.offsetWidth, scaleX = bw / f.w;
+  let left = x * scaleX + 12; if (left + tw > bw) left = x * scaleX - tw - 12; if (left < 0) left = 0;
+  f.tip.style.left = left + 'px'; f.tip.style.top = Math.max(0, y * scaleX - 10) + 'px';
+}
+function yAxis(f, y, tv, fmt) {
+  for (const t of tv) {
+    el('line', {x1: f.x0, x2: f.x1, y1: y(t), y2: y(t), stroke: 'var(--grid)', 'stroke-width': 1}, f.svg);
+    el('text', {x: f.x0 - 6, y: y(t) + 4, 'text-anchor': 'end'}, f.svg).textContent = fmt(t);
+  }
+}
+
+/* line with a range band: rows [{label, mid, low, high, tip}] */
+function lineBand(box, rows, opt = {}) {
+  const f = frame(box, opt.h || 260, {l: 44, r: 64, t: 14, b: 28});
+  const lo = Math.min(...rows.map(r => r.low), opt.ref ?? Infinity), hi = Math.max(...rows.map(r => r.high), opt.ref ?? -Infinity);
+  const tv = ticks(Math.max(0, lo * 0.92), hi * 1.05);
+  const y = scale(tv[0], tv[tv.length - 1], f.y0, f.y1);
+  const x = scale(0, rows.length - 1, f.x0 + 8, f.x1 - 8);
+  yAxis(f, y, tv, t => '৳' + num(t));
+  const band = rows.map((r, i) => `${x(i)},${y(r.high)}`).concat(rows.map((r, i) => `${x(i)},${y(r.low)}`).reverse()).join(' ');
+  el('polygon', {points: band, fill: 'var(--series-band)'}, f.svg);
+  if (opt.ref != null) {
+    el('line', {x1: f.x0, x2: f.x1, y1: y(opt.ref), y2: y(opt.ref), stroke: 'var(--muted)', 'stroke-dasharray': '4 4', 'stroke-width': 1.2}, f.svg);
+    el('text', {x: f.x1 + 4, y: y(opt.ref) + 4, class: 'lbl'}, f.svg).textContent = 'today ৳' + num(opt.ref, 1);
+  }
+  el('polyline', {points: rows.map((r, i) => `${x(i)},${y(r.mid)}`).join(' '), fill: 'none', stroke: 'var(--series)', 'stroke-width': 2}, f.svg);
+  const step = rows.length > 8 && f.w < 520 ? 2 : 1;
+  rows.forEach((r, i) => {
+    el('circle', {cx: x(i), cy: y(r.mid), r: 4, fill: 'var(--series)', stroke: 'var(--paper)', 'stroke-width': 2}, f.svg);
+    if (i % step === 0 || i === rows.length - 1) el('text', {x: x(i), y: f.y0 + 18, 'text-anchor': 'middle'}, f.svg).textContent = r.label;
+  });
+  const last = rows[rows.length - 1];
+  el('text', {x: x(rows.length - 1) + 8, y: y(last.mid) + 4, class: 'lbl'}, f.svg).textContent = '৳' + num(last.mid, 1);
+  el('text', {x: x(rows.length - 1) + 8, y: y(last.high) + 4}, f.svg).textContent = '৳' + num(last.high, 0);
+  el('text', {x: x(rows.length - 1) + 8, y: y(last.low) + 12}, f.svg).textContent = '৳' + num(last.low, 0);
+  const cross = el('line', {y1: f.y1, y2: f.y0, stroke: 'var(--text-body)', 'stroke-width': 1, opacity: 0}, f.svg);
+  const hit = el('rect', {x: f.x0, y: f.y1, width: f.x1 - f.x0, height: f.y0 - f.y1, fill: 'transparent'}, f.svg);
+  const move = ev => {
+    const pt = f.svg.getBoundingClientRect(), px = (ev.clientX - pt.left) * f.w / pt.width;
+    const i = Math.max(0, Math.min(rows.length - 1, Math.round((px - x(0)) / ((x(1) - x(0)) || 1))));
+    cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('opacity', .5);
+    showTip(f, box, rows[i].tip, x(i), y(rows[i].mid));
+  };
+  hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move);
+  hit.addEventListener('pointerleave', () => { f.tip.style.display = 'none'; cross.setAttribute('opacity', 0); });
+}
+
+/* vertical bars around zero with a range whisker: rows [{label, v, low, high, tip}] */
+function divBars(box, rows, opt = {}) {
+  const f = frame(box, opt.h || 250, {l: 62, r: 12, t: 14, b: 28});
+  const lo = Math.min(0, ...rows.map(r => r.low ?? r.v)), hi = Math.max(0, ...rows.map(r => r.high ?? r.v));
+  const tv = ticks(lo, hi);
+  const y = scale(tv[0], tv[tv.length - 1], f.y0, f.y1);
+  yAxis(f, y, tv, opt.fmt || (t => t === 0 && opt.zeroLabel ? opt.zeroLabel : tkSigned(t)));
+  const bw = (f.x1 - f.x0) / rows.length;
+  el('line', {x1: f.x0, x2: f.x1, y1: y(0), y2: y(0), stroke: 'var(--text-body)', 'stroke-width': 1.5}, f.svg);
+  rows.forEach((r, i) => {
+    const cx = f.x0 + bw * (i + .5), w = Math.max(6, Math.min(26, bw * .45));
+    const top = Math.min(y(r.v), y(0)), hgt = Math.max(1, Math.abs(y(r.v) - y(0)));
+    el('rect', {x: cx - w / 2, y: top, width: w, height: hgt, fill: r.v >= 0 ? 'var(--gain)' : 'var(--loss)'}, f.svg);
+    if (r.low != null) {
+      el('line', {x1: cx, x2: cx, y1: y(r.low), y2: y(r.high), stroke: 'var(--text-body)', 'stroke-width': 1.2}, f.svg);
+      for (const yy of [r.low, r.high]) el('line', {x1: cx - 4, x2: cx + 4, y1: y(yy), y2: y(yy), stroke: 'var(--text-body)', 'stroke-width': 1.2}, f.svg);
     }
+    el('text', {x: cx, y: f.y0 + 18, 'text-anchor': 'middle'}, f.svg).textContent = r.label;
+    const hit = el('rect', {x: cx - bw / 2, y: f.y1, width: bw, height: f.y0 - f.y1, fill: 'transparent'}, f.svg);
+    const on = () => showTip(f, box, r.tip, cx, top);
+    hit.addEventListener('pointerenter', on); hit.addEventListener('pointerdown', on);
+    hit.addEventListener('pointerleave', () => f.tip.style.display = 'none');
+  });
+}
 
-    // Input Slider Updaters
-    function updateQtyDisplay(val) {
-      const kg = Math.round(val * 37.3242);
-      document.getElementById('qtyDisplay').innerText = `${val} মণ (${kg.toLocaleString()} kg)`;
+/* production bars with a forecast bar (hatched) and a trend line */
+function prodBars(box, hist, fc) {
+  const rows = hist.map(h => ({label: h.season.slice(2), v: h.production_t, trend: h.trend_t, tip: `<b>${h.season}</b><br>${lakhT(h.production_t)} (BBS)<br>${h.gap_pct > 0 ? '+' : ''}${h.gap_pct}% against the trend`}));
+  if (!hist.some(h => h.season === fc.season)) rows.push({label: fc.season.slice(2), v: fc.production_t, low: fc.low_t, high: fc.high_t, trend: fc.trend_t, forecast: true,
+    tip: `<b>${fc.season} forecast</b><br>${lakhT(fc.production_t)}<br>range ${lakhT(fc.low_t)} to ${lakhT(fc.high_t)}<br>${esc(fc.basis)}`});
+  const f = frame(box, 240, {l: 40, r: 10, t: 18, b: 28});
+  const hi = Math.max(...rows.map(r => r.high || r.v)) * 1.05;
+  const tv = ticks(0, hi);
+  const y = scale(0, tv[tv.length - 1], f.y0, f.y1);
+  yAxis(f, y, tv, t => num(t / 100000, 0));
+  el('text', {x: f.x0 + 4, y: f.y1 + 2, class: 'lbl'}, f.svg).textContent = 'lakh tonnes';
+  const defs = el('defs', {}, f.svg);
+  const pat = el('pattern', {id: 'hatch' + box.id, width: 6, height: 6, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)'}, defs);
+  el('rect', {width: 6, height: 6, fill: 'var(--paper)'}, pat); el('rect', {width: 2.5, height: 6, fill: 'var(--series)'}, pat);
+  const bw = (f.x1 - f.x0) / rows.length;
+  const pts = [];
+  rows.forEach((r, i) => {
+    const cx = f.x0 + bw * (i + .5), w = Math.max(5, bw * .55);
+    el('rect', {x: cx - w / 2, y: y(r.v), width: w, height: f.y0 - y(r.v), fill: r.forecast ? `url(#hatch${box.id})` : 'var(--series)', stroke: r.forecast ? 'var(--series)' : 'none'}, f.svg);
+    if (r.forecast) {
+      el('line', {x1: cx, x2: cx, y1: y(r.low), y2: y(r.high), stroke: 'var(--text-body)', 'stroke-width': 1.2}, f.svg);
+      for (const yy of [r.low, r.high]) el('line', {x1: cx - 4, x2: cx + 4, y1: y(yy), y2: y(yy), stroke: 'var(--text-body)', 'stroke-width': 1.2}, f.svg);
     }
-    function updateCashDisplay(val) {
-      document.getElementById('cashDisplay').innerText = `৳${parseInt(val).toLocaleString()}`;
+    pts.push(`${cx},${y(r.trend)}`);
+    if (rows.length < 12 || i % 2 === 0 || r.forecast) el('text', {x: cx, y: f.y0 + 16, 'text-anchor': 'middle'}, f.svg).textContent = r.label;
+    const hit = el('rect', {x: cx - bw / 2, y: f.y1, width: bw, height: f.y0 - f.y1, fill: 'transparent'}, f.svg);
+    const on = () => showTip(f, box, r.tip, cx, y(r.high || r.v));
+    hit.addEventListener('pointerenter', on); hit.addEventListener('pointerdown', on);
+    hit.addEventListener('pointerleave', () => f.tip.style.display = 'none');
+  });
+  el('polyline', {points: pts.join(' '), fill: 'none', stroke: 'var(--muted)', 'stroke-dasharray': '4 3', 'stroke-width': 1.5, 'pointer-events': 'none'}, f.svg);
+}
+
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthLabel = ym => MON[Number(ym.slice(5, 7)) - 1] + ' ' + ym.slice(2, 4);
+/* national price history: points, used months joined */
+function histLine(box, rows) {
+  const f = frame(box, 220, {l: 44, r: 12, t: 12, b: 28});
+  const ord = r => Number(r.month.slice(0, 4)) * 12 + Number(r.month.slice(5, 7)) - 1;
+  const o0 = ord(rows[0]), o1 = ord(rows[rows.length - 1]);
+  const hi = Math.max(...rows.map(r => r.median)) * 1.08;
+  const tv = ticks(0, hi);
+  const y = scale(0, tv[tv.length - 1], f.y0, f.y1);
+  const x = scale(o0, o1, f.x0 + 6, f.x1 - 6);
+  yAxis(f, y, tv, t => '৳' + num(t));
+  // join only months that follow each other and are both used: a gap in the data stays a gap
+  let seg = [];
+  const flush = () => { if (seg.length > 1) el('polyline', {points: seg.join(' '), fill: 'none', stroke: 'var(--series)', 'stroke-width': 2}, f.svg); seg = []; };
+  rows.forEach((r, i) => {
+    if (!r.used || (i && ord(r) - ord(rows[i - 1]) > 1)) flush();
+    if (r.used) seg.push(`${x(ord(r))},${y(r.median)}`);
+  });
+  flush();
+  for (let o = o0; o <= o1; o++) if (o % 12 === 1 || o % 12 === 7) {
+    el('text', {x: x(o), y: f.y0 + 16, 'text-anchor': 'middle'}, f.svg).textContent = MON[o % 12] + ' ' + String(Math.floor(o / 12)).slice(2);
+  }
+  rows.forEach(r => {
+    const cx = x(ord(r));
+    el('circle', {cx, cy: y(r.median), r: 4, fill: r.used ? 'var(--series)' : '#fff', stroke: r.used ? 'var(--paper)' : 'var(--muted)', 'stroke-width': 2}, f.svg);
+    const hit = el('rect', {x: cx - 8, y: f.y1, width: 16, height: f.y0 - f.y1, fill: 'transparent'}, f.svg);
+    const on = () => showTip(f, box, `<b>${monthLabel(r.month)}</b><br>৳${num(r.median, 1)}/kg (middle of ${r.reports} markets)${r.used ? '' : '<br>too few reports: not used'}`, cx, y(r.median));
+    hit.addEventListener('pointerenter', on); hit.addEventListener('pointerdown', on);
+    hit.addEventListener('pointerleave', () => f.tip.style.display = 'none');
+  });
+}
+
+/* horizontal bars around a base: rows [{label, v, tip}] */
+function hBars(box, rows, opt = {}) {
+  const base = opt.base ?? 0, rowH = 22;
+  const f = frame(box, rows.length * rowH + 30, {l: opt.left || 118, r: 56, t: 6, b: 24});
+  const lo = Math.min(base, ...rows.map(r => r.v)), hi = Math.max(base, ...rows.map(r => r.v));
+  const tv = ticks(lo, hi, 4);
+  const x = scale(tv[0], tv[tv.length - 1], f.x0, f.x1);
+  for (const t of tv) {
+    el('line', {x1: x(t), x2: x(t), y1: f.y1, y2: f.y0, stroke: 'var(--grid)'}, f.svg);
+    el('text', {x: x(t), y: f.y0 + 16, 'text-anchor': 'middle'}, f.svg).textContent = (opt.fmt || (v => v))(t);
+  }
+  el('line', {x1: x(base), x2: x(base), y1: f.y1, y2: f.y0, stroke: 'var(--text-body)', 'stroke-width': 1.5}, f.svg);
+  rows.forEach((r, i) => {
+    const cy = f.y1 + rowH * i + rowH / 2, hgt = 12;
+    const color = opt.single ? 'var(--series)' : (r.v >= base ? (opt.upGood === false ? 'var(--loss)' : 'var(--gain)') : (opt.upGood === false ? 'var(--gain)' : 'var(--loss)'));
+    el('rect', {x: Math.min(x(r.v), x(base)), y: cy - hgt / 2, width: Math.max(1, Math.abs(x(r.v) - x(base))), height: hgt, fill: color}, f.svg);
+    el('text', {x: f.x0 - 6, y: cy + 4, 'text-anchor': 'end', class: 'lbl'}, f.svg).textContent = r.label;
+    el('text', {x: Math.max(x(r.v), x(base)) + 4, y: cy + 4}, f.svg).textContent = r.text ?? '';
+    const hit = el('rect', {x: 0, y: cy - rowH / 2, width: f.w, height: rowH, fill: 'transparent'}, f.svg);
+    const on = () => showTip(f, box, r.tip, Math.max(x(r.v), x(base)), cy);
+    hit.addEventListener('pointerenter', on); hit.addEventListener('pointerdown', on);
+    hit.addEventListener('pointerleave', () => f.tip.style.display = 'none');
+  });
+}
+
+/* ------------------------------------------------------------------ pages */
+const loaded = new Set();
+const PAGES = {overview: loadOverview, store: runPlan, forecast: loadForecast, buyers: runOffers, loan: runLoan,
+               group: loadGroups, export: loadExport, profit: loadProfit, partners: loadPartners};
+const currentPage = () => { const h = location.hash.slice(1); return PAGES[h] ? h : 'overview'; };
+function showPage(name) {
+  $$('section.page').forEach(s => s.classList.toggle('active', s.id === 'page-' + name));
+  $$('nav.tabs a').forEach(a => { if (a.dataset.page === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  if (!loaded.has(name)) { loaded.add(name); PAGES[name]().catch(e => console.error(e)); }
+  partnerTimer(name === 'partners');
+}
+window.addEventListener('hashchange', () => showPage(currentPage()));
+let resizeT; window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { const n = currentPage(); loaded.delete(n); showPage(n); }, 250); });
+
+function outlookRows(months) {
+  return months.map(m => ({label: m.month_en.slice(0, 3), mid: m.mid, low: m.low, high: m.high,
+    tip: `<b>${m.month_en}</b><br>middle ৳${num(m.mid, 1)}/kg<br>8 in 10: ৳${num(m.low, 1)} to ৳${num(m.high, 1)}${m.h ? '<br>above today in ' + pct(m.chance_above_today) + ' of paths' : '<br>today'}`}));
+}
+function gainRows(plan) {
+  const now = plan.options.sell_now.money_mean;
+  return plan.by_month.filter(r => r.h > 0).map(r => ({label: r.month_en.slice(0, 3), v: r.gain_vs_now, low: r.net_low - now, high: r.net_high - now,
+    tip: `<b>Sell in ${r.month_en}</b><br>average ${tkSigned(r.gain_vs_now)} vs today<br>8 in 10: ${tkSigned(r.net_low - now)} to ${tkSigned(r.net_high - now)}<br>beats today in ${pct(r.chance_beats_now)} of paths<br>pays if price passes ৳${num(r.break_even_price, 1)}/kg`}));
+}
+function planBody(extra = {}) {
+  const s = season();
+  return Object.assign({quantity: 80, unit: 'maund', price_today: s.price, month: s.month, year: s.year, stored: s.stored,
+    gap_override_pct: whatIf()}, extra);
+}
+
+/* ---------------- overview */
+async function loadOverview() {
+  const s = season();
+  const [prodNat, prodBog, plan] = await Promise.all([
+    api(`/api/forecast/production?season_start=${s.year - 1}`),
+    api(`/api/forecast/production?district=Bogura&season_start=${s.year - 1}`),
+    api('/api/storage/plan', planBody({quantity: 36, unit: 'sack'})),
+  ]);
+  const rec = plan.recommendation, best = plan.best_month, store = plan.options.store;
+  const last = plan.by_month[plan.by_month.length - 1];
+  const gap = plan.outlook.gap_pct;
+  $('#ovTiles').innerHTML = `
+    <div class="tile"><div class="label">Bangladesh crop ${esc(prodNat.season)}</div><div class="value">${lakhT(prodNat.production_t)}</div>
+      <div class="sub">${prodNat.low_t === prodNat.high_t ? 'BBS figure' : 'range ' + lakhT(prodNat.low_t) + ' to ' + lakhT(prodNat.high_t)}</div></div>
+    <div class="tile"><div class="label">Against the trend</div><div class="value">${gap > 0 ? '+' : ''}${gap}%</div>
+      <div class="sub">${whatIf() != null ? 'what-if setting' : gap > 3 ? 'a big crop: prices may stay low' : gap < -3 ? 'a small crop: prices may rise more' : 'about a normal crop'}</div></div>
+    <div class="tile"><div class="label">Bogura crop ${esc(prodBog.season)}</div><div class="value">${lakhT(prodBog.production_t)}</div>
+      <div class="sub">${num(prodBog.history[prodBog.history.length - 1].production_t / prodNat.history[prodNat.history.length - 1].production_t * 100, 1)}% of the country (2024-25)</div></div>
+    <div class="tile"><div class="label">Price in ${esc(last.month_en)}</div><div class="value">৳${num(last.price_mid, 1)}</div>
+      <div class="sub">from ৳${num(plan.inputs.price_today, 1)} today; range ৳${num(last.price_low, 0)} to ৳${num(last.price_high, 0)}</div></div>
+    <div class="tile"><div class="label">36 sacks: advice</div><div class="value" style="font-size:1.1rem">${esc(rec.title_en)}</div>
+      <div class="sub bn">${esc(rec.title_bn)}</div></div>`;
+  if (plan.months_left > 0) {
+    const o = await api(`/api/forecast/price?price_today=${s.price}&month=${s.month}&year=${s.year}${whatIf() != null ? '&gap_override_pct=' + whatIf() : ''}`);
+    lineBand($('#ovPrice'), outlookRows(o.months), {ref: s.price});
+    $('#ovPriceNote').innerHTML = `Season ${esc(o.season)}. Rise strength ${o.rise.k.toFixed(2)} (1 = the usual rise, 0 = flat)${o.rise.season_months_used ? `, corrected by ${o.rise.season_months_used} months of this season's prices` : ''}. A statistical outlook, not a promise.`;
+    divBars($('#ovGain'), gainRows(plan), {zeroLabel: 'sell today'});
+    $('#ovGainNote').innerHTML = esc(plan.notes.join(' ')) + (best ? ` Best month: <b>${esc(best.month_en)}</b>${store ? ` (${tkSigned(store.gain_vs_now)} on average, beats today in ${pct(store.chance_beats_now)} of paths)` : ''}.` : '');
+  } else {
+    $('#ovPrice').innerHTML = '<p class="muted">The storage season is over for this month.</p>';
+    $('#ovGain').innerHTML = '';
+  }
+}
+
+/* ---------------- store or sell */
+const TERMS = [
+  ['rent_per_sack', 'Rent a sack, whole season (৳)', 250, 10], ['sack_kg', 'Sack size (kg)', 84, 1],
+  ['sack_cost', 'Empty sack (৳)', 40, 1], ['carry_in_per_sack', 'Carry to cold storage (৳/sack)', 25, 1],
+  ['load_unload_per_sack', 'Loading, unloading (৳/sack)', 15, 1], ['sell_from_store_per_sack', 'Selling from store (৳/sack)', 30, 1],
+  ['sell_now_per_sack', 'Selling at the field (৳/sack)', 10, 1], ['monthly_weight_loss', 'Weight loss a month (%)', 0.5, 0.1, 100],
+  ['exit_sorting_loss', 'Rotten when taken out (%)', 2, 0.5, 100], ['cs_advance_per_sack', 'Cold-storage advance (৳/sack)', 250, 10],
+  ['cs_advance_rate_year', 'Advance interest (% a year)', 14, 0.5, 100], ['bank_rate_year', 'Bank interest (% a year)', 11, 0.5, 100],
+];
+function buildTerms() {
+  $('#termsBox').innerHTML = TERMS.map(([k, label, v, step]) => `<div><label class="f" for="t_${k}">${label}</label><input id="t_${k}" type="number" min="0" step="${step}" value="${v}"></div>`).join('');
+}
+function readTerms() {
+  const t = {};
+  for (const [k, , , , div] of TERMS) { const v = val('#t_' + k); if (v != null) t[k] = div ? v / div : v; }
+  return t;
+}
+async function runPlan() {
+  const out = $('#planOut'); $('#planErr').textContent = '';
+  let plan;
+  const body = planBody({quantity: val('#pQty'), unit: $('#pUnit').value, price_today: val('#pPrice'), stored: $('#pStored').value,
+    cash_needed_tk: val('#pCash') || 0, cash_days: val('#pDays') || 0, loan_source: $('#pLoan').value,
+    production_cost_per_kg: val('#pCost') || null, terms: readTerms()});
+  try { plan = await api('/api/storage/plan', body); } catch (e) { $('#planErr').textContent = e.message; return; }
+  const rec = plan.recommendation, opts = plan.options, inp = plan.inputs;
+  const optCard = o => !o ? '' : `<div class="opt ${o.key === rec.key ? 'on' : ''}"><h4>${esc(o.title_en)} ${o.key === rec.key ? '<span class="tag real">ADVISED</span>' : ''}</h4><div class="bn">${esc(o.title_bn)}</div>
+      <div class="money">${tk(o.money_mean)}</div><div class="small">${o.key === 'sell_now' ? 'certain, at today\'s price' : 'average; 8 in 10: ' + tk(o.money_low) + ' to ' + tk(o.money_high)}</div>
+      <dl>${o.key !== 'sell_now' ? `<dt>vs selling now</dt><dd class="${o.gain_vs_now >= 0 ? 'up' : 'down'}">${tkSigned(o.gain_vs_now)}</dd><dt>Beats selling now</dt><dd>${pct(o.chance_beats_now)} of paths</dd><dt>Bad case (1 in 10)</dt><dd>${tkSigned(o.worst_case_vs_now)}</dd>` : ''}
+      ${o.cash_now != null ? `<dt>Cash now</dt><dd>${tk(o.cash_now)}</dd>` : ''}
+      ${o.loan ? `<dt>Loan needed</dt><dd>${tk(o.loan.amount)} (${o.loan.source === 'bank' ? 'bank' : 'cold storage'})</dd><dt>Interest</dt><dd>${tk(o.loan.interest)}</dd>` : ''}</dl></div>`;
+  const rows = plan.by_month.map(r => `<tr class="${best(plan) === r.h ? 'best' : ''}"><td>${r.h ? 'Sell in ' + esc(r.month_en) : 'Sell now (' + esc(r.month_en) + ')'}</td>
+      <td class="n">৳${num(r.price_low, 1)} – ৳${num(r.price_mid, 1)} – ৳${num(r.price_high, 1)}</td><td class="n">${tk(r.net_mean)}</td>
+      <td class="n ${r.gain_vs_now >= 0 ? 'up' : 'down'}">${r.h ? tkSigned(r.gain_vs_now) : '—'}</td><td class="n">${r.h ? pct(r.chance_beats_now) : '—'}</td>
+      <td class="n">${r.break_even_price ? '৳' + num(r.break_even_price, 1) : '—'}</td></tr>`).join('');
+  const home = plan.home_storage, floor = plan.cost_floor;
+  out.innerHTML = `
+    <div class="rec ${rec.key}"><h3>${esc(rec.title_en)}</h3><div class="bn">${esc(rec.title_bn)}</div>
+      <ul>${rec.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>
+      <div class="small" style="margin-top:6px">${num(inp.quantity_kg)} kg = ${inp.sacks} sacks of ${inp.terms.sack_kg} kg = ${num(inp.maunds, 1)} maunds · price today ৳${num(inp.price_today, 1)}/kg · season ${esc(plan.outlook.season)}, ${plan.months_left} month(s) of storage left</div></div>
+    <div class="options">${optCard(opts.sell_now)}${optCard(opts.store)}${optCard(opts.sell_part)}</div>
+    ${plan.months_left ? `<div class="panel"><h2>Gain over selling today, by month of sale <span class="bn">মাসভিত্তিক লাভ/ক্ষতি</span></h2><div class="panel-body"><div class="chart" id="planChart"></div>
+      <div class="legend"><span><i style="background:var(--gain)"></i>More than selling today</span><span><i style="background:var(--loss)"></i>Less</span><span>│ 8 in 10 paths</span></div>
+      <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>When</th><th class="n">Price ৳/kg (low – middle – high)</th><th class="n">Money in hand</th><th class="n">vs now</th><th class="n">Beats now</th><th class="n">Pays above</th></tr></thead><tbody>${rows}</tbody></table></div>
+      ${plan.notes.map(n => `<p class="note">${esc(n)}</p>`).join('')}
+      ${home ? `<p class="note">Keeping them at home instead (no rent, about 4% loss a month, at most 3 months): best in ${esc(home.month_en)}, ${tk(home.net_mean)} on average (${tkSigned(home.gain_vs_now)} vs now).</p>` : ''}
+      ${floor ? `<p class="note ${floor.below_cost_today ? 'honest' : ''}">Own cost ৳${num(floor.production_cost_per_kg, 1)}/kg: ${floor.below_cost_today ? 'selling today is below cost, a loss of ৳' + num(floor.loss_per_kg_if_sold_now, 1) + ' a kg.' : 'today\'s price covers it.'}</p>` : ''}
+      </div></div>` : ''}
+    <div class="panel" style="margin-top:14px"><h2>Act on it <span class="bn">পরবর্তী ধাপ</span></h2><div class="panel-body">
+      <div class="form"><div><label class="f" for="actName">Farmer</label><input id="actName" value="Demo farmer"></div><div><label class="f" for="actPhone">Phone (for SMS)</label><input id="actPhone" placeholder="01XXXXXXXXX"></div></div>
+      <div class="row" style="margin-top:8px"><button class="btn primary" id="actSms" type="button">Send this advice by SMS</button>
+        ${rec.key !== 'sell_now' && inp.stored === 'no' ? `<button class="btn" id="actBook" type="button">Ask the cold storage for ${rec.key === 'sell_part' ? opts.sell_part.store_sacks : inp.sacks} sacks</button>` : ''}
+        <a class="btn" href="#buyers" style="text-decoration:none;text-align:center">Compare buyers</a><a class="btn" href="#loan" style="text-decoration:none;text-align:center">Loan against the sacks</a></div>
+      <div id="actOut" class="small" style="margin-top:8px"></div></div></div>
+    <p class="note honest">How sure is this? Prices come from a statistical outlook fitted to two seasons of WFP prices and 13 seasons of BBS production. Costs and losses marked as assumptions should be checked with the farmer and the cold storage.</p>`;
+  if (plan.months_left) divBars($('#planChart'), gainRows(plan), {zeroLabel: 'sell today'});
+  $('#actSms').onclick = async () => {
+    const o = $('#actOut');
+    try { const r = await api('/api/sms/advice', Object.assign({}, body, {phone: $('#actPhone').value.trim()}));
+      o.innerHTML = r.error ? `<span class="err">${esc(r.error)}</span>` : `${r.dry_run ? '<span class="tag info">DRY RUN</span> not sent; this is the SMS that would go out:' : '<span class="tag real">SENT</span>'}<pre class="req bn">${esc(r.text)}</pre>`;
+    } catch (e) { o.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  };
+  const bookBtn = $('#actBook');
+  if (bookBtn) bookBtn.onclick = async () => {
+    try { const sacks = rec.key === 'sell_part' ? opts.sell_part.store_sacks : inp.sacks;
+      const r = await api('/api/storage/book', {sacks, farmer_name: $('#actName').value || 'Demo farmer', phone: $('#actPhone').value.trim() || null, advice: rec.title_en});
+      $('#actOut').innerHTML = `Request sent to the cold storage's screen. Receipt no. <b>${esc(r.ref)}</b> (demo). It can back a bank loan.`;
+      $('#aReceipt').value = 'DEMO-' + r.ref; $('#lSacks').value = sacks;
+    } catch (e) { $('#actOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  };
+}
+const best = plan => plan.best_month ? plan.best_month.h : -1;
+
+/* ---------------- forecasts */
+let districtsLoaded = false;
+async function loadForecast() {
+  if (!districtsLoaded) {
+    const ds = await api('/api/districts');
+    $('#fDist').insertAdjacentHTML('beforeend', ds.map(d => `<option ${d === 'Bogura' ? '' : ''}>${esc(d)}</option>`).join(''));
+    $('#xDist').innerHTML = ds.map(d => `<option ${d === 'Bogura' ? 'selected' : ''}>${esc(d)}</option>`).join('');
+    districtsLoaded = true;
+  }
+  await Promise.all([runProduction(), runPriceOutlook(), loadModel(), loadRegions()]);
+}
+async function runProduction() {
+  const q = new URLSearchParams({season_start: $('#fSeason').value});
+  if ($('#fDist').value) q.set('district', $('#fDist').value);
+  if (val('#fArea')) q.set('area_ha', val('#fArea'));
+  if (val('#fWeather')) q.set('weather_adjust_pct', val('#fWeather'));
+  const f = await api('/api/forecast/production?' + q);
+  $('#prodTiles').innerHTML = `
+    <div class="tile"><div class="label">${esc(f.area)} ${esc(f.season)}</div><div class="value">${lakhT(f.production_t)}</div><div class="sub">${f.low_t === f.high_t ? 'BBS figure' : '8 in 10: ' + lakhT(f.low_t) + ' to ' + lakhT(f.high_t)}</div></div>
+    <div class="tile"><div class="label">Against the trend</div><div class="value">${f.gap_pct > 0 ? '+' : ''}${f.gap_pct}%</div><div class="sub">trend grows ${f.trend_growth_pct_year}% a year</div></div>
+    <div class="tile"><div class="label">Based on</div><div class="value" style="font-size:1rem">${esc(f.basis)}</div><div class="sub">yield trend ${f.yield_trend_t_ha} t/ha, area trend ${num(f.area_trend_ha)} ha</div></div>`;
+  prodBars($('#prodChart'), f.history, f);
+}
+async function runPriceOutlook() {
+  const s = season();
+  const o = await api(`/api/forecast/price?price_today=${val('#foPrice') || s.price}&month=${s.month}&year=${s.year}${whatIf() != null ? '&gap_override_pct=' + whatIf() : ''}`);
+  if (o.months.length > 1) lineBand($('#foChart'), outlookRows(o.months), {ref: o.price_today}); else $('#foChart').innerHTML = '<p class="muted">The storage season is over in this month.</p>';
+  $('#foTable').innerHTML = `<thead><tr><th>Month</th><th class="n">Low (1 in 10)</th><th class="n">Middle</th><th class="n">High (1 in 10)</th><th class="n">Above today</th></tr></thead><tbody>` +
+    o.months.map(m => `<tr><td>${esc(m.month_en)} <span class="bn small">${esc(m.month_bn)}</span></td><td class="n">৳${num(m.low, 1)}</td><td class="n">৳${num(m.mid, 1)}</td><td class="n">৳${num(m.high, 1)}</td><td class="n">${m.h ? pct(m.chance_above_today) : '—'}</td></tr>`).join('') + '</tbody>';
+  const r = o.rise;
+  $('#foNote').innerHTML = `Season ${esc(o.season)}: crop gap ${r.gap_pct > 0 ? '+' : ''}${r.gap_pct}%${r.gap_sd_pct ? ' (± ' + r.gap_sd_pct + '%)' : ''} → rise strength ${r.k_from_crop} from crop size` +
+    (r.k_from_prices != null ? `, ${r.k_from_prices} from ${r.season_months_used} months of this season's prices, combined ${r.k}` : '') + '. 1 = the usual rise to December, 0 = flat, below 0 = falling.';
+}
+async function loadModel() {
+  const m = await api('/api/forecast/model');
+  histLine($('#histChart'), m.national_prices);
+  const c = m.card;
+  $('#modelCard').innerHTML = `<p><b>${esc(c.name)}</b></p>
+    <ul class="plain"><li>Prices: ${esc(c.trained_on.prices)}.</li><li>Production: ${esc(c.trained_on.production)}.</li>
+    <li>In a crop of trend size, prices rise with strength <b>${c.rise_in_trend_crop}</b>; every 10% bigger crop changes it by <b>${c.rise_change_per_10pct_bigger_crop}</b>.</li>
+    <li>Prices wander about ${c.monthly_wander_pct}% a month around the path; the range is ${esc(c.range)}.</li></ul>
+    <div class="table-wrap"><table><thead><tr><th>Season fitted</th><th class="n">Crop gap</th><th class="n">Rise strength</th><th class="n">Months</th></tr></thead><tbody>
+    ${c.seasons_fitted.map(s => `<tr><td>${esc(s.season)}</td><td class="n">${s.gap_pct > 0 ? '+' : ''}${s.gap_pct}%</td><td class="n">${s.k} ± ${s.k_se}</td><td class="n">${s.months}</td></tr>`).join('')}</tbody></table></div>
+    <p class="note honest"><b>Limits.</b> ${c.limits.map(esc).join(' ')}</p>`;
+}
+async function loadRegions() {
+  const r = await api('/api/market/regions');
+  const rows = r.price_index.filter(d => d.reports >= 5).map(d => ({label: d.district, v: d.index, text: d.index.toFixed(2),
+    tip: `<b>${esc(d.district)}</b><br>price level ${d.index.toFixed(2)} × national<br>${d.reports} reports; latest ৳${num(d.latest_price, 1)} (${d.latest_date})`}));
+  hBars($('#regChart'), rows, {base: 1, fmt: v => v.toFixed(2), upGood: false, left: 104});
+  $('#supplyTable').innerHTML = '<thead><tr><th>District</th><th class="n">Production</th><th class="n">Share</th><th class="n">Yield t/ha</th></tr></thead><tbody>' +
+    r.supply.slice(0, 12).map(d => `<tr><td>${esc(d.district)}</td><td class="n">${lakhT(d.production_t)}</td><td class="n">${d.share_pct}%</td><td class="n">${d.yield_t_ha}</td></tr>`).join('') + '</tbody>';
+}
+
+/* ---------------- buyers */
+const ownOffers = [];
+function drawOwnOffers() {
+  $('#ownOffers').innerHTML = ownOffers.map((o, i) => `${esc(o.name || 'Offer')}: ৳${o.price_per_kg}/kg <button class="btn small" data-i="${i}" type="button">remove</button>`).join(' · ');
+  $$('#ownOffers button').forEach(b => b.onclick = () => { ownOffers.splice(+b.dataset.i, 1); drawOwnOffers(); runOffers(); });
+}
+async function runOffers() {
+  const out = $('#offersOut');
+  try {
+    const d = await api('/api/market/offers', {quantity_kg: val('#bQty'), price_today: val('#bPrice'), extra_offers: ownOffers});
+    out.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Buyer</th><th class="n">Price ৳/kg</th><th class="n">Money in hand</th><th class="n">Per kg</th><th class="n">vs haat</th><th>Terms</th></tr></thead><tbody>
+      ${d.offers.map((o, i) => o.eligible ? `<tr class="${i === 0 ? 'best' : ''}"><td>${esc(o.name)} ${o.type === 'own offer' ? '<span class="tag info">OWN</span>' : demoTag(o.demo)}<div class="small">${esc(o.type)}</div></td>
+        <td class="n">৳${num(o.price_per_kg, 2)}</td><td class="n"><b>${tk(o.money_total)}</b></td><td class="n">৳${num(o.net_per_kg, 2)}</td>
+        <td class="n ${o.more_than_haat >= 0 ? 'up' : 'down'}">${tkSigned(o.more_than_haat)}</td><td class="small">${esc(o.conditions)}${o.payment_days ? ' · waiting costs ' + tk(o.wait_cost) : ''}${o.kg_rest_at_haat ? ' · ' + num(o.kg_rest_at_haat) + ' kg over their limit sold at the haat' : ''}</td></tr>`
+        : `<tr class="off"><td>${esc(o.name)} ${demoTag(o.demo)}</td><td class="n">৳${num(o.price_per_kg, 2)}</td><td colspan="4">Not possible: ${esc(o.why_not)}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="note">${esc(d.ranking_rule)} The highest quote (${esc(d.highest_quote.name)}, ৳${num(d.highest_quote.price_per_kg, 2)}) ${d.best && d.best.id === d.highest_quote.id ? 'is also the best deal.' : 'is not the best deal once costs are counted.'}</p>
+      <p class="small">"Local trader" and "retail" use today's haat price; all named buyers are made up.</p>`;
+  } catch (e) { out.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+}
+
+/* ---------------- loan */
+let partnerData = null;
+async function partnersData() { if (!partnerData) partnerData = await api('/api/partners'); return partnerData; }
+async function runLoan() {
+  const p = await partnersData();
+  if (!$('#aCs').options.length) {
+    $('#aCs').innerHTML = p.cold_storages.map(c => `<option value="${esc(c.id)}">${esc(c.name)} (${esc(c.upazila)}, ${esc(c.district)})</option>`).join('');
+    $('#aBank').innerHTML = p.banks.map(b => `<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('');
+  }
+  const s = season(), out = $('#loanOut');
+  try {
+    const rows = await api('/api/finance/estimate', {sacks: val('#lSacks'), price_today: val('#lPrice'), month: s.month, year: s.year, months: val('#lMonths'), amount: val('#lAmount') || null});
+    out.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Lender</th><th class="n">Rate</th><th class="n">Up to</th><th class="n">Loan</th><th class="n">Interest</th><th>Risk</th><th></th></tr></thead><tbody>
+      ${rows.map((r, i) => `<tr class="${r.problems.length ? 'off' : ''}"><td>${esc(r.bank.name)} ${r.bank.demo ? demoTag(true) : ''}${r.problems.map(x => `<div class="small" style="color:var(--red)">${esc(x)}</div>`).join('')}</td>
+        <td class="n">${num(r.bank.rate_year * 100, 1)}%</td><td class="n">${tk(r.max_loan)}</td><td class="n">${tk(r.loan)}</td><td class="n">${tk(r.interest)}</td>
+        <td>${r.risk ? `<span class="tag ${r.risk === 'Low' ? 'real' : r.risk === 'Medium' ? 'demo' : 'warn'}">${r.risk.toUpperCase()}</span> <span class="small">${pct(r.chance_crop_worth_less_than_repayment)}</span>` : '—'}</td>
+        <td>${r.crop ? `<button class="btn small" data-i="${i}" type="button">Details</button>` : ''}</td></tr>`).join('')}</tbody></table></div>
+      <p class="note">Risk = the chance, across 2,000 simulated price paths, that the stored potatoes are worth less than the loan plus interest when it ends. The cold storage is paid first (rent and any advance), because it holds the sacks.</p>`;
+    $$('#loanOut button[data-i]').forEach(b => b.onclick = () => showPack(rows[+b.dataset.i]));
+    const first = rows.find(r => r.crop && !r.problems.length) || rows.find(r => r.crop);
+    if (first) showPack(first);
+  } catch (e) { out.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+}
+function showPack(r) {
+  $('#aBank').value = r.bank.id;
+  $('#loanPack').innerHTML = `<p><b>${esc(r.bank.name)}</b> <span class="tag demo">DEMO</span> lends up to ${num(r.bank.ltv * 100)}% of a careful value.</p>
+    <div class="table-wrap"><table><tbody>
+      <tr><td>Crop</td><td class="n">${r.crop.sacks} sacks, ${num(r.crop.kg)} kg; about ${num(r.crop.kg_at_end)} kg after ${r.months} months</td></tr>
+      <tr><td>Value today</td><td class="n">${tk(r.crop.value_today)} at ৳${num(r.crop.price_today, 1)}/kg</td></tr>
+      <tr><td>Price when the loan ends (${esc(r.ends)})</td><td class="n">৳${num(r.price_at_end.low, 1)} – ৳${num(r.price_at_end.mid, 1)} – ৳${num(r.price_at_end.high, 1)}</td></tr>
+      <tr><td>Careful price used</td><td class="n">৳${num(r.careful_price, 1)}/kg</td></tr>
+      <tr><td>Paid first to the cold storage</td><td class="n">${tk(r.paid_first_to_cold_storage)}</td></tr>
+      <tr><td>Security value</td><td class="n">${tk(r.collateral_value)}</td></tr>
+      <tr><td>Most it can lend</td><td class="n"><b>${tk(r.max_loan)}</b></td></tr>
+      <tr><td>Loan, interest, fee</td><td class="n">${tk(r.loan)} + ${tk(r.interest)} + ${tk(r.fee)}</td></tr>
+      <tr><td>Repayment risk</td><td class="n">${esc(r.risk)} (${pct(r.chance_crop_worth_less_than_repayment)}); cover ${r.cover}×</td></tr>
+      <tr><td>Repayment plan</td><td class="n">${esc(r.repayment_plan)}</td></tr>
+      <tr><td>Bank needs</td><td class="n">${r.bank.needs.map(esc).join('; ')}</td></tr></tbody></table></div>`;
+}
+
+/* ---------------- group storage */
+async function loadGroups() {
+  const pools = await api('/api/groups');
+  $('#gPool').innerHTML = pools.map(p => `<option value="${esc(p.id)}">${esc(p.name)} (${esc(p.cold_storage.name)})</option>`).join('');
+  $('#groupPools').innerHTML = pools.map(p => {
+    const maxT = Math.max(p.total_sacks, ...p.tiers.map(t => t.min_sacks)) * 1.1;
+    return `<div class="panel"><h2>${esc(p.name)} <span class="tag demo">DEMO</span></h2><div class="panel-body">
+      <div>${p.member_count} farmers · <b>${num(p.total_sacks)} sacks</b> · ${esc(p.cold_storage.name)}, standard rent ৳${p.cold_storage.rent_per_sack}/sack · ${p.trucks} shared truck(s)</div>
+      <div class="progress" title="${p.total_sacks} sacks"><div class="fill" style="width:${p.total_sacks / maxT * 100}%"></div>
+        ${p.tiers.map(t => `<div class="mark" style="left:${t.min_sacks / maxT * 100}%"><span>${t.min_sacks}: ৳${t.rent_per_sack}</span></div>`).join('')}</div>
+      <ul class="plain small">${p.tiers.map(t => `<li>${t.min_sacks}+ sacks: ৳${t.rent_per_sack}/sack — ${t.reached ? 'reached' : t.sacks_short + ' sacks short'}; ${t.agreed ? '<b>agreed by the cold storage</b>' : 'offer not agreed yet (does not count)'}</li>`).join('')}</ul>
+      <details class="more"><summary>Members</summary><ul class="plain small">${p.members.map(m => `<li>${esc(m.name)}: ${m.sacks} sacks${m.demo ? '' : ' (joined here)'}</li>`).join('')}</ul></details></div></div>`;
+  }).join('');
+  await runGroupCompare();
+}
+async function runGroupCompare() {
+  try {
+    const c = await api('/api/groups/compare', {pool_id: $('#gPool').value, sacks: val('#gSacks')});
+    $('#groupCmp').innerHTML = `<div class="table-wrap"><table><thead><tr><th></th><th class="n">Rent/sack</th><th class="n">Transport/sack</th><th class="n">Total for ${c.sacks} sacks</th><th class="n">Saving</th></tr></thead><tbody>
+      <tr><td>Alone</td><td class="n">৳${c.alone.rent}</td><td class="n">৳${c.alone.transport}</td><td class="n">${tk(c.alone.total)}</td><td class="n">—</td></tr>
+      <tr class="best"><td>In the group, today</td><td class="n">৳${c.group_now.rent}</td><td class="n">৳${c.group_now.transport}</td><td class="n">${tk(c.group_now.total)}</td><td class="n up">${tk(c.group_now.saving)}</td></tr>
+      <tr><td>If the cold storage agrees the offer</td><td class="n">৳${c.group_if_agreed.rent}</td><td class="n">৳${c.group_now.transport}</td><td class="n">${tk(c.group_if_agreed.total)}</td><td class="n up">${tk(c.group_if_agreed.saving)}</td></tr></tbody></table></div>
+      <p class="note">${esc(c.note)} With these ${c.sacks} sacks the group has ${num(c.pool.total_sacks)}.</p>`;
+  } catch (e) { $('#groupCmp').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+}
+
+/* ---------------- export */
+async function loadExport() {
+  if (!districtsLoaded) { const ds = await api('/api/districts'); $('#xDist').innerHTML = ds.map(d => `<option ${d === 'Bogura' ? 'selected' : ''}>${esc(d)}</option>`).join(''); }
+  const src = await api('/api/export/sourcing');
+  $('#srcTable').innerHTML = '<thead><tr><th>District</th><th class="n">Crop</th><th class="n">Share</th><th class="n">Price level</th><th class="n">km to Chattogram</th></tr></thead><tbody>' +
+    src.districts.map(d => `<tr><td>${esc(d.district)}</td><td class="n">${lakhT(d.production_t)}</td><td class="n">${d.share_pct}%</td><td class="n">${d.price_index ?? ''}</td><td class="n">${d.distance_approx ? '~' : ''}${d.km_to_chattogram}</td></tr>`).join('') + '</tbody>';
+  $('#gapNote').innerHTML = src.domestic_gaps.map(g => `<p class="note">Inside Bangladesh: prices in ${esc(g.buy_in)} run about ৳${num(g.price_gap_per_kg, 1)}/kg below ${esc(g.sell_in)} (${esc(g.note.toLowerCase())}).</p>`).join('');
+  await runExport();
+}
+async function runExport() {
+  const d = await api('/api/export/evaluate', {farmgate_price: val('#xPrice'), source_district: $('#xDist').value || 'Bogura', quantity_t: val('#xQty') || 26});
+  $('#xLesson').innerHTML = `<b>${esc(d.lesson)}</b> ${esc(d.note)}`;
+  hBars($('#xChart'), d.markets.map(m => ({label: m.market.replace('United Arab Emirates', 'UAE'), v: m.margin_per_kg, text: (m.margin_per_kg >= 0 ? '+' : '−') + '৳' + num(Math.abs(m.margin_per_kg), 1),
+    tip: `<b>${esc(m.market)}</b><br>quote ৳${num(m.quote_per_kg, 1)}/kg (${m.quote_vs_farmgate}× farm gate)<br>landed cost ৳${num(m.landed_cost_per_kg, 1)}/kg<br>margin ৳${num(m.margin_per_kg, 1)}/kg (${m.margin_pct}%)`})), {fmt: v => (v < 0 ? '−' : '') + '৳' + Math.abs(v), left: 92});
+  $('#xTable').innerHTML = d.markets.map(m => `<details class="more"><summary>${esc(m.market)}: ${m.verdict === 'profitable' ? '<span class="tag real">PROFITABLE</span>' : m.verdict === 'thin' ? '<span class="tag demo">THIN</span>' : '<span class="tag warn">LOSS</span>'} quote ৳${num(m.quote_per_kg, 1)}, costs ৳${num(m.landed_cost_per_kg, 1)}, ${tkSigned(m.margin_per_container)} a container</summary>
+    <div class="table-wrap" style="margin-top:6px"><table><tbody>${m.cost_lines.map(c => `<tr><td>${esc(c.item)}</td><td class="n">৳${num(c.per_kg, 2)}/kg</td></tr>`).join('')}
+    <tr><td><b>Landed cost</b></td><td class="n"><b>৳${num(m.landed_cost_per_kg, 2)}</b></td></tr><tr><td>Quoted price (${m.quote_usd_t} USD/t, ${esc(m.route)})</td><td class="n">৳${num(m.quote_per_kg, 2)}</td></tr></tbody></table></div>
+    <ul class="plain small">${m.requirements.map(r => `<li>${esc(r)}</li>`).join('')}</ul></details>`).join('');
+}
+
+/* ---------------- profit */
+let profitMeta = null;
+function saleRow(s = {month: '', kg: '', price_per_kg: ''}) {
+  const div = document.createElement('div'); div.className = 'form sale'; div.style.marginBottom = '6px';
+  div.innerHTML = `<div><label class="f">Month</label><input class="sMonth" value="${esc(s.month)}"></div><div><label class="f">kg</label><input class="sKg" type="number" min="0" value="${s.kg}"></div>
+    <div><label class="f">৳/kg</label><input class="sPrice" type="number" min="0" step="0.5" value="${s.price_per_kg}"></div><div style="align-self:end"><button class="btn small" type="button">remove</button></div>`;
+  $('button', div).onclick = () => div.remove();
+  $('#prSales').appendChild(div);
+}
+async function loadProfit() {
+  if (!profitMeta) {
+    profitMeta = await api('/api/profit/example');
+    const inp = profitMeta.inputs, L = profitMeta.lines;
+    $('#prGrow').innerHTML = L.growing.map(k => `<div><label class="f" for="g_${k}">${esc(L.labels[k][0])}</label><input id="g_${k}" type="number" min="0" step="100" value="${inp.growing[k] ?? 0}"></div>`).join('');
+    $('#prAfter').innerHTML = L.after.map(k => `<div><label class="f" for="a_${k}">${esc(L.labels[k][0])}</label><input id="a_${k}" type="number" min="0" step="10" value="${inp.after[k] ?? 0}"></div>`).join('');
+    inp.sales.forEach(saleRow);
+  }
+  await runProfit();
+}
+async function runProfit() {
+  const L = profitMeta.lines, g = {}, a = {};
+  L.growing.forEach(k => g[k] = val('#g_' + k) || 0); L.after.forEach(k => a[k] = val('#a_' + k) || 0);
+  const sales = $$('#prSales .sale').map(d => ({month: $('.sMonth', d).value, kg: Number($('.sKg', d).value) || 0, price_per_kg: Number($('.sPrice', d).value) || 0})).filter(s => s.kg > 0);
+  try {
+    const r = await api('/api/profit/calculate', {land_amount: val('#prLand'), land_unit: $('#prUnit').value, harvest_kg: val('#prHarvest'), growing: g, after: a, sales,
+      unsold_price_per_kg: val('#prUnsold'), harvest_price_per_kg: val('#prHarvestPrice') || null});
+    const cmp = r.if_all_sold_at_harvest;
+    $('#prOut').innerHTML = `<div class="tiles">
+      <div class="tile"><div class="label">Profit</div><div class="value ${r.profit >= 0 ? '' : 'down'}">${tk(r.profit)}</div><div class="sub">${r.margin_pct ?? '—'}% of income</div></div>
+      <div class="tile"><div class="label">Profit per kg</div><div class="value">${r.profit_per_kg < 0 ? '−' : ''}৳${num(Math.abs(r.profit_per_kg), 2)}</div><div class="sub">${tk(r.profit_per_sack)} a sack · ${tk(r.profit_per_maund)} a maund</div></div>
+      <div class="tile"><div class="label">Cost per kg</div><div class="value">৳${num(r.cost_per_kg, 2)}</div><div class="sub">${tk(r.cost_per_sack)} a sack · break-even price ৳${num(r.break_even_price, 2)}</div></div>
+      <div class="tile"><div class="label">Spent / earned</div><div class="value" style="font-size:1.1rem">${tk(r.total_cost)} / ${tk(r.income)}</div><div class="sub">${num(r.harvest_kg)} kg from ${r.land.amount} ${esc(r.land.unit)} (${r.yield_t_ha} t/ha)</div></div></div>
+      ${cmp ? `<p class="note"><b>Against selling everything at harvest</b> at ৳${num(cmp.price_per_kg, 1)}/kg: profit would have been ${tk(cmp.profit)}, so the way it was sold made <b class="${cmp.difference >= 0 ? 'up' : 'down'}">${tkSigned(cmp.difference)}</b>. ${esc(cmp.note)}</p>` : ''}
+      ${r.unsold_kg ? `<p class="note">${num(r.unsold_kg)} kg not sold${r.unsold_value ? ', valued at ' + tk(r.unsold_value) : ' (counted as lost, for example rotten)'}.</p>` : ''}
+      <h3 style="font-size:.92rem;margin:12px 0 4px">Where the money went</h3><div class="chart" id="prChart"></div>
+      <p class="small">Average selling price ৳${r.average_price ? num(r.average_price, 2) : '—'}/kg on ${num(r.sold_kg)} kg sold.</p>`;
+    const lines = r.lines.filter(l => l.tk > 0).sort((x, y) => y.tk - x.tk);
+    hBars($('#prChart'), lines.map(l => ({label: l.label_en, v: l.tk, text: tk(l.tk), tip: `<b>${esc(l.label_en)}</b> <span class="bn">${esc(l.label_bn)}</span><br>${tk(l.tk)} (${num(l.tk / r.total_cost * 100, 1)}% of costs)<br>৳${num(l.tk / r.harvest_kg, 2)} a kg`})),
+      {single: true, fmt: v => '৳' + num(v / 1000) + 'k', left: 150});
+  } catch (e) { $('#prOut').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+}
+
+/* ---------------- partner screens */
+let role = 'cold_storage', pTimer = null;
+function partnerTimer(on) { clearInterval(pTimer); pTimer = on ? setInterval(() => loadPartners().catch(() => {}), 5000) : null; }
+const KIND = {cold_storage_booking: 'Space request', group_storage_join: 'Group storage', buyer_lot: 'Lot for sale', loan_application: 'Loan application', helper_callback: 'Call back'};
+async function loadPartners() {
+  const evs = await api('/api/events?partner=' + role);
+  $('#evList').innerHTML = evs.length ? evs.map(e => `<div class="event"><div class="head"><span><b>${esc(KIND[e.kind] || e.kind)}</b> · no. ${esc(e.ref)}</span><span>${esc(e.time.replace('T', ' '))} · ${esc(e.district || '')} ${e.phone ? '· ' + esc(e.phone) : ''}</span></div>
+      <div class="sum">${esc(e.summary_bn)}</div><div class="small">${Object.entries(e.details || {}).filter(([k, v]) => v != null && typeof v !== 'object').map(([k, v]) => esc(k.replace(/_/g, ' ')) + ': ' + esc(v)).join(' · ')}</div></div>`).join('')
+    : '<p class="muted">Nothing yet. Make a request on another page or in the call preview.</p>';
+  const side = $('#roleSide');
+  if (role === 'bank' || role === 'cold_storage') {
+    const apps = await api('/api/finance/applications');
+    $('#roleSideTitle').textContent = role === 'bank' ? 'Loan applications' : 'Receipts to confirm for banks';
+    const list = role === 'bank' ? apps : apps.filter(a => a.status.startsWith('waiting'));
+    side.innerHTML = list.length ? list.map(a => `<div class="event"><div class="head"><span><b>${esc(a.farmer)}</b> · ${a.sacks} sacks · receipt ${esc(a.receipt_no)}</span><span>${esc(a.cold_storage.name)}</span></div>
+      <div>${esc(a.estimate.bank.name)}: ${tk(a.estimate.loan)} for ${a.estimate.months} months · risk ${esc(a.estimate.risk)} (${pct(a.estimate.chance_crop_worth_less_than_repayment)})</div>
+      <div class="small">Status: <b>${esc(a.status)}</b></div>
+      <div class="row" style="margin-top:6px">${role === 'cold_storage' ? `<input type="number" min="0" value="${a.sacks}" id="cf_${esc(a.id)}" style="flex:0 1 110px"><button class="btn small" data-confirm="${esc(a.id)}" type="button">Confirm sacks in store</button>`
+        : a.status.startsWith('receipt confirmed') ? `<button class="btn small primary" data-dec="${esc(a.id)}" data-ok="1" type="button">Approve (demo)</button><button class="btn small" data-dec="${esc(a.id)}" data-ok="0" type="button">Decline</button>` : ''}</div></div>`).join('')
+      : `<p class="muted">${role === 'bank' ? 'No applications yet (Bank loan page, or 4 in the call preview).' : 'No receipts waiting.'}</p>`;
+    $$('[data-confirm]', side).forEach(b => b.onclick = async () => { await api(`/api/finance/applications/${b.dataset.confirm}/receipt`, {sacks_found: Number($('#cf_' + b.dataset.confirm).value)}); loadPartners(); });
+    $$('[data-dec]', side).forEach(b => b.onclick = async () => { await api(`/api/finance/applications/${b.dataset.dec}/decision`, {approve: b.dataset.ok === '1'}); loadPartners(); });
+    if (role === 'cold_storage') {
+      const pools = await api('/api/groups');
+      side.insertAdjacentHTML('beforeend', '<h3 style="font-size:.92rem;margin:14px 0 6px">Group offers to agree</h3>' + pools.map(p => p.tiers.filter(t => t.reached && !t.agreed).map(t =>
+        `<div class="event"><b>${esc(p.name)}</b>: ${num(p.total_sacks)} sacks reached ${t.min_sacks}. Agree ৳${t.rent_per_sack}/sack? <button class="btn small" data-agree="${esc(p.id)}" data-min="${t.min_sacks}" type="button">Agree (demo)</button></div>`).join('')).join('') || '<p class="muted">No group has reached an offer yet.</p>');
+      $$('[data-agree]', side).forEach(b => b.onclick = async () => { await api(`/api/groups/${b.dataset.agree}/agree`, {min_sacks: Number(b.dataset.min)}); loaded.delete('group'); loadPartners(); });
     }
-    function updateDeadlineDisplay(val) {
-      document.getElementById('deadlineDisplay').innerText = `${val} Days`;
-    }
-    function updateOfferDisplay(val) {
-      document.getElementById('offerDisplay').innerText = `৳${parseFloat(val).toFixed(2)} / kg`;
-    }
-    function toggleDadonRow(isChecked) {
-      document.getElementById('dadonAmountRow').style.display = isChecked ? 'block' : 'none';
-    }
+  } else {
+    $('#roleSideTitle').textContent = role === 'buyer' ? 'How buyers answer' : 'How helpers answer';
+    side.innerHTML = role === 'buyer' ? '<p>Buyers see each lot with its quantity and the farmer\'s price today, and answer with an offer. KrishiVault ranks offers by the money left to the farmer (Buyers page) and calls the farmer back. Fees never change the order.</p>'
+      : '<p>A KrishiVault helper calls back farmers who pressed 9 or could not be understood, with the values the call already collected.</p>';
+  }
+}
+$$('#roleTabs button').forEach(b => b.onclick = () => { role = b.dataset.role; $$('#roleTabs button').forEach(x => x.setAttribute('aria-pressed', x === b)); loadPartners(); });
 
-    // Presets
-    function loadPreset(name) {
-      document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
-      const activeChip = Array.from(document.querySelectorAll('.preset-chip')).find(c => c.getAttribute('onclick').includes(name));
-      if (activeChip) activeChip.classList.add('active');
-
-      if (name === 'abdur_rahim') {
-        document.getElementById('district').value = 'Bogura';
-        document.getElementById('quantityMaunds').value = 100;
-        document.getElementById('cashNeeded').value = 30000;
-        document.getElementById('deadlineDays').value = 4;
-        document.getElementById('offerPrice').value = 19.0;
-        document.getElementById('hasStorage').checked = true;
-        document.getElementById('hasDadon').checked = false;
-        toggleDadonRow(false);
-      } else if (name === 'mohammad_ali') {
-        document.getElementById('district').value = 'Rangpur';
-        document.getElementById('quantityMaunds').value = 40;
-        document.getElementById('cashNeeded').value = 12000;
-        document.getElementById('deadlineDays').value = 2;
-        document.getElementById('offerPrice').value = 18.0;
-        document.getElementById('hasStorage').checked = false;
-        document.getElementById('hasDadon').checked = false;
-        toggleDadonRow(false);
-      } else if (name === 'dadon_case') {
-        document.getElementById('district').value = 'Bogura';
-        document.getElementById('quantityMaunds').value = 80;
-        document.getElementById('cashNeeded').value = 25000;
-        document.getElementById('deadlineDays').value = 4;
-        document.getElementById('offerPrice').value = 18.0;
-        document.getElementById('hasStorage').checked = false;
-        document.getElementById('hasDadon').checked = true;
-        document.getElementById('dadonAmount').value = 20000;
-        toggleDadonRow(true);
-      }
-      updateQtyDisplay(document.getElementById('quantityMaunds').value);
-      updateCashDisplay(document.getElementById('cashNeeded').value);
-      updateDeadlineDisplay(document.getElementById('deadlineDays').value);
-      updateOfferDisplay(document.getElementById('offerPrice').value);
-      runSimulation();
-    }
-
-    // Run Decision Simulation
-    async function runSimulation() {
-      const btn = document.getElementById('simSubmitBtn');
-      btn.innerText = 'Calculating Optimal Strategy...';
-
-      const payload = {
-        crop: 'potato',
-        quantity_maunds: parseFloat(document.getElementById('quantityMaunds').value),
-        district: document.getElementById('district').value,
-        cash_needed_tk: parseFloat(document.getElementById('cashNeeded').value),
-        deadline_days: parseInt(document.getElementById('deadlineDays').value),
-        current_offer_per_kg: parseFloat(document.getElementById('offerPrice').value),
-        has_cold_storage: document.getElementById('hasStorage').checked
-      };
-
-      try {
-        const res = await fetch('/api/decision/evaluate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        renderSimResults(data);
-      } catch (err) {
-        console.error(err);
-        alert('Failed to connect to KrishiVault Decision API');
-      } finally {
-        btn.innerHTML = '<span>⚡</span> Run Decision Optimization';
-      }
-    }
-
-    function renderSimResults(data) {
-      const rec = data.recommendation;
-      document.getElementById('recBadge').innerText = `TOP RECOMMENDATION: ${rec.scenario.toUpperCase()}`;
-      document.getElementById('recRisk').innerText = `Confidence: ${(rec.confidence * 100).toFixed(0)}% | Risk: ${rec.risk_level.toUpperCase()}`;
-      document.getElementById('heroProceeds').innerHTML = `৳${Math.round(rec.expected_proceeds_tk).toLocaleString()} <span>Expected Net In Pocket</span>`;
-      document.getElementById('heroTextBn').innerText = data.bangla_voice_response.split('আপনার পরবর্তী পদক্ষেপের জন্য')[0];
-
-      const grid = document.getElementById('scenariosGrid');
-      grid.innerHTML = '';
-
-      const titles = {
-        sell_now: 'Sell Now (এখনই বিক্রি)',
-        sell_part: 'Sell Part (আংশিক বিক্রি)',
-        store_review: 'Store & Review (হিমাগার)',
-        group_sell: 'Group Sell (যৌথ বিক্রি)'
-      };
-
-      data.all_scenarios.forEach(s => {
-        const isRec = s.scenario === rec.scenario;
-        const card = document.createElement('div');
-        card.className = `scenario-card ${isRec ? 'recommended' : ''}`;
-        card.innerHTML = `
-          <div class="scenario-header">
-            <span class="scenario-name">${titles[s.scenario] || s.scenario}</span>
-            <span class="scenario-rank">#${s.rank || '-'}</span>
-          </div>
-          <div class="scenario-amount">৳${Math.round(s.expected_proceeds_tk).toLocaleString()}</div>
-          <div class="scenario-desc">${s.explanation_en}</div>
-          <div>
-            ${s.feasible 
-              ? `<span class="scenario-pill pill-feasible">✅ Feasible Option</span>`
-              : `<span class="scenario-pill pill-infeasible">❌ ${s.infeasible_reason || 'Infeasible'}</span>`
-            }
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-    }
-
-    // Voice Simulation Tab
-    async function runVoiceSimulation() {
-      const btn = document.getElementById('voiceSimBtn');
-      btn.innerText = 'Calling Gemini AI & Google Cloud TTS...';
-
-      const transcript = document.getElementById('voiceTranscript').value;
-      const phone = document.getElementById('voicePhone').value;
-      const name = document.getElementById('voiceCallerName').value;
-
-      try {
-        const res = await fetch('/api/voice/webhook', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone_number: phone,
-            caller_name: name,
-            transcript: transcript
-          })
-        });
-        const data = await res.json();
-        
-        // Render entity tags
-        const tags = document.getElementById('entityTagsContainer');
-        tags.innerHTML = '';
-        const ent = data.extracted_entities;
-        tags.innerHTML += `<span class="entity-tag">🌾 ${ent.quantity_maunds} maunds</span>`;
-        tags.innerHTML += `<span class="entity-tag">💰 ৳${ent.cash_needed_tk.toLocaleString()} needed</span>`;
-        tags.innerHTML += `<span class="entity-tag">⏱️ ${ent.deadline_days} days</span>`;
-        tags.innerHTML += `<span class="entity-tag">🏷️ ৳${ent.offer_price_per_kg}/kg offer</span>`;
-        tags.innerHTML += `<span class="entity-tag">${ent.has_cold_storage ? '❄️ Storage: Yes' : '❌ No Storage'}</span>`;
-
-        document.getElementById('spokenTextBn').innerText = data.response_speech_bn;
-        document.getElementById('smsTextBn').innerText = data.response_sms_bn;
-
-        // Trigger Google Cloud TTS speech synthesis
-        const ttsRes = await fetch('/api/voice/synthesize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text: data.response_speech_bn,
-            filename: `voice_demo_${Date.now()}.mp3`,
-            gender: 'MALE'
-          })
-        });
-        const ttsData = await ttsRes.json();
-        if (ttsData.audio_url) {
-          const player = document.getElementById('audioPlayer');
-          player.src = ttsData.audio_url;
-          player.play();
-          document.getElementById('audioMeta').innerText = `Generated (${Math.round(ttsData.file_size_bytes/1024)} KB)`;
-        }
-      } catch (err) {
-        console.error(err);
-        alert('Voice simulation error: ' + err);
-      } finally {
-        btn.innerHTML = '<span>🎙️</span> Process Spoken Transcript & Synthesize Audio';
-      }
-    }
-
-    // Load Market Tab
-    async function loadMarketData() {
-      try {
-        const res = await fetch('/api/prices/latest');
-        const prices = await res.json();
-        const tbody = document.getElementById('marketTableBody');
-        tbody.innerHTML = '';
-        prices.forEach(p => {
-          tbody.innerHTML += `
-            <tr>
-              <td>${p.date}</td>
-              <td style="color:#e2e8f0; font-weight:500;">${p.market}</td>
-              <td>${p.district}</td>
-              <td class="badge-price">৳${p.retail_avg ? p.retail_avg.toFixed(2) : '-'}</td>
-              <td>৳${p.wholesale_avg ? p.wholesale_avg.toFixed(2) : '-'}</td>
-              <td><span style="font-size:0.75rem; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px;">${p.source}</span></td>
-            </tr>
-          `;
-        });
-        loadDistrictForecast('Bogura');
-      } catch (e) { console.error(e); }
-    }
-
-    async function loadDistrictForecast(district) {
-      try {
-        const res = await fetch(`/api/prices/predict/${district}`);
-        const data = await res.json();
-        const fc = data.forecasts;
-        document.getElementById('fc7').innerText = `৳${fc['7_days'].predicted_price.toFixed(2)} / kg`;
-        document.getElementById('fc14').innerText = `৳${fc['14_days'].predicted_price.toFixed(2)} / kg`;
-        document.getElementById('fc30').innerText = `৳${fc['30_days'].predicted_price.toFixed(2)} / kg`;
-      } catch (e) { console.error(e); }
-    }
-
-    // Load Buyers & Storages
-    async function loadNetworkData() {
-      try {
-        const csRes = await fetch('/api/cold-storages');
-        const storages = await csRes.json();
-        const csList = document.getElementById('coldStorageList');
-        csList.innerHTML = '';
-        storages.forEach(s => {
-          csList.innerHTML += `
-            <div style="background:rgba(0,0,0,0.25); border:1px solid var(--card-border); padding:0.85rem 1rem; border-radius:10px;">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-weight:600; color:#e2e8f0;">${s.name}</span>
-                <span style="color:#34d399; font-weight:700;">৳${s.actual_rate_per_kg.toFixed(2)} / kg</span>
-              </div>
-              <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.25rem;">
-                📍 ${s.upazila}, ${s.district} | Available: ${(s.available_tonnes).toLocaleString()} tonnes | 📞 ${s.phone}
-              </div>
-            </div>
-          `;
-        });
-
-        const bRes = await fetch('/api/buyers');
-        const buyers = await bRes.json();
-        const bList = document.getElementById('buyerList');
-        bList.innerHTML = '';
-        buyers.forEach(b => {
-          bList.innerHTML += `
-            <div style="background:rgba(0,0,0,0.25); border:1px solid var(--card-border); padding:0.85rem 1rem; border-radius:10px;">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-weight:600; color:#e2e8f0;">${b.name}</span>
-                <span style="color:#38bdf8; font-weight:700;">৳${b.current_offer_per_kg.toFixed(2)} / kg</span>
-              </div>
-              <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.25rem;">
-                🏢 Type: ${b.type.toUpperCase()} | Min Order: ${b.min_quantity_kg.toLocaleString()} kg | Payment: ${b.payment_days} days | 📞 ${b.phone}
-              </div>
-            </div>
-          `;
-        });
-      } catch (e) { console.error(e); }
-    }
-
-    // Auto-initialize first simulation on page load
-    window.addEventListener('DOMContentLoaded', () => {
-      runSimulation();
-    });
-  </script>
+/* ------------------------------------------------------------------ wiring */
+buildTerms();
+$('#planForm').addEventListener('submit', e => { e.preventDefault(); runPlan(); });
+$('#season').addEventListener('change', seasonChanged);
+$('#whatif').addEventListener('change', () => { loaded.clear(); showPage(currentPage()); });
+for (const id of ['#fDist', '#fSeason', '#fArea', '#fWeather']) $(id).addEventListener('change', runProduction);
+$('#foPrice').addEventListener('change', runPriceOutlook);
+$('#oAdd').onclick = () => { const p = val('#oPrice'); if (!p) return; ownOffers.push({name: $('#oName').value.trim() || 'My offer', price_per_kg: p, farmer_transport_per_kg: val('#oTrans') || 0, payment_days: val('#oDays') || 0}); drawOwnOffers(); runOffers(); };
+$('#bGo').onclick = runOffers;
+$('#bSend').onclick = async () => { try { const r = await api('/api/market/lot', {kg: val('#bQty'), price_today: val('#bPrice'), farmer_name: $('#bName').value || 'Demo farmer', phone: $('#bPhone').value.trim() || null}); $('#bSendOut').innerHTML = `Sent to the buyers' screen, no. <b>${esc(r.ref)}</b>.`; } catch (e) { $('#bSendOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
+$('#lGo').onclick = runLoan;
+$('#aGo').onclick = async () => { const s = season(); try { const r = await api('/api/finance/apply', {sacks: val('#lSacks'), price_today: val('#lPrice'), month: s.month, year: s.year, months: val('#lMonths'), amount: val('#lAmount') || null, bank_id: $('#aBank').value, farmer_name: $('#aName').value || 'Demo farmer', phone: $('#aPhone').value.trim() || null, cold_storage_id: $('#aCs').value, receipt_no: $('#aReceipt').value.trim() || 'not given'});
+  $('#aOut').innerHTML = `Application no. <b>${esc(r.ref)}</b>: ${esc(r.status)}. See Partner screens → Cold storage, then Bank.`; } catch (e) { $('#aOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
+$('#gGo').onclick = runGroupCompare; $('#gPool').onchange = runGroupCompare;
+$('#gJoin').onclick = async () => { try { const r = await api('/api/groups/join', {pool_id: $('#gPool').value, sacks: val('#gSacks'), name: $('#gName').value || 'Demo farmer'}); $('#gOut').innerHTML = `Joined, no. <b>${esc(r.ref)}</b>. The group now has ${num(r.pool.total_sacks)} sacks.`; const keep = $('#gPool').value; await loadGroups(); $('#gPool').value = keep; await runGroupCompare(); } catch (e) { $('#gOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
+$('#xGo').onclick = runExport;
+$('#prAddSale').onclick = () => saleRow();
+$('#prGo').onclick = runProfit;
+try { const s = localStorage.getItem('kv-season'); if (s && SEASONS[s]) $('#season').value = s; } catch (e) {}
+(function init() {
+  const s = season();
+  $('#seasonNote').textContent = s.note + ' Example farm-gate price ৳' + s.price + '/kg (change it on each page).';
+  for (const id of ['#pPrice', '#foPrice', '#bPrice', '#lPrice', '#xPrice']) $(id).value = s.price;
+  $('#pStored').value = s.stored;
+  showPage(currentPage());
+})();
+</script>
 </body>
 </html>

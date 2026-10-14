@@ -172,6 +172,27 @@ def storage_plan(req: PlanIn):
     return planner.plan(req.lot())
 
 
+class BookIn(BaseModel):
+    sacks: int = Field(..., gt=0, le=100_000)
+    cold_storage_id: str = "cs-a"
+    farmer_name: str = Field(..., min_length=1, max_length=80)
+    phone: Optional[str] = Field(None, max_length=20)
+    advice: Optional[str] = Field(None, max_length=120)
+
+
+@app.post("/api/storage/book")
+def storage_book(req: BookIn):
+    """A cold-storage space request; its number is the receipt a bank loan can use later."""
+    try:
+        cs = demo_data.cold_storage(req.cold_storage_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="No such cold storage")
+    return event_log.record("cold_storage_booking", f"{req.farmer_name}: {req.sacks} বস্তা আলু রাখার অনুরোধ",
+                            {"sacks": req.sacks, "cold_storage": cs["name"], "rent_per_sack": cs["rent_per_sack"],
+                             "farmer": req.farmer_name, "advice": req.advice},
+                            district=cs["district"], phone=req.phone)
+
+
 @app.get("/api/storage/terms")
 def storage_terms():
     return {"defaults": StorageTerms().to_dict(), "sources": SOURCES}
@@ -195,6 +216,22 @@ class OffersIn(BaseModel):
 @app.post("/api/market/offers")
 def market_offers(req: OffersIn):
     return market_access.compare_offers(req.quantity_kg, req.price_today, [o.model_dump() for o in req.extra_offers])
+
+
+class LotIn(BaseModel):
+    kg: float = Field(..., gt=0, le=10_000_000)
+    price_today: float = Field(..., gt=0, le=500)
+    district: str = Field("Bogura", max_length=40)
+    farmer_name: str = Field(..., min_length=1, max_length=80)
+    phone: Optional[str] = Field(None, max_length=20)
+
+
+@app.post("/api/market/lot")
+def market_lot(req: LotIn):
+    """Send a lot to the buyers' screen; buyers answer with offers."""
+    return event_log.record("buyer_lot", f"{req.farmer_name}: {round(req.kg):,} কেজি আলু বিক্রির লট",
+                            {"kg": round(req.kg), "sacks": round(req.kg / SACK_KG, 1), "price_today": req.price_today,
+                             "farmer": req.farmer_name}, district=req.district, phone=req.phone)
 
 
 @app.get("/api/partners")

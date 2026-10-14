@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Optional
 
 from config.settings import DATA_DIR
+from src.voice.bangla_numbers import to_bn_digits
 
 # Who acts on each kind of event
 PARTNER_FOR = {
@@ -53,7 +54,7 @@ def record(kind: str, summary_bn: str, details: dict, district: str = "", phone:
         "for": PARTNER_FOR.get(kind, "helper"),
         "district": district,
         "phone": mask_phone(phone),
-        "summary_bn": summary_bn,
+        "summary_bn": to_bn_digits(summary_bn),
         "details": details,
         "demo": True,
     }

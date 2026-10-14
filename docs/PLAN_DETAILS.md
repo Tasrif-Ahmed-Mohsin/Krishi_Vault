@@ -2,147 +2,113 @@
 
 The parts of the plan that `HANDOFF.md` only summarizes. Read `HANDOFF.md` first.
 
-## 1. One farmer, one calendar, four pillars that move together
+## 1. How the storage engine decides
 
-```
-                  Farmer: phone number, upazila, crops and plots (registered by an officer), dadon
-                                              │
-     Crop knowledge base (13 crops' traits)   │   Place: soil, flood exposure, dealers, cold storages, sellers
-                          └───────────────────┼────────────────────┘
-                                   Crop calendar (stage of every plot today)
-                                              │
-   ┌──────────────────┬──────────────────┬────┴─────────────┬────────────────────┐
- Sell for the best  Fertilizer and     Seeds and machinery   Danger alerts
- value              pesticide supply   marketplace           (weather, flood, disease, price)
-   └──────────────────┴──────────────────┴────┬─────────────┴────────────────────┘
-          An event bus: one event updates every pillar and the right partner screen
-```
+Code: `krishivault-pipeline/src/engine/storage_plan.py`, costs in `src/engine/facts.py`.
 
-**The marketplace in the season:**
-- **Before planting:** certified seed potato and improved varieties, fertilizer as a group order, a power tiller to rent.
-- **At harvest:** a harvester, reaper or digger to rent, booked by the bigha.
-- **After harvest:** storage bags, and the cold-storage booking.
+**Inputs:** how much potato (maunds, 84 kg sacks or kg), the price offered today, the month, whether the potatoes are already in cold storage, any cash needed and by when, the farmer's own cost per kg (optional), and the costs below.
 
-Machinery owners and operators get steady bookings, and smallholders get machines they could never buy. Subsidy information comes from the DAE machinery programme; verify current terms before quoting a rate.
+**Costs per sack (editable):**
 
-**How one event moves every pillar:**
-
-| Event | Danger alert | Fertilizer and pesticide | Seeds and machinery | Selling and storage | Partner screens |
-|---|---|---|---|---|---|
-| Flood water rising | "25% of your upazila under water" | Hold fertilizer purchase and top-dressing until the water leaves | Seed order moves to the drain date; pumps to rent | Home-stored potato and seed at risk: move it or sell part; transport may be cut | Officer desk and DAE dashboard show the flooded area |
-| Late-blight weather | "Walk your potato field" | Fungicide only if spots are seen; buy one pack, not a season's stock | none | none | Officer gets callback requests |
-| Heat wave (April) | "Heat on stored potato" | none | none | Spoilage up, so store-or-sell is recalculated | Cold storage sees new booking requests |
-| Rain before harvest | "Dig before Thursday" | none | A digger or extra labour to book | Wet tubers stored are marked higher-risk | Machinery owners see rush bookings |
-| Price crash expected | "Prices likely to fall: sell part now" | none | none | Sell-part advice; group lot offered to buyers | Buyers see the lot |
-
-**Depth by crop:** potato is the hero (all pillars, deepest). The 13 crops with full traits get fertilizer need, crop-stage alerts and market prices: Boro, Aman, Aus, wheat, maize, mustard, lentil, mungbean, grass pea, jute, dhaincha and fodder, as well as potato. All 23 crops in the BBS district table are catalogue information.
-
-## 2. Demo story: Abdur Rahim in Sariakandi (char land, button phone)
-
-Real reading from Mati Kohon's NASA OPERA data on 1 October 2026: 25% of Sariakandi's land under water, against 14% by radar at the same time last year; in 2025, 80% of the monsoon water drained only by 19 January.
-
-| When | On his phone | Behind it |
+| Cost | Default | Source |
 |---|---|---|
-| Oct | Flood alert; plant after the water leaves; keep seed in cold storage | OPERA flood reading; storage cost added to his plan |
-| Nov | Fertilizer need for 2 bigha; fair price; press 1 to join a group order; certified seed potato and a power tiller to rent | Dealer fills the group order on time; seed seller and tiller owner get the bookings; SMS receipt |
-| Dec–Jan | Late-blight weather alerts; "no spray needed" in quiet weeks; cold and fog alerts | Disease weather and forecast |
-| Feb | Heavy rain before harvest: dig early, a digger to book; then the sell/store call with his cost floor | Decision engine; cold-storage booking; machinery booking |
-| Apr | Heat wave: selling 20 maunds now is better by ৳Y | Heat-aware spoilage |
-| Any time | Price-crash warning: sell part now, join a group lot | Price watch; buyers see the lot |
+| Rent for the season (up to 9 months) | ৳250 | Field notes |
+| Sack size | 84 kg | Field notes |
+| Empty sack, carrying to the cold storage, loading and unloading | ৳40 + ৳25 + ৳15 | Assumption |
+| Selling from the store / selling at the field | ৳30 / ৳10 | Assumption |
+| Weight loss in cold storage | 0.5% a month, plus 2% sorted out as rotten at exit | Assumption |
+| Home store | 4% loss a month, at most 3 months | Assumption (field notes: about 3 months) |
+| Cold-storage advance | ৳250 a sack at 14% a year | Field notes (৳200-300); rate assumed |
+| Bank loan | up to 60% of a careful value, 11% a year | Assumption; set by the bank |
 
-## 3. What partners see
+**For every month from today to December** (when the cold storages empty), and for each of 2,000 simulated price paths, it works out the money left in the farmer's hand: kilos left after weight loss × the price that month − rent − sacks, carrying and selling − loan interest.
 
-Each screen shows only what that partner needs, straight after a farmer's call:
-- **Officer desk:** farmers registered in the union, alerts sent, callback requests ("press 9"), overcharge reports.
-- **Cold storage:** booking requests and slots, space and rates.
-- **Buyer:** group lots forming (maunds, variety, area), with offers sent back to the farmers by call.
-- **Dealer:** group fertilizer and pesticide orders with delivery dates, stock, and the weekly demand calendar.
-- **Seed and machinery seller:** orders and rental bookings by date and place.
-- **DAE dashboard:** alerts, flood water, crop loss, the fertilizer demand calendar and overcharge reports by upazila.
+- **Rent is flat**, so storing is a big fixed cost: the engine shows the **price needed** ("pays above ৳X/kg") for every month. Selling stored potatoes after 1 or 2 months usually loses money.
+- If the potatoes are **already in cold storage**, the rent is owed either way, so holding on costs only weight loss and interest.
+- **Cash needed soon:** storing means borrowing against the stored sacks (the cheaper of the cold-storage advance and a bank loan that covers it), or selling part now.
 
-Phone numbers are masked on partner screens.
+**The three options and the rule:**
 
-## 4. Rules for every call
-
-- One action per call, 60 to 90 seconds; numbers in bigha, maund, bosta and taka.
-- Keypad first, speech second; every number read back.
-- Every call ends with "১ = আবার শুনুন, ৯ = কর্মকর্তা ফোন করবেন" (1 to hear it again, 9 for an officer to call back).
-- Never ask what a dealer, cold storage or buyer can record instead.
-- Urgent alerts go out at once; others in the evening, when farmers are home.
-- The farmer pays nothing: missed call, then we call back.
-
-## 5. The phone line where the AI listens
-
-**Why Awaj alone can't do it:** Awaj gives one-way calls (its own voice or our audio) and keypad surveys with pre-recorded prompts. It has no speech recognition and no live audio stream. Keep Awaj for mass alerts; add our own voice server for conversations.
-
-**Telephony options:**
-
-| Option | How | Use |
-|---|---|---|
-| A. Local SIP trunk (production) | Licensed Bangladeshi IPTSP gives a 096 number over a SIP trunk into our Asterisk server | Local number, local rates; needs provider KYC (NID, licence or project letter, static IP) |
-| B. Twilio | Twilio Media Streams sends live call audio to our server | Prototype only: about $0.06/min to Bangladeshi mobiles, roughly 13 times Awaj; local number stock unclear |
-| C. Hybrid | An Awaj call ends with "press 1 to talk to KrishiVault" and transfers to our number | Awaj for volume, our server for conversation |
-
-**Do not use** a GSM gateway (GoIP) with a GP or Teletalk SIM: treated as illegal VoIP in Bangladesh, operators block such SIMs, and it handles one call at a time.
-
-**The listening pipeline:**
-
-```
-Farmer's phone → SIP trunk → Asterisk (ARI from Python) → live audio + keypad presses
-→ turn detection (~0.7 s silence; the farmer can interrupt)
-→ speech-to-text: Google bn-BD (chirp_2), Whisper large-v3 tested on the same audio
-→ understanding: KrishiVault's Bangla parser for numbers and units, then Gemini with fixed output fields
-→ dialogue state machine: asks for missing values, reads numbers back, keypad always works,
-  two failures → keypad menu → officer callback
-→ engine (decision, alerts, fertilizer, marketplace) → Bangla template filled with the engine's numbers
-→ number check (Gemini may reword, never change a number) → Google bn-BD voice → back into the call
-```
-
-About 2 to 4 seconds per turn; a short filler ("একটু শুনুন, হিসাব করছি…") covers the wait. Use this step-by-step pipeline, not one speech-to-speech AI, because every taka figure must be checked before the farmer hears it. Google lists bn-BD on chirp_2; phone-audio and streaming support for Bangla were not confirmed, so recognize each answer after the farmer stops speaking first.
-
-**Build steps:**
-
-| Step | What | Done when |
-|---|---|---|
-| V0 | Awaj one-way calls and keypad surveys; `call_simulator.py` as the test harness | Keypad flows work end to end on real phones |
-| V1 | Record-and-reply on Twilio (prototype) or Asterisk with a SIP trunk | 200 consented answers from Bogura farmers, measured for word error and task success |
-| V2 | Live streaming, turn detection, barge-in, filler audio, keypad in parallel | A full harvest-decision call without keypad fallback for most farmers |
-| V3 | Phrase hints, a fine-tuned Whisper on farmer audio, a Gemini Live trial | Measured gain over V1 |
-
-**Security before connecting a trunk:** firewall SIP and call-audio ports to the provider's IPs only; fail2ban; no guest calls; strong credentials; ARI bound to localhost; a daily outbound-minutes cap. A hijacked trunk can run up large call bills.
-
-**Reliability:** auto-restart (Docker or systemd), health checks, daily backups; if the server is down, the trunk forwards to an officer's phone (ask the provider); if the AI fails, fall back to the keypad menu.
-
-**Testing without a telecom line:** a small cloud Linux VM with Asterisk plus the Zoiper softphone on a phone gives real SIP and phone-quality audio. A browser "phone" page is fine for demos, but needs HTTPS for the microphone and 8 kHz downsampling for realistic speech tests. Skip ADB dialing from a personal SIM.
-
-## 6. Risks, and how we answer them
-
-| Risk | Fix |
+| Recommendation | When |
 |---|---|
-| No action partners: advice alone changes little | Sign one buyer and one cold storage before scaling |
-| A wrong "store" call | Sell part, store part; say the uncertainty; forecasts only if they beat seasonality |
-| Too wide for a small team | Build the prototype scope first; the rest is the roadmap |
-| Helpers won't use portals | Each gets a reason: volume for dealers, bookings for cold storages, lots for buyers; overcharge reports go to DAE |
-| Bangla speech on phone lines | Keypad first; voice added stepwise and measured |
-| Who pays | Alerts by government or NGO; fees on bookings, group sales, marketplace sales and rentals |
-| Rules and trust | Consent in every call, BTRC-compliant numbers, officer callback always available |
+| **Sell now** | Storing to the best month adds less than ৳500 or 3% on average, or beats selling now in fewer than 55 of 100 paths, or no loan can cover the cash need and selling part does not help |
+| **Store, sell in month X** | Storing beats selling now in at least 80 of 100 paths and the bad case (1 in 10) loses at most 5% |
+| **Sell part, store the rest** | In between. It sells enough sacks for the cash need, and at least a safety share (25%, 40% or 50% as the chance of gain falls) |
 
-**Go/no-go after one pilot harvest:** pilot farmers' price against the DAM benchmark and neighbours, share sold in glut weeks, fertilizer price paid, sprays, storage losses, "repeat" presses. If the money numbers don't move, change the actions offered, not the features.
+## 2. How the forecasts work
 
-## 7. How the plan covers the judging criteria
+**Production** (`src/models/production_forecast.py`): a straight-line trend through the logarithm of BBS production, 2012-13 to 2024-25 (about 1.8% growth a year nationally). The range comes from how far real seasons fell from the trend (±3.6% a year nationally, wider for single districts). If DAE's planted area is known, area × the yield trend replaces the trend. The **crop gap** (production against the trend) is what drives prices.
+
+**Price** (`src/models/price_outlook.py`):
+1. The usual shape of the year: cheapest in February-March, dearest in November-December (March to December ×1.9).
+2. Each season's "rise strength" (1 = the usual rise, 0 = flat) is measured from WFP prices: 2023-24 (crop 1% below trend) 0.93; 2024-25 (6% above trend) 0.0. A straight line through these two gives the rise for any crop gap: 0.77 for a trend-size crop, falling by 1.3 for every 10% bigger crop.
+3. Once three months of the current season are known, their own rise is blended in.
+4. 2,000 paths: each draws its own rise (crop uncertainty) and a monthly wander of about 6%. The outlook gives the middle and the 8-in-10 range.
+5. The farmer's own price today anchors the path. Retail and farm-gate prices are assumed to move together (a conservative assumption; farm-gate prices usually swing more).
+
+**Honest limits** (also on the dashboard): two full price seasons; no backtest yet; no weather in production; retail prices. Adding a longer price history refits it automatically (`data/raw/price_history.csv`).
+
+## 3. Demo story (5 minutes)
+
+| Step | Screen | What the judges see |
+|---|---|---|
+| 1. The trap | Dashboard → Season overview, season "Replay March 2025" | A big crop (6% above trend); the price path stays flat; storing 36 sacks loses money in every month: "sell now" |
+| 2. A normal year | Season "Replay March 2024" | Prices nearly double by November; storing until December gains about ৳29,000; selling after 1-2 months still loses (flat rent) |
+| 3. The farmer's call | `/call`, season "Next harvest", the first "Try" sentence | Dialect speech understood, numbers read back, "sell 19 sacks now, store 17 until December", the money and the risk; press 2: cold-storage request; SMS receipt |
+| 4. The bank | Dashboard → Bank loan, then Partner screens | The cold storage confirms 36 sacks; the bank sees the value, the careful price, the risk and approves (demo) |
+| 5. Group and export | Group storage, Export | A shared truck saves money now; the discount counts only when the cold storage agrees. The UAE quotes most, Singapore pays most after costs |
+| 6. Profit | Profit calculator | One bigha: cost ৳15.59/kg; storing part added about ৳10,400 against selling everything at harvest |
+
+## 4. What partners see
+
+- **Cold storage:** space requests (with the advice behind them), receipts to confirm for banks, group offers to agree.
+- **Bank or microfinance lender:** loan applications with the crop, value today, careful price, what the cold storage is owed first, the most it can lend, the repayment risk and the repayment plan; approve or decline.
+- **Buyer:** lots with quantity and today's price; offers go back to the farmer, ranked by money in hand.
+- **Exporter:** sourcing districts and market margins after costs (the Export page).
+- **KrishiVault helper:** callback requests with what the call already collected.
+
+Phone numbers are masked on every partner screen.
+
+## 5. Rules for every call
+
+- One question per call, 60 to 90 seconds; numbers in maunds, sacks and taka.
+- Keypad first, speech second; every number read back for a keypad "yes".
+- Every answer ends with "১ = আবার শুনুন, ০ = মূল মেনু, ৯ = সহকারী".
+- Never ask what a cold storage, bank or buyer can record instead.
+- The farmer pays nothing: missed call, then we call back (when there is a phone line).
+- The answer always says it is an estimate, never a promise.
+
+## 6. The phone line (after the prototype)
+
+There is no phone line in the prototype; the call preview runs the same steps in the browser.
+
+**Options:** a licensed Bangladeshi IP-telephony 096 number over a SIP trunk into our own Asterisk server (production); Twilio Media Streams (testing only, about 13 times Awaj's cost); or a hybrid where an Awaj broadcast call ends with "press 1 to talk to KrishiVault". **Do not use** a GSM gateway with a GP or Teletalk SIM (treated as illegal VoIP, blocked by operators).
+
+**The listening steps:** phone → SIP trunk → Asterisk → live audio and keypad → turn detection → Google bn-BD speech to text (Whisper tested on the same audio) → Bangla parser, then Gemini with fixed fields → the call steps (`src/voice/conversation.py`) → the engine → Bangla template → number lock → Google Bangla voice. About 2 to 4 seconds a turn.
+
+**Security before a trunk:** firewall the SIP and audio ports to the provider; fail2ban; strong credentials; a daily outbound-minutes cap.
+
+## 7. Risks, and how we answer them
+
+| Risk | Answer |
+|---|---|
+| A wrong "store" call costs a farmer money | Ranges, the bad case shown, "sell part" when unsure; the engine never says "store everything" when the chance of gain is low |
+| Cold storages gain from early sales and may resist | They gain filled space from group bookings and loan customers from verified receipts; fees only per booking |
+| Banks will not lend against potatoes | Start with one lender and small loans; careful values; the cold storage confirms the sacks and is paid first |
+| Too little price data | Say so; get the DAM history (to-do 4); the model refits |
+| Farmers do not trust a machine | Numbers read back, a helper one keypress away, SMS receipts, results compared with neighbours in the pilot |
+| Export claims look inflated | Every market shown after costs; demo figures labelled until real quotes |
+
+**Go or no-go after the pilot harvest:** net price received against the haat and neighbours, months stored against advice, loans used instead of early sales and repaid, discounts agreed. If the money does not move, change the actions offered.
+
+## 8. How the plan covers the judging criteria
 
 | Criterion | Where we win it |
 |---|---|
-| Clarity | One sentence, three leaks, five services, one demo |
-| Problem depth | Three money leaks plus two barriers; research on why information alone fails; real Bogura numbers |
-| Differentiation | A business ecosystem, not an information service; decision plus action in the same call; button-phone voice; inputs, seeds and machinery on time; NASA alerts per upazila |
-| AI rationale | AI where language and uncertainty live, fixed rules where money and safety live; number lock; honest forecast backtest |
-| Feasibility and scale | Working prototype; Bogura pilot with named partner types; about ৳10 per farmer a season; data for 544 upazilas and 13 crops |
-| Impact | Income, environment (fewer sprays, right fertilizer, less food waste), climate resilience, inclusion, business revenue |
-| Q&A | The prepared answers in `HANDOFF.md` |
-
-## 8. Three upgrades that make the idea stronger
-
-1. **Advice and action in the same call:** every piece of advice ends with something to press (book cold storage, join a group sale or order, order seed, rent a machine, call an officer).
-2. **Inputs on time, not just at a fair price:** group orders and the weekly demand calendar let dealers stock before the planting rush, when shortages and overcharging are worst.
-3. **Machinery as a service:** smallholders rent machines by the bigha; owners and operators get steady bookings; government subsidy information is part of the offer.
+| Clarity | One question: "store or sell, and until when?" |
+| Problem depth | The flat-rent trap, the big-crop years (BBS and WFP data), traders' cash and information advantage, from field notes |
+| Differentiation | Not information alone: a decision in taka with its risk, plus the action (booking, loan, group, buyer) |
+| AI rationale | Statistics and simulation where the future is uncertain; exact sums where money is; the number lock |
+| Feasibility and scale | Working prototype on real national data; 64 districts covered; partners paid only when they gain |
+| Impact | Farmers keep more of the post-harvest price rise; fewer forced sales; less storage waste |
+| Q&A | `HANDOFF.md`, section 11 |

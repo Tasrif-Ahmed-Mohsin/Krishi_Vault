@@ -10,7 +10,8 @@ comes from. A farmer or helper can change any of them on the dashboard.
 
 from dataclasses import dataclass, asdict
 
-MAUND_KG = 37.3242          # 1 maund (মণ), standard Bangladesh maund
+from config.settings import MAUND_TO_KG as MAUND_KG  # 1 maund (মণ) = 37.3242 kg
+
 SACK_KG = 84.0              # field notes: the cold-storage sack holds 84 kg
 SEASON_MONTHS = 9           # field notes: one rent covers up to 9 months
 RENT_PER_SACK = 250.0       # field notes: ৳250 a sack for the season (some charge ৳300)

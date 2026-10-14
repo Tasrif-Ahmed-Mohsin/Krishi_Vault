@@ -96,7 +96,7 @@ def join(pool_id: str, name: str, sacks: int, phone: Optional[str] = None) -> di
     entry = demo_data.append("group_joins", {"pool_id": pool_id, "name": name, "sacks": int(sacks),
                                              "phone": events.mask_phone(phone)})
     status = pool_status(pool)
-    ev = events.record("group_storage_join", f"{name}: {sacks} বস্তা, {pool['name']}",
+    ev = events.record("group_storage_join", f"{name}: {sacks} বস্তা, {pool.get('name_bn') or pool['name']}",
                        {"pool": pool_id, "sacks": sacks, "group_total": status["total_sacks"]},
                        district=pool["district"], phone=phone)
     return {"joined": entry, "pool": status, "ref": ev["ref"], "event": ev}

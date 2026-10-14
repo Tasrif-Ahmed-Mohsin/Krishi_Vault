@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
 <link rel="icon" href="data:,">
-<title>KrishiVault Farmer Call</title>
+<title>KrishiVault Call Preview</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -53,6 +53,11 @@
   .brand { font-weight: 700; font-size: 1.25rem; letter-spacing: .2px; }
   .brand .en { font-weight: 600; color: var(--gold-light, #d4b96a); margin-left: 6px; font-size: 1rem; }
   .top-sub { font-size: .85rem; color: var(--green-pale); flex: 1 1 220px; }
+  .dash-link { color: var(--cream); font-weight: 600; font-size: .85rem; border: 1px solid rgba(255,255,255,.3); padding: 5px 9px; text-decoration: none; background: rgba(255,255,255,.06); }
+  .mini { width: 100%; border-collapse: collapse; font-size: .82rem; margin-top: 8px; }
+  .mini th, .mini td { padding: 4px 6px; border-bottom: 1px solid var(--cream-dark); width: auto; }
+  .mini td.n, .mini th.n { text-align: right; font-family: var(--font-latin); white-space: nowrap; }
+  .up { color: #1c5cab; font-weight: 600; } .down { color: #b4481c; font-weight: 600; }
   .demo-flag {
     font-family: var(--font-latin); font-size: .75rem; font-weight: 600; letter-spacing: .4px;
     background: var(--gold); color: var(--green-darkest); padding: 3px 8px;
@@ -216,8 +221,9 @@
 <header class="top">
   <div class="top-inner">
     <div class="brand">কৃষিভল্ট<span class="en">KrishiVault</span></div>
-    <div class="top-sub">কৃষকের ফোন কল, ব্রাউজারে · <span class="en">A farmer's call, in the browser (prototype)</span></div>
-    <span class="demo-flag" title="Partners, buyers, cold storages and neighbours on this screen are fictional demo data">DEMO DATA</span>
+    <div class="top-sub">কৃষকের ফোন কল, ব্রাউজারে (প্রিভিউ) · <span class="en">A farmer's phone call, previewed in the browser. There is no phone line in the prototype; SMS can be sent.</span></div>
+    <span class="demo-flag" title="Cold storages, banks, buyers and groups on this screen are made up">DEMO PARTNERS</span>
+    <a class="dash-link en" href="/">Dashboard →</a>
   </div>
 </header>
 
@@ -226,7 +232,7 @@
   <div class="col col-phone">
     <section class="phone" aria-label="Farmer call">
       <div class="phone-head">
-        <b>☎ কৃষিভল্ট কল</b>
+        <b>☎ কৃষিভল্ট কল · প্রিভিউ</b>
         <span class="small en" id="callState">Not started</span>
       </div>
       <div class="log" id="log" aria-live="polite"></div>
@@ -280,7 +286,7 @@
     </section>
 
     <section class="panel">
-      <h2>সিদ্ধান্ত <span class="en">Decision (from the decision engine)</span></h2>
+      <h2>উত্তর <span class="en">The answer (from the engine)</span></h2>
       <div class="panel-body" id="decision"><p class="empty">সব তথ্য ঠিক হলে এখানে টাকার হিসাব আসবে। <span class="en small">Appears after the farmer confirms the numbers.</span></p></div>
     </section>
 
@@ -290,14 +296,13 @@
     </section>
 
     <section class="panel">
-      <h2>এসএমএস ও কল <span class="en">SMS me · Call me</span></h2>
+      <h2>এসএমএস রসিদ <span class="en">SMS receipt</span></h2>
       <div class="panel-body">
         <div class="sms-preview" id="smsPreview"><span class="empty">পরামর্শের পর এসএমএস রসিদ এখানে দেখা যাবে।</span></div>
         <div class="notify-row">
           <label class="sr-only" for="phone">Farmer's mobile number</label>
           <input id="phone" inputmode="tel" placeholder="01XXXXXXXXX" autocomplete="off">
-          <button class="btn" id="smsBtn" onclick="notify('sms')" disabled>✉ SMS me</button>
-          <button class="btn" id="ringBtn" onclick="notify('ring')" disabled>☎ Call me</button>
+          <button class="btn" id="smsBtn" onclick="notify()" disabled>✉ SMS me</button>
         </div>
         <div class="small en" id="notifyMode" style="margin-top:6px"></div>
         <pre class="result" id="notifyResult" hidden></pre>
@@ -306,7 +311,7 @@
 
     <section class="panel">
       <h2>পার্টনারের কাছে গেছে <span class="en">Sent to partners</span></h2>
-      <div class="panel-body" id="events"><p class="empty en small">Bookings, lots and officer callback requests from this call appear here. They are saved for the partner screens (to-do item 6).</p></div>
+      <div class="panel-body" id="events"><p class="empty en small">Cold-storage requests, group joins, loan applications, lots and helper callbacks from this call appear here and on the dashboard's Partner screens.</p></div>
     </section>
 
     <section class="panel">
@@ -322,8 +327,13 @@
               <option value="Munshiganj">মুন্সিগঞ্জ (Munshiganj)</option>
             </select>
           </label>
-          <label>মৌসুমের মাস <span class="en small">Month for the seasonal price pattern</span>
-            <select id="month"></select>
+          <label>মৌসুম <span class="en small">Season</span>
+            <select id="season">
+              <option value="3-2027">Next harvest: March 2027 (forecast)</option>
+              <option value="10-2026">Today: October 2026 (potatoes in store)</option>
+              <option value="3-2025">Replay March 2025: big crop</option>
+              <option value="3-2024">Replay March 2024: normal crop</option>
+            </select>
           </label>
           <label>কণ্ঠ <span class="en small">Voice</span>
             <select id="voiceMode">
@@ -367,20 +377,23 @@ let mode = "speak";
 const audio = new Audio();
 
 const TRIES = [
-  "হামার শিবগঞ্জের জমিতে ৮০ মণ আলু উঠছে বাহে। জরুরি ২৫ হাজার টেকা নাগবে ৪ দিনের মইধ্যে। স্থানীয় ফড়িয়া ১৮ টেকা কেজি দিবার চায়। আড়তদারের কাছে ২০ হাজার টেকা দাদন নেওয়া আছে।",
-  "আমার পঞ্চাশ মণ আলু, বিশ হাজার টাকা লাগবে তিন দিনের মধ্যে",
+  "হামার শিবগঞ্জের জমিতে ৮০ মণ আলু উঠছে বাহে। ফড়িয়া ১৬ টেকা কেজি দিবার চায়। জরুরি ২৫ হাজার টেকা নাগবে ৪ দিনের মইধ্যে।",
+  "আমার পঞ্চাশ মণ আলু, রাখব না বেচব?",
+  "দাম কেমন হবে সামনে?",
+  "সবাই মিলে একসাথে হিমাগারে রাখতে চাই",
+  "বস্তা জামানত রেখে লোন পাব?",
+  "আলু হিমাগারে রাখা আছে",
   "হ্যাঁ, ঠিক আছে",
   "না, নব্বই মণ",
   "আবার বলেন",
-  "কর্মকর্তার সাথে কথা বলব",
+  "মানুষের সাথে কথা বলব",
 ];
 const SOURCE = { parser: "Parser", gemini: "Gemini ✓", keypad: "Keypad" };
 
 // ---------------------------------------------------------------- setup
 function setup() {
-  const months = ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"];
-  const now = new Date().getMonth() + 1;
-  $("month").innerHTML = months.map((m, i) => `<option value="${i + 1}"${i + 1 === now ? " selected" : ""}>${m}${i + 1 === now ? " (এখন)" : ""}</option>`).join("");
+  if (store.get("season")) $("season").value = store.get("season");
+  $("season").addEventListener("change", () => store.set("season", $("season").value));
   $("tries").innerHTML = '<small class="en" style="width:100%">Try (if the microphone is not available):</small>' +
     TRIES.map((t, i) => `<button class="btn" onclick="sendSpeech(TRIES[${i}])">${esc(t.length > 60 ? t.slice(0, 58) + "…" : t)}</button>`).join("");
   const layout = [["1", ""], ["2", ""], ["3", ""], ["4", ""], ["5", ""], ["6", ""], ["7", ""], ["8", ""], ["9", ""], ["*", "মেনু"], ["0", ""], ["#", "পাঠান"]];
@@ -418,11 +431,11 @@ async function loadStatus() {
   if (status) {
     chips.push(chip(status.gemini.on ? "on" : "off", status.gemini.on ? "Gemini: on (checked)" : "Gemini: off (parser only)"));
     chips.push(chip(status.google_voice.ready ? "on" : "warn", status.google_voice.ready ? "Google Bangla voice: on" : "Google voice: off, phone voice used"));
-    chips.push(chip(status.sms.live ? "bad" : "on", status.sms.live ? "SMS: LIVE (real, billed)" : "SMS: dry run"));
-    chips.push(chip(status.awaj.live ? "bad" : "on", status.awaj.live ? "Calls: LIVE (real, billed)" : "Calls: dry run"));
-    $("notifyMode").textContent = (status.sms.live || status.awaj.live)
-      ? "Live sending is switched on in the server's settings: SMS and calls are real and billed."
-      : "Dry run: nothing is sent. The box below shows the exact request that would go to REVE (SMS) or Awaj (call).";
+    chips.push(chip(status.sms.live ? "bad" : "on", status.sms.live ? "SMS: LIVE (real, billed)" : (status.sms.configured ? "SMS: keys set, dry run" : "SMS: dry run")));
+    chips.push(chip("warn", "Phone calls: preview only"));
+    $("notifyMode").textContent = status.sms.live
+      ? "Live sending is switched on in the server's settings: the SMS is real and billed."
+      : "Dry run: nothing is sent. The box below shows the exact request that would go to REVE.";
   } else {
     chips.push(chip("bad", "Server not reachable"));
   }
@@ -436,7 +449,7 @@ async function startCall() {
   $("log").innerHTML = "";
   $("decision").innerHTML = '<p class="empty">সব তথ্য ঠিক হলে এখানে টাকার হিসাব আসবে।</p>';
   $("numcheck").innerHTML = '<p class="empty en small">Appears with the advice.</p>';
-  $("events").innerHTML = '<p class="empty en small">Bookings, lots and officer callback requests from this call appear here.</p>';
+  $("events").innerHTML = '<p class="empty en small">Requests from this call appear here and on the dashboard\'s Partner screens.</p>';
   $("smsPreview").innerHTML = '<span class="empty">পরামর্শের পর এসএমএস রসিদ এখানে দেখা যাবে।</span>';
   $("notifyResult").hidden = true;
   state = null;
@@ -448,10 +461,11 @@ async function turn(input) {
   busy = true;
   const wait = addMsg("kv wait", "একটু শুনুন, হিসাব করছি…", "KrishiVault");
   try {
+    const [month, year] = $("season").value.split("-").map(Number);
     const body = {
       ...input, state,
       district: $("district").value,
-      month: Number($("month").value),
+      month, year,
       phone: $("phone").value.trim() || null,
     };
     const res = await fetch("/api/call/turn", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -479,16 +493,14 @@ function render(r) {
   speak(r.say);
   renderHint();
   renderSlots(r.slots);
-  if (r.decision) renderDecision(r.decision);
+  if (r.result && state.step === "result") renderResult(r.result);
   if (r.narration) renderNumberCheck(r.narration);
   if (r.event) addEvent(r.event);
   if (r.sms_text) {
     $("smsPreview").innerHTML = `<div class="small en">SMS receipt</div>${esc(r.sms_text)}`;
   }
-  const hasAdvice = Boolean(state && state.advice_body);
   $("smsBtn").disabled = !r.sms_text;
-  $("ringBtn").disabled = !hasAdvice;
-  $("callState").textContent = r.done ? "Call ended" : ({ menu: "Menu", sell_ask: "Questions", sell_confirm: "Read-back", sell_advice: "Advice", sell_done: "Action done", not_ready: "Not built yet", help: "Help" }[state.step] || state.step);
+  $("callState").textContent = r.done ? "Call ended" : ({ menu: "Menu", ask: "Questions", confirm: "Read-back", result: "Answer", done: "Request sent", help: "Help" }[state.step] || state.step);
 }
 
 function renderHint() {
@@ -522,13 +534,15 @@ function annotateFarmer(heard) {
   const last = msgs[msgs.length - 1];
   if (!last) return;
   const parts = [];
-  const names = { quantity_kg: "পরিমাণ", cash_needed_tk: "টাকার দরকার", deadline_days: "দিন", offer_per_kg: "দর", dadon_tk: "দাদন" };
+  const names = { quantity_kg: "পরিমাণ", cash_needed_tk: "টাকার দরকার", deadline_days: "দিন", offer_per_kg: "দাম", dadon_tk: "দাদন" };
   for (const [slot, v] of Object.entries(heard.values || {})) {
     parts.push(`${names[slot]}: ${esc(bnDigits(v.heard))} <span class="src ${v.source}">${SOURCE[v.source] || v.source}</span>`);
   }
+  if (heard.in_storage === true) parts.push("হিমাগারে আছে");
+  if (heard.in_storage === false) parts.push("হিমাগারে নেই");
   if (heard.yes_no === true) parts.push("হ্যাঁ");
   if (heard.yes_no === false) parts.push("না");
-  if (heard.menu && !parts.length) parts.push({ sell: "ফসল বেচা", fertilizer: "সার ও কীটনাশক", seeds: "বীজ ও যন্ত্রপাতি", officer: "কর্মকর্তা" }[heard.menu]);
+  if (heard.menu && !parts.length) parts.push({ advice: "রাখব না বেচব", outlook: "দামের পূর্বাভাস", group: "একসাথে হিমাগার", loan: "বস্তা জামানতে ঋণ", helper: "সহকারী" }[heard.menu]);
   for (const r of heard.rejected || []) {
     parts.push(`<span class="rej">${esc(names[r.slot] || r.slot)} ${esc(r.number)} বাদ (${r.reason === "not_said" ? "Gemini number not said" : "out of range"})</span>`);
   }
@@ -542,7 +556,7 @@ function annotateFarmer(heard) {
 // ---------------------------------------------------------------- panels
 function renderSlots(rows) {
   if (!rows || !rows.length) {
-    rows = [["আলুর পরিমাণ", "Potato"], ["টাকার দরকার", "Cash needed"], ["কত দিনে", "Within"], ["পাইকারের দর", "Trader's offer"], ["দাদন", "Dadon"]]
+    rows = [["আলুর পরিমাণ", "Potato"], ["আজকের দাম", "Price today"], ["হিমাগারে আছে?", "Already in cold storage?"], ["টাকার দরকার", "Cash needed"], ["কত দিনে", "Within"]]
       .map(([b, e]) => ({ label_bn: b, label_en: e, display: null }));
   }
   $("slots").innerHTML = rows.map(r => `<tr><th>${esc(r.label_bn)}<span class="en">${esc(r.label_en)}</span></th>
@@ -550,27 +564,39 @@ function renderSlots(rows) {
     ${r.heard && r.source !== "keypad" ? `<div class="small">শোনা: “${esc(bnDigits(r.heard))}”</div>` : ""}</td></tr>`).join("");
 }
 
-function renderDecision(d) {
-  const rec = d.scenarios.find(s => s.recommended);
-  const inp = d.inputs;
-  const opts = d.scenarios.slice().sort((a, b) => (b.feasible - a.feasible) || (b.expected_proceeds_tk - a.expected_proceeds_tk)).map(s => `
-    <div class="opt${s.recommended ? " best" : ""}${s.feasible ? "" : " no"}">
-      <div>${esc(s.name_bn)}${s.recommended ? ' <span class="src parser">পরামর্শ</span>' : ""}</div>
-      <div class="t">${s.feasible ? taka(s.expected_proceeds_tk) : "সম্ভব নয়"}</div>
-      <div class="why">${esc(s.explanation_en)}</div>
-    </div>`).join("");
-  const notes = [
-    `Today's price: ৳${inp.price_today_per_kg}/kg, from ${esc(inp.price_basis)}${inp.price_basis.includes("demo") ? "" : ""}.`,
-    `Price in 30 days: ৳${inp.outlook.price_in_30d}/kg (${inp.outlook.change_30d_pct > 0 ? "+" : ""}${inp.outlook.change_30d_pct}%), from the <b>seasonal pattern only</b>: not a trained forecast.`,
-    inp.cold_storage ? `Cold storage: a demo partner in this district with space, ৳${inp.cold_storage.rate_per_kg}/kg.` : "No demo cold storage listed for this district.",
-    `Buyers: ${inp.demo_buyers} demo buyer offers; group lot: ${inp.demo_neighbours} demo neighbours. All partners are fictional demo data.`,
-    "The engine compares storing for one month only.",
-  ];
-  $("decision").innerHTML = `
-    <div class="rec"><div class="label">Recommended</div><div class="name">${esc(d.recommended_bn)}</div>
-      <div class="amount">${taka(rec.expected_proceeds_tk)}</div><div class="small">আনুমানিক মোট আয় · expected total</div></div>
-    <div class="options">${opts}</div>
-    <ul class="notes en">${notes.map(n => `<li>${n}</li>`).join("")}</ul>`;
+const tkSigned = n => (n > 0 ? "+" : n < 0 ? "−" : "") + "৳" + bnDigits(Math.abs(Math.round(n)).toLocaleString("en-IN"));
+const pctBn = p => bnDigits(Math.round(p * 100)) + "%";
+function renderResult(r) {
+  let html = `<div class="rec"><div class="label">${esc({ advice: "Store or sell", outlook: "Price outlook", group: "Group storage", loan: "Loan against sacks" }[r.flow] || r.flow)}</div>
+    <div class="name">${esc(r.title_bn)}</div><div class="small en">${esc(r.title_en)}</div></div>`;
+  if (r.flow === "advice") {
+    html += '<div class="options">' + r.options.map(o => `<div class="opt${o.recommended ? " best" : ""}">
+      <div>${esc(o.title_bn)}${o.recommended ? ' <span class="src parser">পরামর্শ</span>' : ""}</div>
+      <div class="t">${taka(o.money_mean)}</div>
+      <div class="why">${o.key === "sell_now" ? "certain, at today's price" : `8 in 10: ${taka(o.money_low)} – ${taka(o.money_high)} · ${tkSigned(o.gain_vs_now)} vs now · beats now in ${pctBn(o.chance_beats_now)}`}</div></div>`).join("") + "</div>";
+    html += `<table class="mini"><thead><tr><th>Sell in</th><th class="n">Price ৳/kg (middle)</th><th class="n">vs selling now</th><th class="n">Pays above</th></tr></thead><tbody>` +
+      r.by_month.filter(m => m.h > 0).map(m => `<tr><td>${esc(m.month_bn)}</td><td class="n">${bnDigits(m.price_mid.toFixed(1))}</td><td class="n ${m.gain_vs_now >= 0 ? "up" : "down"}">${tkSigned(m.gain_vs_now)}</td><td class="n">${m.break_even_price ? "৳" + bnDigits(m.break_even_price.toFixed(1)) : "—"}</td></tr>`).join("") + "</tbody></table>";
+    const notes = [...r.reasons, ...r.notes,
+      r.price_assumed ? `Price today unknown: a demo price of ৳${r.price_today}/kg was used and said so.` : `Price today: ৳${r.price_today}/kg (what the farmer said).`,
+      `Season ${r.outlook.season}: price outlook from crop size and this season's prices (rise strength ${r.outlook.k.toFixed(2)}); a statistical outlook, not a promise.`,
+      'The full chart and costs: <a href="/#store">dashboard → Store or sell</a>.'];
+    html += `<ul class="notes en">${notes.map(n => `<li>${n.startsWith("The full") ? n : esc(n)}</li>`).join("")}</ul>`;
+  } else if (r.flow === "outlook") {
+    html += r.months.length ? `<table class="mini"><thead><tr><th>Month</th><th class="n">Low</th><th class="n">Middle</th><th class="n">High</th></tr></thead><tbody>` +
+      r.months.map(m => `<tr><td>${esc(m.month_bn)}</td><td class="n">৳${bnDigits(m.low.toFixed(1))}</td><td class="n">৳${bnDigits(m.mid.toFixed(1))}</td><td class="n">৳${bnDigits(m.high.toFixed(1))}</td></tr>`).join("") + "</tbody></table>" : "";
+    html += `<ul class="notes en"><li>Low and high: 1 path in 10 is below or above. ${r.price_assumed ? "Price today unknown: a demo price was used." : ""}</li></ul>`;
+  } else if (r.flow === "group" && r.compare) {
+    const c = r.compare;
+    html += `<table class="mini"><tbody><tr><td>একা <span class="en small">alone</span></td><td class="n">${taka(c.alone.total)}</td></tr>
+      <tr><td>দলে, আজ <span class="en small">group today</span></td><td class="n">${taka(c.group_now.total)} (${tkSigned(-c.group_now.saving)})</td></tr>
+      <tr><td>হিমাগার রাজি হলে <span class="en small">if the cold storage agrees</span></td><td class="n">${taka(c.group_if_agreed.total)}</td></tr></tbody></table>
+      <ul class="notes en"><li>${esc(c.note)}</li><li>The group and cold storage are demo partners.</li></ul>`;
+  } else if (r.flow === "loan" && r.banks) {
+    html += `<table class="mini"><thead><tr><th>Lender</th><th class="n">Up to</th><th class="n">Interest</th><th>Risk</th></tr></thead><tbody>` +
+      r.banks.map(b => `<tr><td>${esc(b.bank.name)}${b.bank.demo ? ' <span class="src keypad">DEMO</span>' : ""}</td><td class="n">${taka(b.max_loan)}</td><td class="n">${taka(b.interest)}</td><td>${esc(b.risk || "—")}</td></tr>`).join("") + "</tbody></table>" +
+      `<ul class="notes en"><li>KrishiVault does not lend. The cold storage confirms the sacks; the bank decides.</li></ul>`;
+  }
+  $("decision").innerHTML = html;
 }
 
 function renderNumberCheck(n) {
@@ -595,7 +621,7 @@ function renderNumberCheck(n) {
 }
 
 function addEvent(e) {
-  const where = { cold_storage: "Cold storage screen", buyer: "Buyer screen", officer: "Officer desk" }[e.for] || e.for;
+  const where = { cold_storage: "Cold storage screen", buyer: "Buyer screen", bank: "Bank screen", helper: "KrishiVault helper" }[e.for] || e.for;
   const html = `<div class="event"><b>${esc(e.summary_bn)}</b> · নং ${bnDigits(e.ref)}<br>
     <span class="small en">→ ${where} (demo) · ${esc(e.district)} · ${esc(e.time.replace("T", " "))}${e.phone ? " · " + esc(e.phone) : ""}</span></div>`;
   const box = $("events");
@@ -759,7 +785,7 @@ function stopAudio(bump = true) {
 function replayLast() { if (lastSay) speak(lastSay, true); }
 
 // ---------------------------------------------------------------- SMS me / Call me
-async function notify(kind) {
+async function notify() {
   const phone = $("phone").value.trim();
   store.set("phone", phone);
   if (!/^(\+?88)?01[3-9]\d{8}$/.test(phone.replace(/[\s-]/g, ""))) {
@@ -768,14 +794,12 @@ async function notify(kind) {
   }
   if (!state) return;
   try {
-    const res = await fetch(kind === "sms" ? "/api/call/sms" : "/api/call/ring", {
+    const res = await fetch("/api/call/sms", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state, phone }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || res.statusText);
-    const head = data.dry_run
-      ? (kind === "sms" ? "DRY RUN: no SMS sent. This is the request REVE would get:" : "DRY RUN: no call made. This is the request Awaj would get:")
-      : (kind === "sms" ? "SENT (live SMS):" : "CALL REQUESTED (live, Awaj):");
+    const head = data.dry_run ? "DRY RUN: no SMS sent. This is the request REVE would get:" : "SENT (live SMS):";
     showNotify(head + "\n\n" + JSON.stringify(data, null, 2));
   } catch (err) {
     showNotify("Error: " + err.message);
