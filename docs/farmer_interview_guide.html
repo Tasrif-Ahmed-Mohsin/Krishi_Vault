@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>KrishiVault Farmer Interview Guide</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Source+Sans+3:wght@400;600;700&family=Noto+Sans+Bengali:wght@400;600;700&display=swap">
+<style>
+@page { size: A4; margin: 14mm 13mm 14mm 13mm; }
+:root {
+  --ink: #1C2420; --muted: #56615A; --rule: #C9D1C7; --accent: #0F5D57; --soft: #E7F0EC; --ochre: #8A6214; --ochre-soft: #F6EEDB;
+  --display: "Archivo", "Arial Narrow", Arial, sans-serif;
+  --body: "Source Sans 3", "Noto Sans Bengali", "Nirmala UI", "Segoe UI", Arial, sans-serif;
+  --bn: "Noto Sans Bengali", "Nirmala UI", "Source Sans 3", sans-serif;
+}
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+html, body { margin: 0; background: #fff; color: var(--ink); font-family: var(--body); font-size: 10.5pt; line-height: 1.45; }
+h1, h2, h3 { font-family: var(--display); margin: 0; line-height: 1.15; }
+h1 { font-size: 22pt; font-weight: 800; }
+h2 { font-size: 14pt; font-weight: 800; color: var(--accent); margin-bottom: 4pt; }
+h3 { font-size: 11.5pt; font-weight: 600; margin: 8pt 0 4pt; }
+p { margin: 0 0 5pt; }
+.bn { font-family: var(--bn); }
+.page { page-break-after: always; break-after: page; }
+.page:last-child { page-break-after: auto; break-after: auto; }
+.eyebrow { font-family: var(--display); font-size: 8.5pt; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.titlebar { border-bottom: 3px solid var(--accent); padding-bottom: 8pt; margin-bottom: 10pt; display: grid; gap: 4pt; }
+.titlebar .bn { font-size: 13pt; color: var(--accent); font-weight: 600; }
+.muted { color: var(--muted); }
+.box { border: 1px solid var(--rule); background: var(--soft); padding: 8pt 10pt; margin: 6pt 0 8pt; }
+.box.warn { background: var(--ochre-soft); border-color: var(--ochre); }
+.box.warn b.lab { color: var(--ochre); }
+.box .bn { font-size: 11pt; line-height: 1.6; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10pt; }
+ul { margin: 2pt 0 4pt; padding-left: 14pt; }
+li { margin: 1.5pt 0; }
+table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt; }
+th, td { border: 1px solid var(--rule); padding: 4pt 5pt; vertical-align: top; text-align: left; }
+th { background: var(--soft); font-family: var(--display); font-size: 8.5pt; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); }
+tr { page-break-inside: avoid; break-inside: avoid; }
+td.n { width: 22pt; font-family: var(--display); font-weight: 800; color: var(--accent); text-align: center; }
+td.q { width: 40%; font-family: var(--bn); font-size: 10.5pt; line-height: 1.55; }
+td.m { width: 30%; }
+td.w { color: var(--muted); font-size: 9.5pt; }
+.star { color: var(--ochre); font-weight: 800; }
+.group-h { font-family: var(--display); font-weight: 800; font-size: 10pt; background: var(--accent); color: #fff; padding: 3pt 6pt; margin-top: 8pt; }
+.group-h span { font-weight: 600; opacity: 0.9; }
+/* answer form */
+.form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6pt 12pt; margin-bottom: 4pt; }
+.f { display: grid; gap: 1pt; }
+.f .lab { font-size: 8.5pt; color: var(--muted); }
+.f .line { border-bottom: 1px solid #8A948D; height: 15pt; }
+.f.wide { grid-column: span 3; }
+.f.two { grid-column: span 2; }
+.f .bnlab { font-family: var(--bn); font-size: 8.5pt; color: var(--muted); }
+.yn { display: inline-flex; gap: 8pt; align-items: center; font-size: 9pt; }
+.yn i { display: inline-block; width: 9pt; height: 9pt; border: 1px solid #56615A; margin-right: 2pt; vertical-align: -1pt; }
+.sec { font-family: var(--display); font-size: 9pt; font-weight: 800; color: var(--accent); border-bottom: 1px solid var(--rule); margin: 7pt 0 4pt; padding-bottom: 1pt; letter-spacing: 0.04em; text-transform: uppercase; }
+.quote-box { border: 1px solid #8A948D; height: 100pt; }
+/* tally */
+table.tally th { font-size: 7pt; padding: 3pt; }
+table.tally td { height: 21pt; }
+.tmpl { border-left: 3px solid var(--accent); padding: 4pt 8pt; margin: 4pt 0; background: #F7FAF8; }
+.small { font-size: 9pt; }
+a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1 -->
+<section class="page">
+  <div class="titlebar">
+    <span class="eyebrow">KrishiVault · field work</span>
+    <h1>Farmer Interview Guide</h1>
+    <span class="bn">কৃষকের সমস্যা জানার প্রশ্নমালা — আলু চাষি, বগুড়া</span>
+  </div>
+
+  <p><b>Why we are doing this.</b> KrishiVault helps potato farmers with button phones: danger alerts, sell-or-store advice in taka, fair fertilizer prices, and a season record. Before we present it, we want to hear the problems from farmers themselves. Their real answers make our problem slide stronger and check our design.</p>
+
+  <div class="box warn">
+    <b class="lab">The golden rule.</b> Only real answers from real farmers go on the slides. Never invent a quote or a number. If a judge asks "how many farmers did you talk to, and where?", we must answer with what we really did.
+  </div>
+
+  <h2>Who to talk to</h2>
+  <ul>
+    <li><b>10 to 15 potato farmers in Bogura.</b> Mix char land (Sariakandi) and a central upazila.</li>
+    <li>Small and larger farmers, <b>some women farmers</b>, and farmers with and without cold-storage access.</li>
+    <li>About <b>20 minutes</b> each. Two of us: one asks, one writes.</li>
+  </ul>
+
+  <h2>Before you start: read this aloud</h2>
+  <div class="box">
+    <p class="bn">"আমরা ছাত্র, একটা কৃষি প্রকল্পের জন্য আপনার অভিজ্ঞতা জানতে চাই। আপনার নাম কোথাও প্রকাশ হবে না। ছবি বা রেকর্ড শুধু আপনার অনুমতি নিয়ে। আমরা কোনো টাকা বা সাহায্যের প্রতিশ্রুতি দিচ্ছি না। কথা বলবেন?"</p>
+    <p class="muted small">We are students and want to learn from your experience for a farming project. Your name will not be published. Photos or recordings only with your permission. We are not promising money or help. Will you talk to us?</p>
+  </div>
+
+  <h2>How to ask</h2>
+  <div class="cols">
+    <ul>
+      <li>Ask an <b>open question first</b>, then ask for the number.</li>
+      <li><b>Don't suggest answers.</b> Ask "why did you sell then?", not "did you sell because of dadon?"</li>
+      <li>Use their units: <span class="bn">মণ, বিঘা, বস্তা, কেজি</span>.</li>
+    </ul>
+    <ul>
+      <li>Write <b>numbers</b>, not impressions.</li>
+      <li>Write <b>exact words</b> for anything that could be a quote.</li>
+      <li>Ask before every photo or recording. Mark it on the form.</li>
+    </ul>
+  </div>
+
+  <h2>How this guide is laid out</h2>
+  <ul>
+    <li><b>Pages 2 to 4:</b> the questions, in eight groups. <span class="star">★</span> marks a hero question whose answer is strongest on a slide.</li>
+    <li><b>Page 5:</b> the answer form. Print one for each farmer.</li>
+    <li><b>Page 6:</b> the tally sheet, to add up the numbers after the visits.</li>
+    <li><b>Page 7:</b> how to turn real answers into slides, and what we expect to hear.</li>
+  </ul>
+</section>
+
+<!-- PAGE 2 -->
+<section class="page">
+  <h2>The questions</h2>
+  <p class="muted small"><span class="star">★</span> hero question · Ask in Bangla · "What it shows" says which part of KrishiVault the answer supports</p>
+
+  <div class="group-h">A. The farmer and his phone <span>· proves the voice-first design</span></div>
+  <table>
+    <tr><th>#</th><th>Ask in Bangla</th><th>Meaning</th><th>What it shows</th></tr>
+    <tr><td class="n">1</td><td class="q">কত বিঘা জমিতে আলু করেন? আর কী কী ফসল করেন?</td><td class="m">How many bigha of potato? What other crops?</td><td class="w">Farm size; potato plus other crops</td></tr>
+    <tr><td class="n">2<span class="star">★</span></td><td class="q">আপনার ফোনটা কেমন — বাটনওয়ালা না টাচ? ইন্টারনেট চালান?</td><td class="m">Button or touch phone? Do you use internet?</td><td class="w">Why KrishiVault uses calls, not an app</td></tr>
+    <tr><td class="n">3</td><td class="q">মেসেজ (SMS) নিজে পড়তে পারেন, নাকি কেউ পড়ে দেয়?</td><td class="m">Can you read SMS yourself, or does someone read it for you?</td><td class="w">Why voice comes first and SMS is a receipt</td></tr>
+  </table>
+
+  <div class="group-h">B. Selling <span>· the main money leak</span></div>
+  <table>
+    <tr><th>#</th><th>Ask in Bangla</th><th>Meaning</th><th>What it shows</th></tr>
+    <tr><td class="n">4<span class="star">★</span></td><td class="q">গত মৌসুমে আলু কবে বেচলেন? কেজি কত টাকায়?</td><td class="m">When did you sell last season, at what price per kg?</td><td class="w">The harvest-glut price</td></tr>
+    <tr><td class="n">5<span class="star">★</span></td><td class="q">বেচার কয়েক মাস পরে বাজারে আলুর দাম কত উঠেছিল?</td><td class="m">How high did the market price go a few months later?</td><td class="w"><b>The price gap</b>, the strongest slide</td></tr>
+    <tr><td class="n">6</td><td class="q">তখনই বেচলেন কেন? টাকার দরকার, দাদন, রাখার জায়গা নেই, নাকি পচার ভয়?</td><td class="m">Why sell then: cash need, dadon, no storage, fear of rot?</td><td class="w">The real reasons behind forced sales</td></tr>
+    <tr><td class="n">7</td><td class="q">কার কাছে বেচেন — ফড়িয়া, আড়তদার, নাকি নিজে বাজারে? দামটা কে ঠিক করে?</td><td class="m">Who do you sell to, and who sets the price?</td><td class="w">Price power sits with the middleman</td></tr>
+    <tr><td class="n">8<span class="star">★</span></td><td class="q">দাদন বা আগাম টাকা নিয়েছিলেন? কার কাছ থেকে? তার কাছেই কি বেচতে হয়েছে?</td><td class="m">Did you take dadon, from whom? Did you have to sell to him?</td><td class="w">The dadon trap, which KrishiVault's credit idea targets</td></tr>
+  </table>
+
+  <div class="group-h">C. Storage</div>
+  <table>
+    <tr><th>#</th><th>Ask in Bangla</th><th>Meaning</th><th>What it shows</th></tr>
+    <tr><td class="n">9</td><td class="q">হিমাগারে আলু রাখেন? জায়গা পান? কেজিতে ভাড়া কত দেন?</td><td class="m">Do you use cold storage? Can you get space? Rent per kg?</td><td class="w">Access gap; actual rent against the official rate</td></tr>
+    <tr><td class="n">10</td><td class="q">বাড়িতে রাখলে মণে কত কেজি পচে বা নষ্ট হয়?</td><td class="m">At home, how many kg per maund rot or spoil?</td><td class="w">Home-storage loss (checks our spoilage figure)</td></tr>
+  </table>
+</section>
+
+<!-- PAGE 3 -->
+<section class="page">
+  <div class="group-h">D. Fertilizer and seed <span>· the input leak</span></div>
+  <table>
+    <tr><th>#</th><th>Ask in Bangla</th><th>Meaning</th><th>What it shows</th></tr>
+    <tr><td class="n">11<span class="star">★</span></td><td class="q">শেষবার ইউরিয়ার এক বস্তা কত টাকায় কিনেছেন? টিএসপি আর এমওপি?</td><td class="m">What did you last pay per bag of urea, TSP and MoP?</td><td class="w"><b>Overcharging.</b> Official urea is about ৳1,350 a 50 kg bag (confirm the current order).</td></tr>
+    <tr><td class="n">12</td><td class="q">সার সময়মতো পেয়েছিলেন? কোথাও ঘুরতে হয়েছে?</td><td class="m">Did you get fertilizer on time? Did you have to search for it?</td><td class="w">Shortages at planting time</td></tr>
+    <tr><td class="n">13</td><td class="q">কতটুকু সার দিবেন, কীভাবে ঠিক করেন? মাটি পরীক্ষা করিয়েছেন কখনো?</td><td class="m">How do you decide the dose? Ever had a soil test?</td><td class="w">Guesswork, which SRDI's soil-based dose fixes</td></tr>
+    <tr><td class="n">14</td><td class="q">বীজ আলু কোথা থেকে নেন? খরচ কত?</td><td class="m">Where do you get seed potato, and at what cost?</td><td class="w">The full input-cost picture</td></tr>
+  </table>
+
+  <div class="group-h">E. Risks: disease, weather, flood <span>· the case for danger alerts</span></div>
+  <table>
+    <tr><th>#</th><th>Ask in Bangla</th><th>Meaning</th><th>What it shows</th></tr>
+    <tr><td class="n">15<span class="star">★</span></td><td class="q">গত মৌসুমে আলুতে কতবার স্প্রে করেছেন? কখন দিতে হবে, কে বলে?</td><td class="m">How many sprays last season? Who tells you when?</td><td class="w">Calendar or dealer-led spraying; the case for weather-based alerts</td></tr>
+    <tr><td class="n">16</td><td class="q">মড়ক (লেট ব্লাইট) বা কুয়াশায় কখনো ক্ষতি হয়েছে? কত মণ?</td><td class="m">Ever lost potato to late blight or fog? How many maunds?</td><td class="w">Size of disease loss</td></tr>
+    <tr><td class="n">17</td><td class="q">বন্যা, শিলাবৃষ্টি বা আলু তোলার সময় বৃষ্টিতে ক্ষতি হয়েছে? আগে খবর পেয়েছিলেন?</td><td class="m">Losses from flood, hail or rain at harvest? Were you warned?</td><td class="w">No early warning reaches farmers</td></tr>
+  </table>
+
+  <div class="group-h">F. Information and trust</div>
+  <table>
+    <tr><th>#</th><th>Ask in Bangla</th><th>Meaning</th><th>What it shows</th></tr>
+    <tr><td class="n">18</td><td class="q">দাম, আবহাওয়া বা রোগের খবর কোথা থেকে পান?</td><td class="m">Where do you get price, weather and disease news?</td><td class="w">Current sources (often the dealer or trader)</td></tr>
+    <tr><td class="n">19</td><td class="q">উপসহকারী কৃষি কর্মকর্তা বা ১৬১২৩ কৃষি কল সেন্টারে কখনো কথা বলেছেন?</td><td class="m">Ever talked to the SAAO or the 16123 Krishi Call Centre?</td><td class="w">How far existing services reach</td></tr>
+    <tr><td class="n">20<span class="star">★</span></td><td class="q">যদি একটা ফোন আসে, বাংলায় বলে "এই সপ্তাহে মড়কের আবহাওয়া, খেত দেখুন" — শুনবেন? বিশ্বাস করবেন?</td><td class="m">Would you listen to, and trust, a call like that?</td><td class="w"><b>Acceptance of KrishiVault's core channel</b></td></tr>
+    <tr><td class="n">21</td><td class="q">উত্তর দিতে বোতাম চাপা সহজ, নাকি মুখে বলা?</td><td class="m">Easier to press keys or to speak?</td><td class="w">Keypad and voice design choice</td></tr>
+  </table>
+</section>
+
+<!-- PAGE 4 -->
+<section class="page">
+  <div class="group-h">G. Would they use the solution?</div>
+  <table>
+    <tr><th>#</th><th>Ask in Bangla</th><th>Meaning</th><th>What it shows</th></tr>
+    <tr><td class="n">22</td><td class="q">পাশের কয়েকজন মিলে একসাথে আলু বেচলে বা সার কিনলে রাজি হবেন?</td><td class="m">Would you join a group sale or a group fertilizer buy?</td><td class="w">Group selling and buying are wanted</td></tr>
+    <tr><td class="n">23</td><td class="q">দাদনের বদলে কম সুদে লোন পেলে নিবেন? কী শর্ত হলে?</td><td class="m">Would you take a cheaper loan instead of dadon? On what terms?</td><td class="w">Demand for the credit idea</td></tr>
+    <tr><td class="n">24</td><td class="q">এমন সেবার জন্য মৌসুমে কিছু টাকা দিতে রাজি? কত হলে ঠিক মনে হয়?</td><td class="m">Would you pay something per season? How much is fair?</td><td class="w">Evidence for the business model</td></tr>
+  </table>
+
+  <div class="group-h">H. Test the prototype, and the closing question</div>
+  <table>
+    <tr><th>#</th><th>Ask in Bangla</th><th>Meaning</th><th>What it shows</th></tr>
+    <tr><td class="n">25</td><td class="q">(ডেমো কল বা অ্যাপের উত্তর শোনান) কী বুঝলেন? এখন কী করবেন?</td><td class="m">(Play the demo call or app answer.) What did you understand? What would you do now?</td><td class="w"><b>Comprehension.</b> Ask them to repeat the advice in their own words.</td></tr>
+    <tr><td class="n">26<span class="star">★</span></td><td class="q">একটাই সমস্যা যদি আমরা সমাধান করতে পারি, কোনটা চাইবেন?</td><td class="m">If we could fix just one problem, which one?</td><td class="w">The best quote for the opening slide</td></tr>
+  </table>
+
+  <h2 style="margin-top:12pt">Closing the visit</h2>
+  <div class="box">
+    <p class="bn">"আপনার সময়ের জন্য ধন্যবাদ। আপনার কথাগুলো আমাদের সেবা ঠিকভাবে বানাতে সাহায্য করবে।"</p>
+    <p class="muted small">Thank you for your time. What you told us will help us build the service the right way.</p>
+  </div>
+  <ul>
+    <li>Check every number on the form before you leave.</li>
+    <li>Confirm what they agreed to: photo, voice recording, or neither.</li>
+    <li>Give each farmer a code (F01, F02 ...). Never write the phone number on a slide.</li>
+  </ul>
+</section>
+
+<!-- PAGE 5: ANSWER FORM -->
+<section class="page">
+  <div class="titlebar" style="margin-bottom:6pt">
+    <span class="eyebrow">Answer form · print one per farmer</span>
+    <h1 style="font-size:17pt">Farmer <span class="bn">কৃষক</span> F ____</h1>
+  </div>
+
+  <div class="form-row">
+    <div class="f"><span class="lab">Date</span><span class="line"></span></div>
+    <div class="f"><span class="lab">Upazila / village</span><span class="line"></span></div>
+    <div class="f"><span class="lab">Interviewers</span><span class="line"></span></div>
+  </div>
+  <div class="form-row">
+    <div class="f"><span class="lab">Consent given</span><span class="yn"><span><i></i>Yes</span><span><i></i>No</span></span></div>
+    <div class="f"><span class="lab">Photo allowed</span><span class="yn"><span><i></i>Yes</span><span><i></i>No</span></span></div>
+    <div class="f"><span class="lab">Audio allowed</span><span class="yn"><span><i></i>Yes</span><span><i></i>No</span></span></div>
+  </div>
+
+  <div class="sec">A · Farmer and phone</div>
+  <div class="form-row">
+    <div class="f"><span class="lab">1 · Potato land (bigha)</span><span class="line"></span></div>
+    <div class="f"><span class="lab">1 · Other crops</span><span class="line"></span></div>
+    <div class="f"><span class="lab">2 · Phone</span><span class="yn"><span><i></i>Button</span><span><i></i>Touch</span><span><i></i>Internet</span></span></div>
+  </div>
+  <div class="form-row">
+    <div class="f wide"><span class="lab">3 · Reads SMS</span><span class="yn"><span><i></i>Self</span><span><i></i>Someone reads it</span><span><i></i>Doesn't use SMS</span></span></div>
+  </div>
+
+  <div class="sec">B · Selling</div>
+  <div class="form-row">
+    <div class="f"><span class="lab">4 · Sold in (month)</span><span class="line"></span></div>
+    <div class="f"><span class="lab">4 · Price ৳/kg</span><span class="line"></span></div>
+    <div class="f"><span class="lab">5 · Later market ৳/kg, month</span><span class="line"></span></div>
+  </div>
+  <div class="form-row">
+    <div class="f two"><span class="lab">6 · Why sold then</span><span class="yn"><span><i></i>Cash</span><span><i></i>Dadon</span><span><i></i>No storage</span><span><i></i>Rot</span><span><i></i>Other</span></span></div>
+    <div class="f"><span class="lab">7 · Sold to / who set price</span><span class="line"></span></div>
+  </div>
+  <div class="form-row">
+    <div class="f"><span class="lab">8 · Took dadon</span><span class="yn"><span><i></i>Yes</span><span><i></i>No</span></span></div>
+    <div class="f"><span class="lab">8 · From whom</span><span class="line"></span></div>
+    <div class="f"><span class="lab">8 · Had to sell to lender</span><span class="yn"><span><i></i>Yes</span><span><i></i>No</span></span></div>
+  </div>
+
+  <div class="sec">C · Storage</div>
+  <div class="form-row">
+    <div class="f"><span class="lab">9 · Uses cold storage</span><span class="yn"><span><i></i>Yes</span><span><i></i>No</span><span><i></i>No space</span></span></div>
+    <div class="f"><span class="lab">9 · Rent ৳/kg</span><span class="line"></span></div>
+    <div class="f"><span class="lab">10 · Home loss kg per maund</span><span class="line"></span></div>
+  </div>
+
+  <div class="sec">D · Fertilizer and seed</div>
+  <div class="form-row">
+    <div class="f"><span class="lab">11 · Urea ৳/bag</span><span class="line"></span></div>
+    <div class="f"><span class="lab">11 · TSP ৳/bag</span><span class="line"></span></div>
+    <div class="f"><span class="lab">11 · MoP ৳/bag</span><span class="line"></span></div>
+  </div>
+  <div class="form-row">
+    <div class="f"><span class="lab">12 · Shortage or searching</span><span class="yn"><span><i></i>Yes</span><span><i></i>No</span></span></div>
+    <div class="f"><span class="lab">13 · Dose decided by / soil test</span><span class="line"></span></div>
+    <div class="f"><span class="lab">14 · Seed source and cost</span><span class="line"></span></div>
+  </div>
+
+  <div class="sec">E · Risks</div>
+  <div class="form-row">
+    <div class="f"><span class="lab">15 · Sprays last season / advised by</span><span class="line"></span></div>
+    <div class="f"><span class="lab">16 · Blight or fog loss (maunds)</span><span class="line"></span></div>
+    <div class="f"><span class="lab">17 · Weather loss / warned before?</span><span class="line"></span></div>
+  </div>
+
+  <div class="sec">F and G · Information, trust, solution</div>
+  <div class="form-row">
+    <div class="f"><span class="lab">18 · News source</span><span class="line"></span></div>
+    <div class="f"><span class="lab">19 · Talked to SAAO / 16123</span><span class="yn"><span><i></i>SAAO</span><span><i></i>16123</span><span><i></i>Neither</span></span></div>
+    <div class="f"><span class="lab">20 · Would trust an alert call</span><span class="yn"><span><i></i>Yes</span><span><i></i>No</span><span><i></i>Maybe</span></span></div>
+  </div>
+  <div class="form-row">
+    <div class="f"><span class="lab">21 · Prefers</span><span class="yn"><span><i></i>Keypad</span><span><i></i>Voice</span></span></div>
+    <div class="f"><span class="lab">22 · Group sale / buy</span><span class="yn"><span><i></i>Yes</span><span><i></i>No</span></span></div>
+    <div class="f"><span class="lab">23 · Loan instead of dadon</span><span class="yn"><span><i></i>Yes</span><span><i></i>No</span></span></div>
+  </div>
+  <div class="form-row">
+    <div class="f"><span class="lab">24 · Would pay ৳ per season</span><span class="line"></span></div>
+    <div class="f two"><span class="lab">25 · Repeated the demo advice correctly</span><span class="yn"><span><i></i>Yes</span><span><i></i>Partly</span><span><i></i>No</span></span></div>
+  </div>
+
+  <div class="sec">26 · Exact words (biggest problem, or any strong quote)</div>
+  <div class="quote-box"></div>
+</section>
+
+<!-- PAGE 6: TALLY -->
+<section class="page">
+  <h2>Tally sheet</h2>
+  <p class="muted small">Fill after the visits, one row per farmer. These columns become the numbers on the slides.</p>
+  <table class="tally">
+    <tr>
+      <th>Code</th><th>Upazila</th><th>Phone (B/T)</th><th>Sold ৳/kg, month</th><th>Later ৳/kg, month</th><th>Dadon (Y/N)</th><th>Urea ৳/bag</th><th>Sprays</th><th>Trust call (Y/N)</th><th>Group (Y/N)</th><th>Demo repeated (Y/P/N)</th>
+    </tr>
+    <tr><td>F01</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>F02</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>F03</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>F04</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>F05</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>F06</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>F07</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>F08</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>F09</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>F10</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>F11</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>F12</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>F13</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>F14</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>F15</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+    <tr style="background:#F2F6F3"><td><b>Total</b></td><td></td><td>___ of ___ B</td><td>avg ___</td><td>avg ___</td><td>___ of ___</td><td>avg ___</td><td>avg ___</td><td>___ of ___</td><td>___ of ___</td><td>___ of ___</td></tr>
+  </table>
+</section>
+
+<!-- PAGE 7: SLIDES -->
+<section class="page">
+  <h2>Turning real answers into slides</h2>
+  <p>Fill these templates only with what you collected. Write the sample size every time ("of 12 farmers").</p>
+  <div class="tmpl"><b>Voices from Bogura.</b> Two or three short quotes in Bangla with an English line, signed <i>farmer, Sariakandi</i> (no name unless they agree).</div>
+  <div class="tmpl"><b>The price gap.</b> "Sold at ৳___/kg in [month]; the market reached ৳___/kg by [month]." Use the average across farmers.</div>
+  <div class="tmpl"><b>Fertilizer.</b> "___ of ___ farmers paid more than the official ৳1,350 for a bag of urea; the average paid was ৳___."</div>
+  <div class="tmpl"><b>The channel.</b> "___ of ___ use button phones; ___ would trust a Bangla alert call."</div>
+  <div class="tmpl"><b>Dadon.</b> "___ of ___ took dadon; ___ had to sell to their lender."</div>
+  <div class="tmpl"><b>Spraying.</b> "Average ___ sprays a season, mostly on the dealer's advice."</div>
+  <div class="tmpl"><b>Proof the prototype works.</b> "___ of ___ farmers repeated our demo advice correctly."</div>
+
+  <h2 style="margin-top:12pt">What we expect to hear: prepare, don't quote</h2>
+  <p class="small">These come from research and news. Use them to know what to ask more about, never as farmer answers.</p>
+  <ul class="small">
+    <li><b>Fertilizer overcharging is common.</b> In August 2026, urea sold in Joypurhat for ৳1,900 to ৳1,950 a bag against the official ৳1,350 (The Daily Observer, observerbd.com/news/589247).</li>
+    <li><b>Late blight is a constant worry.</b> In Bogura, the weather favours late blight on about 40 days of a typical potato season (25 seasons of NASA data).</li>
+    <li><b>Many farmers sell early for cash or because of dadon</b>, even when they know prices will rise. Research finds that price information alone rarely raises what farmers are paid (Fafchamps and Minten, India; Aker and Fafchamps, Niger).</li>
+  </ul>
+  <div class="box">
+    If what farmers tell us is different from what we expected, say so on the slides. Judges respect "we went, we listened, and we changed our design because of what farmers told us."
+  </div>
+  <p class="muted small" style="margin-top:10pt">KrishiVault · Farmer Interview Guide · October 2026</p>
+</section>
+
+</body>
+</html>
