@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:,">
+<title>KrishiVault Farmer Call</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green-darkest: #1b2f21;
+    --green-dark: #2a4a36;
+    --green-mid: #3a7050;
+    --green-light: #5e9e6e;
+    --green-pale: #c8dece;
+    --green-faint: #ecf3ee;
+    --cream: #f7f5ef;
+    --cream-dark: #ece8dc;
+    --paper: #fffdf8;
+    --line: #d9d3c2;
+    --gold: #b8943e;
+    --gold-faint: #f6efdc;
+    --red: #a8392b;
+    --red-faint: #f8e9e6;
+    --text: #1a2a1f;
+    --text-body: #3d4f42;
+    --muted: #6f8174;
+    --bevel: inset 0 1px 0 rgba(255,255,255,.85), inset 0 -1px 0 rgba(27,47,33,.06), 0 1px 2px rgba(27,47,33,.08);
+    --bevel-raised: inset 0 1px 0 #fff, inset 0 -2px 0 rgba(27,47,33,.10), 0 1px 1px rgba(27,47,33,.12);
+    --pressed: inset 0 2px 4px rgba(27,47,33,.22);
+    --font: 'Noto Sans Bengali', 'Outfit', system-ui, sans-serif;
+    --font-latin: 'Outfit', 'Noto Sans Bengali', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; border-radius: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--cream); color: var(--text); font-family: var(--font);
+    font-size: 16px; line-height: 1.55;
+  }
+  .en { font-family: var(--font-latin); }
+  small, .small { font-size: .8rem; color: var(--muted); }
+
+  /* Header: part of the page, scrolls away (no floating bar) */
+  header.top {
+    background: var(--green-darkest); color: var(--cream);
+    border-bottom: 3px solid var(--gold);
+    box-shadow: inset 0 -1px 0 rgba(255,255,255,.08);
+  }
+  .top-inner { max-width: 1180px; margin: 0 auto; padding: 14px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .brand { font-weight: 700; font-size: 1.25rem; letter-spacing: .2px; }
+  .brand .en { font-weight: 600; color: var(--gold-light, #d4b96a); margin-left: 6px; font-size: 1rem; }
+  .top-sub { font-size: .85rem; color: var(--green-pale); flex: 1 1 220px; }
+  .demo-flag {
+    font-family: var(--font-latin); font-size: .75rem; font-weight: 600; letter-spacing: .4px;
+    background: var(--gold); color: var(--green-darkest); padding: 3px 8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.4), inset 0 -1px 0 rgba(0,0,0,.15);
+  }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; grid-template-columns: 1fr; }
+  @media (min-width: 900px) {
+    main { grid-template-columns: minmax(360px, 440px) 1fr; align-items: start; }
+    .col-phone { position: sticky; top: 12px; }
+  }
+  .col { display: grid; gap: 16px; min-width: 0; }
+
+  .panel { background: var(--paper); border: 1px solid var(--line); box-shadow: var(--bevel); min-width: 0; }
+  .panel > h2 {
+    margin: 0; padding: 10px 14px; font-size: .95rem; font-weight: 700; color: var(--green-dark);
+    background: linear-gradient(var(--cream), var(--cream-dark)); border-bottom: 1px solid var(--line);
+    box-shadow: inset 0 1px 0 #fff; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap;
+  }
+  .panel > h2 .en { font-weight: 500; font-size: .78rem; color: var(--muted); }
+  .panel-body { padding: 12px 14px; }
+
+  /* Status strip */
+  .status { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; }
+  .chip {
+    font-family: var(--font-latin); font-size: .74rem; font-weight: 500; padding: 3px 8px;
+    border: 1px solid var(--line); background: var(--cream); color: var(--text-body); box-shadow: var(--bevel);
+    white-space: nowrap;
+  }
+  .chip.on { background: var(--green-faint); border-color: var(--green-pale); color: var(--green-dark); }
+  .chip.off { background: var(--cream-dark); color: var(--muted); }
+  .chip.warn { background: var(--gold-faint); border-color: #e2d3a8; color: #6d5520; }
+  .chip.bad { background: var(--red-faint); border-color: #e7c4bd; color: var(--red); }
+
+  /* The phone */
+  .phone { border: 1px solid var(--green-dark); box-shadow: var(--bevel), 0 6px 18px rgba(27,47,33,.10); background: var(--paper); }
+  .phone-head {
+    background: linear-gradient(var(--green-mid), var(--green-dark)); color: #fff; padding: 9px 14px;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+  }
+  .phone-head b { font-size: .95rem; }
+  .phone-head .small { color: var(--green-pale); }
+  .log { height: 46vh; min-height: 260px; overflow-y: auto; padding: 12px; background: var(--cream); border-bottom: 1px solid var(--line); }
+  @media (min-width: 900px) { .log { height: 48vh; } }
+  .msg { max-width: 92%; margin: 0 0 10px; padding: 9px 11px; border: 1px solid var(--line); box-shadow: var(--bevel); font-size: .95rem; }
+  .msg.kv { background: var(--paper); border-left: 3px solid var(--green-mid); }
+  .msg.farmer { background: var(--green-faint); border-color: var(--green-pale); margin-left: auto; border-right: 3px solid var(--gold); }
+  .msg.wait { color: var(--muted); font-style: italic; }
+  .msg .who { font-family: var(--font-latin); font-size: .7rem; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+  .msg .heard { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--green-pale); font-size: .8rem; color: var(--green-dark); }
+  .msg .heard .rej { color: var(--red); }
+  .play { font: inherit; font-size: .7rem; padding: 0 6px; border: 1px solid var(--line); background: var(--cream); cursor: pointer; box-shadow: var(--bevel-raised); color: var(--green-dark); }
+
+  .hint { padding: 8px 12px; font-size: .88rem; background: var(--gold-faint); border-bottom: 1px solid var(--line); color: #5b4a1f; min-height: 2.2em; }
+
+  .modes { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); }
+  .modes button {
+    font: inherit; font-size: .9rem; padding: 9px 6px; border: 0; border-right: 1px solid var(--line);
+    background: linear-gradient(var(--cream), var(--cream-dark)); cursor: pointer; color: var(--text-body); box-shadow: inset 0 1px 0 #fff;
+  }
+  .modes button:last-child { border-right: 0; }
+  .modes button[aria-selected="true"] { background: var(--paper); color: var(--green-dark); font-weight: 700; box-shadow: inset 0 3px 0 var(--green-mid); }
+
+  .pane { padding: 12px; }
+  .pane[hidden] { display: none; }
+
+  .mic {
+    width: 100%; font: inherit; font-size: 1.05rem; font-weight: 700; padding: 16px 10px; cursor: pointer;
+    color: #fff; border: 1px solid var(--green-darkest);
+    background: linear-gradient(var(--green-mid), var(--green-dark)); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), inset 0 -2px 0 rgba(0,0,0,.2), 0 1px 2px rgba(0,0,0,.2);
+  }
+  .mic:active { box-shadow: var(--pressed); }
+  .mic.listening { background: linear-gradient(#b8463a, var(--red)); border-color: #6b2219; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 50% { box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 0 0 4px rgba(168,57,43,.25); } }
+  .mic:disabled { background: var(--cream-dark); color: var(--muted); border-color: var(--line); cursor: not-allowed; animation: none; }
+  .interim { min-height: 1.6em; margin: 8px 0; color: var(--text-body); font-size: .92rem; }
+  .typebox { display: flex; gap: 6px; margin-top: 6px; }
+  .typebox input { flex: 1; min-width: 0; }
+  input, select {
+    font: inherit; font-size: .95rem; padding: 8px 9px; border: 1px solid var(--line); background: #fff; color: var(--text);
+    box-shadow: inset 0 1px 2px rgba(27,47,33,.08);
+  }
+  .btn {
+    font: inherit; font-size: .9rem; padding: 8px 12px; border: 1px solid #c9c2ad; cursor: pointer; color: var(--green-darkest);
+    background: linear-gradient(#fff, var(--cream-dark)); box-shadow: var(--bevel-raised); white-space: nowrap;
+  }
+  .btn:active { box-shadow: var(--pressed); }
+  .btn.primary { background: linear-gradient(var(--green-light), var(--green-mid)); color: #fff; border-color: var(--green-dark); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), inset 0 -2px 0 rgba(0,0,0,.15); }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+  .tries { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .tries .btn { font-size: .8rem; padding: 4px 8px; white-space: normal; text-align: left; }
+
+  .keypad-display {
+    font-family: var(--font-latin); font-size: 1.5rem; letter-spacing: 3px; text-align: right; padding: 6px 10px; min-height: 2.2em;
+    background: #e9eee5; border: 1px solid var(--line); box-shadow: inset 0 2px 3px rgba(27,47,33,.15); margin-bottom: 10px; color: var(--green-darkest);
+  }
+  .keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .key {
+    font: inherit; padding: 8px 0 6px; cursor: pointer; border: 1px solid #c9c2ad; color: var(--green-darkest);
+    background: linear-gradient(#fff, #efece2); box-shadow: var(--bevel-raised); line-height: 1.1;
+  }
+  .key b { display: block; font-size: 1.35rem; }
+  .key span { font-family: var(--font-latin); font-size: .7rem; color: var(--muted); }
+  .key:active, .key.down { box-shadow: var(--pressed); transform: translateY(1px); }
+  .key.hot { border-color: var(--green-mid); background: linear-gradient(#fff, var(--green-faint)); }
+  .key-tools { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; }
+
+  .newcall { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); background: var(--cream); flex-wrap: wrap; }
+
+  /* Understood values */
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--cream-dark); vertical-align: top; }
+  th { font-weight: 600; color: var(--text-body); width: 38%; }
+  th .en { display: block; font-weight: 400; font-size: .72rem; color: var(--muted); }
+  .src { font-family: var(--font-latin); font-size: .68rem; padding: 1px 5px; border: 1px solid var(--line); margin-left: 6px; white-space: nowrap; }
+  .src.parser { background: var(--green-faint); color: var(--green-dark); }
+  .src.gemini { background: #eef0fb; color: #3b4a8c; border-color: #cfd5f0; }
+  .src.keypad { background: var(--gold-faint); color: #6d5520; }
+  .empty { color: var(--muted); }
+
+  /* Decision */
+  .rec { padding: 12px; background: var(--green-faint); border: 1px solid var(--green-pale); box-shadow: var(--bevel); margin-bottom: 10px; }
+  .rec .label { font-family: var(--font-latin); font-size: .72rem; font-weight: 600; letter-spacing: .6px; color: var(--green-mid); text-transform: uppercase; }
+  .rec .name { font-size: 1.15rem; font-weight: 700; color: var(--green-darkest); }
+  .rec .amount { font-size: 1.6rem; font-weight: 700; color: var(--green-dark); font-family: var(--font-latin); }
+  .options { display: grid; gap: 6px; }
+  .opt { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 8px 10px; border: 1px solid var(--cream-dark); background: #fff; }
+  .opt.best { border-color: var(--green-light); box-shadow: inset 3px 0 0 var(--green-mid); }
+  .opt.no { color: var(--muted); background: var(--cream); }
+  .opt .t { font-family: var(--font-latin); font-weight: 600; text-align: right; }
+  .opt .why { grid-column: 1 / -1; font-family: var(--font-latin); font-size: .78rem; color: var(--muted); }
+  .notes { margin: 10px 0 0; padding-left: 18px; font-size: .82rem; color: var(--text-body); }
+  .notes li { margin-bottom: 3px; }
+
+  .check { padding: 10px; border: 1px solid var(--line); background: #fff; font-size: .88rem; }
+  .check.ok { border-color: var(--green-pale); background: var(--green-faint); }
+  .check.fallback { border-color: #e2d3a8; background: var(--gold-faint); }
+  .check.reject { border-color: #e7c4bd; background: var(--red-faint); }
+  .nums { font-family: var(--font-latin); font-size: .8rem; margin-top: 6px; color: var(--text-body); word-break: break-word; }
+
+  .notify-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .notify-row input { flex: 1 1 150px; min-width: 0; }
+  pre.result {
+    margin: 10px 0 0; padding: 10px; background: #f4f2ea; border: 1px solid var(--line); font-size: .75rem;
+    white-space: pre-wrap; word-break: break-word; max-height: 240px; overflow: auto; font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .sms-preview { padding: 10px; border: 1px solid var(--line); background: #fff; font-size: .9rem; margin-bottom: 10px; }
+  .event { padding: 8px 10px; border: 1px solid var(--line); background: #fff; margin-bottom: 6px; font-size: .88rem; }
+  .event b { color: var(--green-dark); }
+
+  details.settings summary { cursor: pointer; padding: 10px 14px; font-weight: 600; color: var(--green-dark); }
+  .settings-grid { display: grid; gap: 10px; padding: 0 14px 14px; grid-template-columns: 1fr 1fr; }
+  .settings-grid label { font-size: .82rem; color: var(--text-body); display: grid; gap: 4px; }
+  @media (max-width: 420px) { .settings-grid { grid-template-columns: 1fr; } }
+  .error { color: var(--red); font-size: .85rem; margin-top: 6px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">কৃষিভল্ট<span class="en">KrishiVault</span></div>
+    <div class="top-sub">কৃষকের ফোন কল, ব্রাউজারে · <span class="en">A farmer's call, in the browser (prototype)</span></div>
+    <span class="demo-flag" title="Partners, buyers, cold storages and neighbours on this screen are fictional demo data">DEMO DATA</span>
+  </div>
+</header>
+
+<main>
+  <!-- Left: the phone -->
+  <div class="col col-phone">
+    <section class="phone" aria-label="Farmer call">
+      <div class="phone-head">
+        <b>☎ কৃষিভল্ট কল</b>
+        <span class="small en" id="callState">Not started</span>
+      </div>
+      <div class="log" id="log" aria-live="polite"></div>
+      <div class="hint" id="hint">শুরু করতে "নতুন কল" চাপুন।</div>
+      <div class="modes" role="tablist">
+        <button role="tab" id="tabSpeak" aria-selected="true" onclick="setMode('speak')">🎤 কথা বলুন <small class="en">Speak</small></button>
+        <button role="tab" id="tabKeys" aria-selected="false" onclick="setMode('keys')">⌨ কিপ্যাড <small class="en">Keypad</small></button>
+      </div>
+
+      <div class="pane" id="paneSpeak">
+        <button class="mic" id="micBtn" onclick="toggleMic()">🎤 চাপুন, তারপর কথা বলুন</button>
+        <div class="interim" id="interim"></div>
+        <div class="typebox">
+          <label class="sr-only" for="typed">Type what the farmer says</label>
+          <input id="typed" placeholder="অথবা কৃষকের কথা লিখুন…" autocomplete="off" enterkeyhint="send">
+          <button class="btn" onclick="sendTyped()">পাঠান</button>
+        </div>
+        <div class="tries" id="tries"></div>
+        <div class="error" id="micError"></div>
+      </div>
+
+      <div class="pane" id="paneKeys" hidden>
+        <div class="keypad-display" id="keyDisplay" aria-live="polite"></div>
+        <div class="keys" id="keys"></div>
+        <div class="key-tools">
+          <button class="btn" onclick="backspace()">⌫ মুছুন</button>
+          <small class="en" id="keysNote"></small>
+        </div>
+      </div>
+
+      <div class="newcall">
+        <button class="btn primary" id="newCallBtn" onclick="startCall()">☎ নতুন কল <small class="en" style="color:#e8f2ea">New call</small></button>
+        <button class="btn" onclick="replayLast()">🔊 আবার শুনুন</button>
+        <button class="btn" onclick="stopAudio()">⏹ থামান</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="status" id="status"><span class="chip">Checking…</span></div>
+    </section>
+  </div>
+
+  <!-- Right: what happened -->
+  <div class="col">
+    <section class="panel">
+      <h2>কৃষিভল্ট যা বুঝেছে <span class="en">What KrishiVault understood</span></h2>
+      <div class="panel-body">
+        <table><tbody id="slots"></tbody></table>
+        <div class="small en" style="margin-top:6px">Parser = KrishiVault's Bangla number reader · Gemini = checked against what was said · Keypad = pressed keys</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>সিদ্ধান্ত <span class="en">Decision (from the decision engine)</span></h2>
+      <div class="panel-body" id="decision"><p class="empty">সব তথ্য ঠিক হলে এখানে টাকার হিসাব আসবে। <span class="en small">Appears after the farmer confirms the numbers.</span></p></div>
+    </section>
+
+    <section class="panel">
+      <h2>নম্বর যাচাই <span class="en">Number check (number lock)</span></h2>
+      <div class="panel-body" id="numcheck"><p class="empty en small">Every taka figure, quantity and date the farmer hears comes from the engine. Gemini may reword the advice; if it changes, adds or drops a number, the template is used instead.</p></div>
+    </section>
+
+    <section class="panel">
+      <h2>এসএমএস ও কল <span class="en">SMS me · Call me</span></h2>
+      <div class="panel-body">
+        <div class="sms-preview" id="smsPreview"><span class="empty">পরামর্শের পর এসএমএস রসিদ এখানে দেখা যাবে।</span></div>
+        <div class="notify-row">
+          <label class="sr-only" for="phone">Farmer's mobile number</label>
+          <input id="phone" inputmode="tel" placeholder="01XXXXXXXXX" autocomplete="off">
+          <button class="btn" id="smsBtn" onclick="notify('sms')" disabled>✉ SMS me</button>
+          <button class="btn" id="ringBtn" onclick="notify('ring')" disabled>☎ Call me</button>
+        </div>
+        <div class="small en" id="notifyMode" style="margin-top:6px"></div>
+        <pre class="result" id="notifyResult" hidden></pre>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>পার্টনারের কাছে গেছে <span class="en">Sent to partners</span></h2>
+      <div class="panel-body" id="events"><p class="empty en small">Bookings, lots and officer callback requests from this call appear here. They are saved for the partner screens (to-do item 6).</p></div>
+    </section>
+
+    <section class="panel">
+      <details class="settings">
+        <summary>সেটিং <span class="en small">Demo settings</span></summary>
+        <div class="settings-grid">
+          <label>জেলা <span class="en small">District</span>
+            <select id="district">
+              <option value="Bogura" selected>বগুড়া (Bogura)</option>
+              <option value="Rangpur">রংপুর (Rangpur)</option>
+              <option value="Dinajpur">দিনাজপুর (Dinajpur)</option>
+              <option value="Rajshahi">রাজশাহী (Rajshahi)</option>
+              <option value="Munshiganj">মুন্সিগঞ্জ (Munshiganj)</option>
+            </select>
+          </label>
+          <label>মৌসুমের মাস <span class="en small">Month for the seasonal price pattern</span>
+            <select id="month"></select>
+          </label>
+          <label>কণ্ঠ <span class="en small">Voice</span>
+            <select id="voiceMode">
+              <option value="auto">Google voice if set up, else this phone's voice</option>
+              <option value="phone">This phone's voice</option>
+              <option value="off">No sound (text only)</option>
+            </select>
+          </label>
+          <label>শোনার ভাষা <span class="en small">Speech recognition language</span>
+            <select id="srLang">
+              <option value="bn-BD" selected>Bangla, Bangladesh (bn-BD)</option>
+              <option value="bn-IN">Bangla, India (bn-IN)</option>
+            </select>
+          </label>
+        </div>
+      </details>
+    </section>
+  </div>
+</main>
+
+<script>
+"use strict";
+const BN = "০১২৩৪৫৬৭৮৯";
+const bnDigits = s => String(s).replace(/[0-9]/g, d => BN[d]);
+const taka = n => "৳" + bnDigits(Math.round(n).toLocaleString("en-IN"));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const $ = id => document.getElementById(id);
+const store = {
+  get(k) { try { return localStorage.getItem("kv_" + k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem("kv_" + k, v); } catch { /* private mode */ } },
+};
+
+let state = null;          // the call state the server returns; sent back with each turn
+let expects = "end";       // "menu" | "choice" | "number" | "end"
+let allowedKeys = [];
+let typedDigits = "";
+let busy = false;
+let lastSay = "";
+let status = null;
+let mode = "speak";
+const audio = new Audio();
+
+const TRIES = [
+  "হামার শিবগঞ্জের জমিতে ৮০ মণ আলু উঠছে বাহে। জরুরি ২৫ হাজার টেকা নাগবে ৪ দিনের মইধ্যে। স্থানীয় ফড়িয়া ১৮ টেকা কেজি দিবার চায়। আড়তদারের কাছে ২০ হাজার টেকা দাদন নেওয়া আছে।",
+  "আমার পঞ্চাশ মণ আলু, বিশ হাজার টাকা লাগবে তিন দিনের মধ্যে",
+  "হ্যাঁ, ঠিক আছে",
+  "না, নব্বই মণ",
+  "আবার বলেন",
+  "কর্মকর্তার সাথে কথা বলব",
+];
+const SOURCE = { parser: "Parser", gemini: "Gemini ✓", keypad: "Keypad" };
+
+// ---------------------------------------------------------------- setup
+function setup() {
+  const months = ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"];
+  const now = new Date().getMonth() + 1;
+  $("month").innerHTML = months.map((m, i) => `<option value="${i + 1}"${i + 1 === now ? " selected" : ""}>${m}${i + 1 === now ? " (এখন)" : ""}</option>`).join("");
+  $("tries").innerHTML = '<small class="en" style="width:100%">Try (if the microphone is not available):</small>' +
+    TRIES.map((t, i) => `<button class="btn" onclick="sendSpeech(TRIES[${i}])">${esc(t.length > 60 ? t.slice(0, 58) + "…" : t)}</button>`).join("");
+  const layout = [["1", ""], ["2", ""], ["3", ""], ["4", ""], ["5", ""], ["6", ""], ["7", ""], ["8", ""], ["9", ""], ["*", "মেনু"], ["0", ""], ["#", "পাঠান"]];
+  $("keys").innerHTML = layout.map(([k, sub]) =>
+    `<button class="key" data-k="${k}" onclick="pressKey('${k}')"><b>${k === "*" || k === "#" ? k : BN[k]}</b><span>${sub || k}</span></button>`).join("");
+  $("phone").value = store.get("phone") || "";
+  $("phone").addEventListener("change", () => store.set("phone", $("phone").value.trim()));
+  $("voiceMode").value = store.get("voice") || "auto";
+  $("voiceMode").addEventListener("change", () => store.set("voice", $("voiceMode").value));
+  $("typed").addEventListener("keydown", e => { if (e.key === "Enter") sendTyped(); });
+  document.addEventListener("keydown", e => {
+    if (mode !== "keys" || e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+    if (/^[0-9*#]$/.test(e.key)) { pressKey(e.key); e.preventDefault(); }
+    if (e.key === "Backspace") { backspace(); e.preventDefault(); }
+    if (e.key === "Enter") { pressKey("#"); e.preventDefault(); }
+  });
+  if (!SR) {
+    $("micBtn").disabled = true;
+    $("micBtn").textContent = "🎤 এই ব্রাউজারে কথা শোনা যায় না";
+    $("micError").innerHTML = '<span class="en">This browser has no speech recognition. Use Chrome on Android or a computer, or type below, or use the keypad.</span>';
+  } else if (!window.isSecureContext) {
+    $("micError").innerHTML = '<span class="en">The microphone needs HTTPS (or localhost). Open this page over HTTPS to speak; typing and the keypad still work.</span>';
+  }
+  if ("speechSynthesis" in window) speechSynthesis.getVoices();
+  loadStatus();
+  renderSlots([]);
+}
+
+async function loadStatus() {
+  try {
+    status = await (await fetch("/api/call/status")).json();
+  } catch { status = null; }
+  const chips = [];
+  chips.push(chip(SR ? (window.isSecureContext ? "on" : "warn") : "off", SR ? (window.isSecureContext ? "Speech-to-text: browser (Google)" : "Speech-to-text: needs HTTPS") : "Speech-to-text: not in this browser"));
+  if (status) {
+    chips.push(chip(status.gemini.on ? "on" : "off", status.gemini.on ? "Gemini: on (checked)" : "Gemini: off (parser only)"));
+    chips.push(chip(status.google_voice.ready ? "on" : "warn", status.google_voice.ready ? "Google Bangla voice: on" : "Google voice: off, phone voice used"));
+    chips.push(chip(status.sms.live ? "bad" : "on", status.sms.live ? "SMS: LIVE (real, billed)" : "SMS: dry run"));
+    chips.push(chip(status.awaj.live ? "bad" : "on", status.awaj.live ? "Calls: LIVE (real, billed)" : "Calls: dry run"));
+    $("notifyMode").textContent = (status.sms.live || status.awaj.live)
+      ? "Live sending is switched on in the server's settings: SMS and calls are real and billed."
+      : "Dry run: nothing is sent. The box below shows the exact request that would go to REVE (SMS) or Awaj (call).";
+  } else {
+    chips.push(chip("bad", "Server not reachable"));
+  }
+  $("status").innerHTML = chips.join("");
+}
+const chip = (cls, text) => `<span class="chip ${cls}">${esc(text)}</span>`;
+
+// ---------------------------------------------------------------- the call
+async function startCall() {
+  stopAudio(); stopMic();
+  $("log").innerHTML = "";
+  $("decision").innerHTML = '<p class="empty">সব তথ্য ঠিক হলে এখানে টাকার হিসাব আসবে।</p>';
+  $("numcheck").innerHTML = '<p class="empty en small">Appears with the advice.</p>';
+  $("events").innerHTML = '<p class="empty en small">Bookings, lots and officer callback requests from this call appear here.</p>';
+  $("smsPreview").innerHTML = '<span class="empty">পরামর্শের পর এসএমএস রসিদ এখানে দেখা যাবে।</span>';
+  $("notifyResult").hidden = true;
+  state = null;
+  await turn({ kind: "start" });
+}
+
+async function turn(input) {
+  if (busy) return;
+  busy = true;
+  const wait = addMsg("kv wait", "একটু শুনুন, হিসাব করছি…", "KrishiVault");
+  try {
+    const body = {
+      ...input, state,
+      district: $("district").value,
+      month: Number($("month").value),
+      phone: $("phone").value.trim() || null,
+    };
+    const res = await fetch("/api/call/turn", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json();
+    wait.remove();
+    if (!res.ok) throw new Error(data.detail || res.statusText);
+    render(data);
+  } catch (err) {
+    wait.remove();
+    addMsg("kv", "দুঃখিত, সার্ভারে সমস্যা হয়েছে। " + err.message, "Error");
+  } finally {
+    busy = false;
+  }
+}
+
+function render(r) {
+  state = r.state;
+  expects = r.expects;
+  allowedKeys = r.keys || [];
+  typedDigits = "";
+  $("keyDisplay").textContent = "";
+  if (r.heard) annotateFarmer(r.heard);
+  addMsg("kv", r.say, "KrishiVault", true);
+  lastSay = r.say;
+  speak(r.say);
+  renderHint();
+  renderSlots(r.slots);
+  if (r.decision) renderDecision(r.decision);
+  if (r.narration) renderNumberCheck(r.narration);
+  if (r.event) addEvent(r.event);
+  if (r.sms_text) {
+    $("smsPreview").innerHTML = `<div class="small en">SMS receipt</div>${esc(r.sms_text)}`;
+  }
+  const hasAdvice = Boolean(state && state.advice_body);
+  $("smsBtn").disabled = !r.sms_text;
+  $("ringBtn").disabled = !hasAdvice;
+  $("callState").textContent = r.done ? "Call ended" : ({ menu: "Menu", sell_ask: "Questions", sell_confirm: "Read-back", sell_advice: "Advice", sell_done: "Action done", not_ready: "Not built yet", help: "Help" }[state.step] || state.step);
+}
+
+function renderHint() {
+  const keyText = allowedKeys.map(k => bnDigits(k)).join(" · ");
+  let hint = "";
+  if (expects === "number") hint = "সংখ্যা চেপে # চাপুন, অথবা বলুন · * = মূল মেনু";
+  else if (expects === "menu" || expects === "choice") hint = `চাপুন: ${keyText}${expects === "menu" ? " · অথবা বলুন" : " · অথবা বলুন"}`;
+  else hint = "কল শেষ। আবার শুরু করতে \"নতুন কল\" চাপুন।";
+  $("hint").textContent = hint;
+  $("keysNote").textContent = expects === "number" ? "Digits, then #" : (expects === "end" ? "" : "One key");
+  document.querySelectorAll(".key").forEach(b => {
+    const k = b.dataset.k;
+    const hot = (expects === "number" && /[0-9#*]/.test(k)) || ((expects === "menu" || expects === "choice") && allowedKeys.includes(k));
+    b.classList.toggle("hot", hot);
+  });
+  $("micBtn").disabled = !SR || expects === "end";
+}
+
+function addMsg(cls, text, who, playable) {
+  const div = document.createElement("div");
+  div.className = "msg " + cls;
+  div.innerHTML = `<div class="who"><span>${esc(who)}</span>${playable ? '<button class="play" title="Play">▶ শুনুন</button>' : ""}</div><div class="text">${esc(text)}</div>`;
+  if (playable) div.querySelector(".play").onclick = () => speak(text, true);
+  $("log").appendChild(div);
+  $("log").scrollTop = $("log").scrollHeight;
+  return div;
+}
+
+function annotateFarmer(heard) {
+  const msgs = $("log").querySelectorAll(".msg.farmer");
+  const last = msgs[msgs.length - 1];
+  if (!last) return;
+  const parts = [];
+  const names = { quantity_kg: "পরিমাণ", cash_needed_tk: "টাকার দরকার", deadline_days: "দিন", offer_per_kg: "দর", dadon_tk: "দাদন" };
+  for (const [slot, v] of Object.entries(heard.values || {})) {
+    parts.push(`${names[slot]}: ${esc(bnDigits(v.heard))} <span class="src ${v.source}">${SOURCE[v.source] || v.source}</span>`);
+  }
+  if (heard.yes_no === true) parts.push("হ্যাঁ");
+  if (heard.yes_no === false) parts.push("না");
+  if (heard.menu && !parts.length) parts.push({ sell: "ফসল বেচা", fertilizer: "সার ও কীটনাশক", seeds: "বীজ ও যন্ত্রপাতি", officer: "কর্মকর্তা" }[heard.menu]);
+  for (const r of heard.rejected || []) {
+    parts.push(`<span class="rej">${esc(names[r.slot] || r.slot)} ${esc(r.number)} বাদ (${r.reason === "not_said" ? "Gemini number not said" : "out of range"})</span>`);
+  }
+  const g = { used: "Gemini asked", no_answer: "Gemini gave no answer", not_needed: "", not_set_up: "" }[heard.gemini] || "";
+  const div = document.createElement("div");
+  div.className = "heard";
+  div.innerHTML = (parts.length ? "বোঝা গেছে: " + parts.join(" · ") : "কিছু বোঝা যায়নি") + (g ? ` <span class="src gemini">${g}</span>` : "");
+  last.appendChild(div);
+}
+
+// ---------------------------------------------------------------- panels
+function renderSlots(rows) {
+  if (!rows || !rows.length) {
+    rows = [["আলুর পরিমাণ", "Potato"], ["টাকার দরকার", "Cash needed"], ["কত দিনে", "Within"], ["পাইকারের দর", "Trader's offer"], ["দাদন", "Dadon"]]
+      .map(([b, e]) => ({ label_bn: b, label_en: e, display: null }));
+  }
+  $("slots").innerHTML = rows.map(r => `<tr><th>${esc(r.label_bn)}<span class="en">${esc(r.label_en)}</span></th>
+    <td>${r.display ? esc(r.display) + (r.source ? `<span class="src ${r.source}">${SOURCE[r.source] || r.source}</span>` : "") : '<span class="empty">—</span>'}
+    ${r.heard && r.source !== "keypad" ? `<div class="small">শোনা: “${esc(bnDigits(r.heard))}”</div>` : ""}</td></tr>`).join("");
+}
+
+function renderDecision(d) {
+  const rec = d.scenarios.find(s => s.recommended);
+  const inp = d.inputs;
+  const opts = d.scenarios.slice().sort((a, b) => (b.feasible - a.feasible) || (b.expected_proceeds_tk - a.expected_proceeds_tk)).map(s => `
+    <div class="opt${s.recommended ? " best" : ""}${s.feasible ? "" : " no"}">
+      <div>${esc(s.name_bn)}${s.recommended ? ' <span class="src parser">পরামর্শ</span>' : ""}</div>
+      <div class="t">${s.feasible ? taka(s.expected_proceeds_tk) : "সম্ভব নয়"}</div>
+      <div class="why">${esc(s.explanation_en)}</div>
+    </div>`).join("");
+  const notes = [
+    `Today's price: ৳${inp.price_today_per_kg}/kg, from ${esc(inp.price_basis)}${inp.price_basis.includes("demo") ? "" : ""}.`,
+    `Price in 30 days: ৳${inp.outlook.price_in_30d}/kg (${inp.outlook.change_30d_pct > 0 ? "+" : ""}${inp.outlook.change_30d_pct}%), from the <b>seasonal pattern only</b>: not a trained forecast.`,
+    inp.cold_storage ? `Cold storage: a demo partner in this district with space, ৳${inp.cold_storage.rate_per_kg}/kg.` : "No demo cold storage listed for this district.",
+    `Buyers: ${inp.demo_buyers} demo buyer offers; group lot: ${inp.demo_neighbours} demo neighbours. All partners are fictional demo data.`,
+    "The engine compares storing for one month only.",
+  ];
+  $("decision").innerHTML = `
+    <div class="rec"><div class="label">Recommended</div><div class="name">${esc(d.recommended_bn)}</div>
+      <div class="amount">${taka(rec.expected_proceeds_tk)}</div><div class="small">আনুমানিক মোট আয় · expected total</div></div>
+    <div class="options">${opts}</div>
+    <ul class="notes en">${notes.map(n => `<li>${n}</li>`).join("")}</ul>`;
+}
+
+function renderNumberCheck(n) {
+  const c = n.check;
+  const label = {
+    template: ["fallback", "Template used: Gemini is not set up, so the advice is the engine's own wording."],
+    gemini_checked: ["ok", `Gemini reworded the advice and kept every number (${esc(n.model || "Gemini")}).`],
+    gemini_rejected: ["reject", "Gemini changed a number or used a forbidden word: its wording was thrown away and the template used."],
+    gemini_failed: ["fallback", "Gemini did not answer in time: template used."],
+  }[n.status] || ["fallback", n.status];
+  let html = `<div class="check ${label[0]}"><b class="en">${label[1]}</b>`;
+  if (c) {
+    html += `<div class="nums">Engine's numbers: ${esc(c.template_numbers.join(", "))}<br>Gemini's numbers: ${esc(c.reworded_numbers.join(", "))}`;
+    if (c.added.length) html += `<br>Added by Gemini: ${esc(c.added.join(", "))}`;
+    if (c.missing.length) html += `<br>Dropped by Gemini: ${esc(c.missing.join(", "))}`;
+    if (c.forbidden.length) html += `<br>Forbidden words: ${esc(c.forbidden.join(", "))}`;
+    html += "</div>";
+  }
+  if (n.rejected_text) html += `<div class="small" style="margin-top:6px">Rejected wording: ${esc(n.rejected_text)}</div>`;
+  html += `</div><div class="small" style="margin-top:8px">Template: ${esc(n.template)}</div>`;
+  $("numcheck").innerHTML = html;
+}
+
+function addEvent(e) {
+  const where = { cold_storage: "Cold storage screen", buyer: "Buyer screen", officer: "Officer desk" }[e.for] || e.for;
+  const html = `<div class="event"><b>${esc(e.summary_bn)}</b> · নং ${bnDigits(e.ref)}<br>
+    <span class="small en">→ ${where} (demo) · ${esc(e.district)} · ${esc(e.time.replace("T", " "))}${e.phone ? " · " + esc(e.phone) : ""}</span></div>`;
+  const box = $("events");
+  if (box.querySelector(".empty")) box.innerHTML = "";
+  box.insertAdjacentHTML("afterbegin", html);
+}
+
+// ---------------------------------------------------------------- input: speech
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;
+let listening = false;
+let finalText = "";
+
+function toggleMic() { listening ? stopMic() : startMic(); }
+
+function startMic() {
+  if (!SR || busy || expects === "end") return;
+  if (!state) { startCall(); return; }
+  stopAudio();
+  $("micError").textContent = "";
+  finalText = "";
+  rec = new SR();
+  rec.lang = $("srLang").value;
+  rec.interimResults = true;
+  rec.continuous = false;
+  rec.maxAlternatives = 1;
+  rec.onresult = e => {
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    $("interim").textContent = finalText + interim;
+  };
+  rec.onerror = e => {
+    const msg = {
+      "not-allowed": "Microphone blocked. Allow the microphone for this site; it also needs HTTPS (or localhost).",
+      "service-not-allowed": "Speech recognition is blocked in this browser.",
+      "no-speech": "কিছু শোনা যায়নি, আবার চাপুন। (No speech heard.)",
+      "network": "The speech service could not be reached (it needs the internet).",
+      "language-not-supported": "This browser cannot recognise this Bangla variant: try the other one in Demo settings.",
+      "audio-capture": "No microphone found.",
+    }[e.error] || ("Speech recognition error: " + e.error);
+    $("micError").textContent = msg;
+  };
+  rec.onend = () => {
+    listening = false;
+    $("micBtn").classList.remove("listening");
+    $("micBtn").textContent = "🎤 চাপুন, তারপর কথা বলুন";
+    const text = finalText.trim();
+    $("interim").textContent = "";
+    if (text) sendSpeech(text);
+  };
+  try {
+    rec.start();
+    listening = true;
+    $("micBtn").classList.add("listening");
+    $("micBtn").textContent = "শুনছি… থামাতে চাপুন";
+  } catch (err) {
+    $("micError").textContent = "Could not start the microphone: " + err.message;
+  }
+}
+
+function stopMic() { if (rec && listening) rec.stop(); }
+
+function sendSpeech(text) {
+  if (!state) { $("micError").textContent = "Start a call first (নতুন কল)."; return; }
+  if (busy || expects === "end") return;
+  stopAudio();
+  addMsg("farmer", text, "কৃষক · speech");
+  turn({ kind: "speech", text });
+}
+
+function sendTyped() {
+  const t = $("typed").value.trim();
+  if (!t) return;
+  $("typed").value = "";
+  sendSpeech(t);
+}
+
+// ---------------------------------------------------------------- input: keypad
+function setMode(m) {
+  mode = m;
+  $("paneSpeak").hidden = m !== "speak";
+  $("paneKeys").hidden = m !== "keys";
+  $("tabSpeak").setAttribute("aria-selected", m === "speak");
+  $("tabKeys").setAttribute("aria-selected", m === "keys");
+  if (m === "keys") stopMic();
+}
+
+function pressKey(k) {
+  if (!state) { startCall(); return; }
+  if (busy || expects === "end") return;
+  const btn = document.querySelector(`.key[data-k="${CSS.escape(k)}"]`);
+  if (btn) { btn.classList.add("down"); setTimeout(() => btn.classList.remove("down"), 120); }
+  stopAudio();
+  if (expects === "number") {
+    if (k === "*") { sendKeys("*"); return; }
+    if (k === "#") { if (typedDigits) sendKeys(typedDigits + "#"); return; }
+    if (typedDigits.length < 9) typedDigits += k;
+    $("keyDisplay").textContent = bnDigits(typedDigits);
+    return;
+  }
+  sendKeys(k);
+}
+
+function backspace() {
+  typedDigits = typedDigits.slice(0, -1);
+  $("keyDisplay").textContent = bnDigits(typedDigits);
+}
+
+function sendKeys(digits) {
+  addMsg("farmer", "⌨ " + bnDigits(digits), "কৃষক · keypad");
+  $("keyDisplay").textContent = "";
+  turn({ kind: "keypad", digits });
+}
+
+// ---------------------------------------------------------------- voice out
+let speakToken = 0;
+async function speak(text, force) {
+  const token = ++speakToken;
+  stopAudio(false);
+  const choice = $("voiceMode").value;
+  if (choice === "off" && !force) return;
+  if (choice !== "phone" && status && status.google_voice.ready) {
+    try {
+      const res = await fetch("/api/voice/speak", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+      if (res.ok) {
+        const data = await res.json();
+        if (token !== speakToken) return;
+        audio.src = data.audio_url;
+        await audio.play();
+        return;
+      }
+    } catch { /* fall back to the phone's voice */ }
+  }
+  if (token === speakToken) phoneVoice(text);
+}
+
+function phoneVoice(text) {
+  if (!("speechSynthesis" in window)) return;
+  const voices = speechSynthesis.getVoices();
+  const voice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith("bn"));
+  if (!voice) {
+    $("micError").innerHTML = '<span class="en">No Bangla voice on this device, so replies are shown as text only. (Set up the Google voice on the server for sound.)</span>';
+    return;
+  }
+  const u = new SpeechSynthesisUtterance(text);
+  u.voice = voice;
+  u.lang = voice.lang;
+  u.rate = 0.95;
+  speechSynthesis.speak(u);
+}
+
+function stopAudio(bump = true) {
+  if (bump) speakToken++;
+  try { audio.pause(); } catch { /* nothing playing */ }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+}
+
+function replayLast() { if (lastSay) speak(lastSay, true); }
+
+// ---------------------------------------------------------------- SMS me / Call me
+async function notify(kind) {
+  const phone = $("phone").value.trim();
+  store.set("phone", phone);
+  if (!/^(\+?88)?01[3-9]\d{8}$/.test(phone.replace(/[\s-]/g, ""))) {
+    showNotify("Enter a Bangladeshi mobile number: 01XXXXXXXXX");
+    return;
+  }
+  if (!state) return;
+  try {
+    const res = await fetch(kind === "sms" ? "/api/call/sms" : "/api/call/ring", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state, phone }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.statusText);
+    const head = data.dry_run
+      ? (kind === "sms" ? "DRY RUN: no SMS sent. This is the request REVE would get:" : "DRY RUN: no call made. This is the request Awaj would get:")
+      : (kind === "sms" ? "SENT (live SMS):" : "CALL REQUESTED (live, Awaj):");
+    showNotify(head + "\n\n" + JSON.stringify(data, null, 2));
+  } catch (err) {
+    showNotify("Error: " + err.message);
+  }
+}
+function showNotify(text) { const p = $("notifyResult"); p.hidden = false; p.textContent = text; }
+
+setup();
+</script>
+</body>
+</html>

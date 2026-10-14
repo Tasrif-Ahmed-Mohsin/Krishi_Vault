@@ -13,7 +13,9 @@ Tests FastAPI endpoints:
 
 import pytest
 from fastapi.testclient import TestClient
-from src.main import app
+from src.main import app, tts_service
+
+tts_ready = tts_service.ready
 
 @pytest.fixture
 def client():
@@ -86,6 +88,7 @@ def test_buyers_endpoint(client):
     buyers = response.json()
     assert len(buyers) >= 5
 
+@pytest.mark.skipif(not tts_ready, reason="Google voice key not set (GOOGLE_APPLICATION_CREDENTIALS)")
 def test_voice_synthesize_endpoint(client):
     payload = {
         "text": "আসসালামু আলাইকুম। কৃষিভল্ট এ আপনাকে স্বাগতম।",
@@ -98,3 +101,55 @@ def test_voice_synthesize_endpoint(client):
     assert data["status"] == "success"
     assert "/audio/" in data["audio_url"]
     assert data["file_size_bytes"] > 0
+
+
+@pytest.fixture
+def temp_events(tmp_path, monkeypatch):
+    monkeypatch.setenv("KV_EVENTS_PATH", str(tmp_path / "events.jsonl"))
+
+
+def test_call_screen_served(client):
+    response = client.get("/call")
+    assert response.status_code == 200
+    assert "KrishiVault" in response.text
+
+
+def test_call_status_has_no_keys(client):
+    data = client.get("/api/call/status").json()
+    assert set(data) == {"gemini", "google_voice", "sms", "awaj"}
+    assert "key" not in str(data).lower().replace("token_set", "")
+
+
+def test_call_turns_over_api_and_sms_dry_run(client, temp_events, monkeypatch):
+    monkeypatch.delenv("SMS_LIVE", raising=False)
+    monkeypatch.delenv("AWAJ_LIVE", raising=False)
+    r = client.post("/api/call/turn", json={"kind": "start"}).json()
+    assert r["expects"] == "menu"
+    for digits in ["1", "60#", "0#", "19#", "0#", "1"]:
+        r = client.post("/api/call/turn", json={"state": r["state"], "kind": "keypad", "digits": digits}).json()
+    assert r["state"]["step"] == "sell_advice"
+    assert r["decision"]["recommended"]
+
+    sms = client.post("/api/call/sms", json={"state": r["state"], "phone": "01712345678"}).json()
+    assert sms["dry_run"] is True
+    assert sms["text"].startswith("কৃষিভল্ট:")
+
+    ring = client.post("/api/call/ring", json={"state": r["state"], "phone": "01712345678"}).json()
+    assert ring["dry_run"] is True
+    assert ring["request"]["texts"][0].startswith("কৃষিভল্ট থেকে বলছি।")
+
+    r = client.post("/api/call/turn", json={"state": r["state"], "kind": "keypad", "digits": "2"}).json()
+    events = client.get("/api/events").json()
+    assert events and events[0]["ref"] == r["event"]["ref"]
+
+
+def test_call_turn_needs_a_started_call(client):
+    response = client.post("/api/call/turn", json={"kind": "keypad", "digits": "1"})
+    assert response.status_code == 400
+
+
+def test_speak_without_key_says_use_phone_voice(client):
+    if tts_ready:
+        pytest.skip("Google voice is set up here")
+    response = client.post("/api/voice/speak", json={"text": "আসসালামু আলাইকুম"})
+    assert response.status_code == 503

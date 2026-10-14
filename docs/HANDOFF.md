@@ -123,10 +123,10 @@ If the money numbers do not move, change the actions offered before adding featu
 
 | Part | Status | How we show it |
 |---|---|---|
-| Voice conversation | Build | In-app screen: speak Bangla, see the transcript, what was understood and the decision; hear the Bangla reply |
-| Keypad flow | Build | The same screen in keypad mode (১ ২ ৩ ৯) |
+| Voice conversation | Built (`/call`); to test on a phone with the keys set | In-app screen: speak Bangla, see the transcript, what was understood and the decision; hear the Bangla reply (`docs/CONVERSATION_SCREEN.md`) |
+| Keypad flow | Built (`/call`) | The same screen in keypad mode (১ ২ ৩ ৯) |
 | Phone calls | Waiting on Awaj | Awaj broadcast call to a judge's phone (text-to-speech or our audio) |
-| SMS | Ready to port | REVE SMS (two real sends worked on 8 October from Mati Kohon) |
+| SMS | Ported to Python (dry run) | REVE SMS (two real sends worked on 8 October from Mati Kohon); "SMS me" on `/call` |
 | Danger alerts | Ready (data) | Pick an upazila: today's NASA alerts from `data/reference/mati_kohon/`; price-crash alert shown as a demo |
 | Sell / store decision | Ready | KrishiVault's engine, driven by the conversation |
 | Fertilizer need and fair price | Small work | SRDI union cards (6 pilot unions in the data; Bogura to fetch); official prices |
@@ -147,6 +147,7 @@ Full check in `docs/readiness_check.html` (updated 14 October). Do not present p
 **Real now:**
 - NASA late-blight and flood alerts for 544 upazilas.
 - The decision engine; SMS; the Bangla voice.
+- The conversation screen (`/call`): keypad and typed or spoken Bangla, questions, read-back, the decision in taka, one action, officer callback; the Bangla number reader (digits, words such as পঞ্চাশ and বিশ হাজার, northern forms such as টেকা and নাগবে); the number check. Tested with keypad and typed speech; see "Not yet" for Gemini, the Google voice and a real microphone.
 - Crop data for 13 crops, and Bogura potato facts (BBS 2024-25: 56,657 ha, 1.18 million tonnes).
 - Cost of production: Agriculture Census 2019, about ৳157,532 per hectare in 2019 prices.
 - Official fertilizer prices: urea and TSP ৳27/kg (৳1,350 a bag), DAP ৳21, MoP ৳20. This is the 2023 schedule; confirm the current order.
@@ -158,27 +159,35 @@ Full check in `docs/readiness_check.html` (updated 14 October). Do not present p
 - **Fertilizer cards:** for 6 pilot unions only.
 - **The marketplace and partners:** demo data and plan only.
 - **Talking to the AI on a real phone call:** plan only.
+- **In the conversation screen:** Gemini understanding and rewording, and the Google voice, switch on with their keys but have not been tried there with real keys yet; speech recognition has not been tried with a real microphone and a Bogura speaker. The price a month ahead is the seasonal pattern, not a forecast. Buyers, the cold storage and group-lot neighbours are demo data.
+- **SMS and calls from KrishiVault's own code:** ported to Python, dry run only so far; no live send from KrishiVault yet.
 
 **Fix before sharing anything:** rename the sample buyer "PRAN Agro", and every sample partner, to clearly fictional names.
 
 ## 10. Prototype to-do, in order
 
-1. **Conversation screen** (mobile web):
+1. **Conversation screen** (mobile web). **Done, 14 October** (`/call`; how to open it: `docs/CONVERSATION_SCREEN.md`):
    - The pipeline: mic → speech-to-text → `intent_parser` + Gemini → decision engine → number check → Google Bangla voice.
    - On screen: transcript, the understood values and the decision.
    - Keypad mode, plus "SMS me" and "Call me" buttons.
    - Browser speech recognition needs HTTPS outside localhost.
-2. **SMS and calls:** port `reference/mati_kohon_code/sms.ts` and `awaj.ts` to Python. Dry run by default; live only with the user's go-ahead.
+   - Still to do: try it on a phone over HTTPS with `GEMINI_API_KEY` and the Google key set, with a Bogura speaker.
+2. **SMS and calls:** port `reference/mati_kohon_code/sms.ts` and `awaj.ts` to Python. Dry run by default; live only with the user's go-ahead. **Ported, 14 October** (`src/notify/`); a first live send waits for the user's go-ahead.
 3. **Danger alerts:** read `data/reference/mati_kohon/upazila_conditions.json` and `flood_now.json`.
    - Show today's alerts for any upazila.
    - Add the potato rules (rain before harvest, heat on stored potato, cold and fog) by porting `field_alerts.ts`; late blight is already in the data.
    - Show a price-crash alert as a demo.
 4. **Fertilizer:** need from `srdi_frs_doses.csv` and soil classes; the official price; a "price you paid" report. Fetch Bogura cards with the `srdi_frs.py` approach.
 5. **Marketplace screens:** seeds (BARI and BRRI variety names; seed potato), machinery rental booking with the subsidy note, clearly fictional demo sellers.
-6. **Partner screens:** officer, cold storage, buyer, dealer and seller, each updating straight after a call (a booking, a group lot, an order).
+6. **Partner screens:** officer, cold storage, buyer, dealer and seller, each updating straight after a call (a booking, a group lot, an order). The call already saves these to `data/runtime/events.jsonl`; `GET /api/events` lists them.
 7. **DAM price downloader** to the new site (`https://market.dam.gov.bd/`).
 8. **Rename sample partners** to fictional names.
 9. **Refresh the NASA files** a day before the demo (in Mati Kohon), then copy them into `data/reference/mati_kohon/`.
+
+**Found while building item 1 (for the team to decide):**
+- The decision engine compares storing for **one month** only, and charges the cold storage's rate as if it were one month's cost. So it almost never advises storing, even at harvest when prices usually rise over the following months. Storing until the lean season needs an engine change.
+- `GET /api/prices/predict` labels a fixed +4%/+9%/+20% as "SARIMA-LSTM Hybrid Ensemble", and the old dashboard (`/`) shows it. That is not a trained model; relabel or remove it before showing the old dashboard.
+- The sample database spells the district "Bogra", so `/api/decision/evaluate` never finds a Bogura price and quietly uses ৳22. The conversation screen does not use that path.
 
 ## 11. Field work and slides
 

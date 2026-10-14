@@ -37,6 +37,10 @@ from src.models.price_predictor import FeatureEngineer, HybridEnsemble
 from src.voice.intent_parser import FarmerIntentParser
 from src.voice.farmer_dialog import FarmerVoiceDialog
 from src.voice.tts_generator import BengaliVoiceSynthesizer
+from src.voice.conversation import Conversation, receipt_sms
+from src.voice.gemini import GeminiClient
+from src.notify import sms as sms_client, awaj as awaj_client
+from src import events as event_log
 from config.settings import DATABASE_URL, MAUND_TO_KG
 
 # Initialize DB
@@ -59,6 +63,8 @@ static_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 tts_service = BengaliVoiceSynthesizer()
+gemini_client = GeminiClient()
+conversation = Conversation(SessionLocal, gemini=gemini_client)
 
 # ============================================================
 # PYDANTIC SCHEMAS
@@ -349,6 +355,98 @@ def synthesize_voice(req: VoiceSynthesisRequest):
         "audio_url": f"/audio/{output_path.name}",
         "file_size_bytes": output_path.stat().st_size
     }
+
+# ============================================================
+# CONVERSATION SCREEN (the farmer's call, in the browser)
+# ============================================================
+
+class CallTurnRequest(BaseModel):
+    state: Optional[dict] = None       # what the last turn returned; None starts a call
+    kind: str = "start"                # "start", "speech" or "keypad"
+    text: Optional[str] = Field(None, max_length=2000)   # what the farmer said (speech-to-text)
+    digits: Optional[str] = Field(None, max_length=12)   # keys pressed, e.g. "50#"
+    district: Optional[str] = "Bogura"
+    month: Optional[int] = Field(None, ge=1, le=12)      # season month for the price outlook (demo setting)
+    phone: Optional[str] = Field(None, max_length=20)    # for the SMS receipt and partner screens (masked)
+
+
+class CallNotifyRequest(BaseModel):
+    state: dict
+    phone: str = Field(..., max_length=20)
+
+
+class SpeakRequest(BaseModel):
+    text: str = Field(..., max_length=4000)
+    gender: Optional[str] = "MALE"
+
+
+@app.get("/call")
+def serve_call_screen():
+    """The conversation screen: a farmer's call by voice or keypad (mobile web)."""
+    return FileResponse(static_dir / "call.html")
+
+
+@app.get("/api/call/status")
+def call_status():
+    """Which parts of the pipeline are switched on. Never returns keys."""
+    sms_cfg = sms_client.sms_config()
+    awaj_cfg = awaj_client.awaj_config()
+    return {
+        "gemini": {"on": gemini_client.available, "model": gemini_client.model_used},
+        "google_voice": tts_service.status(),
+        "sms": {"configured": sms_cfg["configured"], "live": sms_cfg["live"]},
+        "awaj": {"token_set": awaj_cfg["token_set"], "sender_set": bool(awaj_cfg["sender"]), "live": awaj_cfg["live"]},
+    }
+
+
+@app.post("/api/call/turn")
+def call_turn(req: CallTurnRequest):
+    """One turn of the farmer's call: what the farmer said or pressed in, what KrishiVault says out."""
+    if req.kind not in ("start", "speech", "keypad"):
+        raise HTTPException(status_code=400, detail="kind must be start, speech or keypad")
+    if req.kind != "start" and not (req.state and req.state.get("step")):
+        raise HTTPException(status_code=400, detail="Start a call first (kind=start)")
+    return conversation.turn(req.state, {
+        "kind": req.kind, "text": req.text, "digits": req.digits,
+        "district": req.district, "month": req.month, "phone": req.phone,
+    })
+
+
+@app.post("/api/voice/speak")
+def speak(req: SpeakRequest):
+    """The Google Bangla voice for one reply (cached). 503 when no key is set: the screen uses the phone's voice."""
+    if not tts_service.ready:
+        raise HTTPException(status_code=503, detail="Google voice not set up (GOOGLE_APPLICATION_CREDENTIALS)")
+    path = tts_service.speak(req.text, voice_gender=req.gender or "MALE")
+    if not path:
+        raise HTTPException(status_code=502, detail=f"Google voice failed: {tts_service.last_error}")
+    return {"audio_url": f"/audio/{path.name}", "language": tts_service.language_used}
+
+
+@app.post("/api/call/sms")
+def call_sms(req: CallNotifyRequest):
+    """Send the call's SMS receipt (REVE). Dry run unless SMS_LIVE=1 and the keys are set."""
+    text = receipt_sms(req.state)
+    if not text:
+        raise HTTPException(status_code=400, detail="There is no advice yet in this call to send.")
+    return {"text": text, **sms_client.send_sms(req.phone, text)}
+
+
+@app.post("/api/call/ring")
+def call_ring(req: CallNotifyRequest):
+    """KrishiVault calls the farmer and reads the advice aloud (Awaj). Dry run unless AWAJ_LIVE=1."""
+    body = (req.state or {}).get("advice_body")
+    if not body:
+        raise HTTPException(status_code=400, detail="There is no advice yet in this call to read out.")
+    text = f"কৃষিভল্ট থেকে বলছি। {body} বিস্তারিত এসএমএসে পাঠানো হলো।"
+    return {"text": text, **awaj_client.send_tts_call([req.phone], [text], metadata={"source": "conversation_screen"})}
+
+
+@app.get("/api/events")
+def list_events(partner: Optional[str] = None, limit: int = 50):
+    """Bookings, lots and callback requests from farmers' calls, newest first (phone numbers masked)."""
+    return event_log.recent(limit=min(max(limit, 1), 200), partner=partner)
+
 
 @app.get("/api/cold-storages")
 def list_cold_storages(district: Optional[str] = None):

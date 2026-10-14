@@ -30,14 +30,17 @@ This file is the short version.
 ## Repository map
 
 - `krishivault-pipeline/`: the Python backend (FastAPI).
-  - `src/main.py`: the API; serves `static/index.html`. Endpoints include `/api/decision/evaluate`, `/api/voice/webhook`, `/api/voice/synthesize`, `/api/prices/latest`, `/api/cold-storages`, `/api/buyers`.
+  - `src/main.py`: the API; serves `static/index.html` (old dashboard) and `static/call.html` (the conversation screen, `/call`). Endpoints include `/api/call/turn`, `/api/voice/speak`, `/api/call/sms`, `/api/call/ring`, `/api/events`, `/api/decision/evaluate`, `/api/voice/webhook`, `/api/prices/latest`, `/api/cold-storages`, `/api/buyers`.
   - `src/engine/decision_engine.py`: sell now / sell part / store / group sell, in taka, with dadon and the cash deadline. Has tests.
   - `src/voice/`:
-    - `intent_parser.py`: Bangla numbers and units such as মণ, বস্তা;
-    - `gemini_advisor.py`;
-    - `tts_generator.py`: the Google Bangla voice;
-    - `farmer_dialog.py`;
-    - `call_simulator.py`.
+    - `conversation.py`: the farmer's call step by step (menu, questions, read-back, advice, action, officer); used by `/call`, later by the phone line;
+    - `understanding.py`: parser first, then Gemini with every number checked against what was said;
+    - `intent_parser.py`, `bangla_numbers.py`: Bangla numbers (digits and words) and units such as মণ, বস্তা;
+    - `number_lock.py`: Gemini may reword, never change a number;
+    - `gemini.py`, `tts_generator.py` (the Google Bangla voice, cached);
+    - older: `gemini_advisor.py`, `farmer_dialog.py`, `call_simulator.py`.
+  - `src/notify/`: `sms.py` (REVE) and `awaj.py` (calls), ported from Mati Kohon; dry run by default.
+  - `src/engine/market_inputs.py`: seasonal price pattern and demo partners for a call. `src/events.py`: actions saved for partner screens (`data/runtime/`, not committed).
   - `src/scrapers/dam_scraper.py`: **broken.** The DAM page moved to `https://market.dam.gov.bd/`.
   - `src/models/price_predictor.py`: SARIMA + LSTM, **never trained**.
   - `data/`: WFP monthly retail potato prices; `krishivault.db` with **sample** partners (made-up phone numbers).
@@ -54,6 +57,7 @@ cd krishivault-pipeline
 pip install -r requirements-cloud.txt     # the SessionStart hook does this in cloud sessions
 python -m pytest -q
 uvicorn src.main:app --reload --port 8000
+# then open http://localhost:8000/call (the conversation screen; docs/CONVERSATION_SCREEN.md)
 ```
 
 Secrets come from environment variables (names in `krishivault-pipeline/.env.example`). In a cloud session the hook writes the Google voice key to `/tmp/gcp-tts.json` from `GOOGLE_TTS_JSON_B64`.
