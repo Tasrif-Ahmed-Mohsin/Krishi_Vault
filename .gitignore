@@ -20,6 +20,7 @@ venv/
 
 # Generated output
 krishivault-pipeline/data/audio_out/
+krishivault-pipeline/data/runtime/
 krishivault-pipeline/models_saved/
 
 # OS and editors

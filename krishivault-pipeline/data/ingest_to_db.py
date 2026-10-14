@@ -121,7 +121,7 @@ def seed_cold_storages(session):
     """Seed real-world cold storage facilities in primary potato hubs."""
     storages = [
         {
-            "name": "Bogra Cold Storage Ltd.",
+            "name": "Demo Cold Storage 1 (Bogura)",
             "district": "Bogura",
             "upazila": "Shibganj",
             "address": "Mahasthangarh Road, Shibganj, Bogura",
@@ -131,10 +131,10 @@ def seed_cold_storages(session):
             "official_rate_per_kg": 6.00,
             "actual_rate_per_kg": 6.50,
             "phone": "+8801711223344",
-            "owner_name": "Alhaj Rafiqul Islam",
+            "owner_name": "Demo owner 1",
         },
         {
-            "name": "Rangpur Himagar & Agro",
+            "name": "Demo Cold Storage 2 (Rangpur)",
             "district": "Rangpur",
             "upazila": "Mithapukur",
             "address": "Mithapukur Bus Stand, Rangpur",
@@ -144,10 +144,10 @@ def seed_cold_storages(session):
             "official_rate_per_kg": 6.00,
             "actual_rate_per_kg": 7.00,
             "phone": "+8801722334455",
-            "owner_name": "Engr. Mostafa Kamal",
+            "owner_name": "Demo owner 2",
         },
         {
-            "name": "Barendra Agro Storage",
+            "name": "Demo Cold Storage 3 (Rajshahi)",
             "district": "Rajshahi",
             "upazila": "Paba",
             "address": "Baneswar Market Bypass, Paba, Rajshahi",
@@ -157,10 +157,10 @@ def seed_cold_storages(session):
             "official_rate_per_kg": 5.75,
             "actual_rate_per_kg": 5.75,
             "phone": "+8801733445566",
-            "owner_name": "Dr. Shamsul Huda",
+            "owner_name": "Demo owner 3",
         },
         {
-            "name": "Munshiganj Central Cold Storage",
+            "name": "Demo Cold Storage 4 (Munshiganj)",
             "district": "Munshiganj",
             "upazila": "Tongibari",
             "address": "Betka Road, Tongibari, Munshiganj",
@@ -170,10 +170,10 @@ def seed_cold_storages(session):
             "official_rate_per_kg": 6.00,
             "actual_rate_per_kg": 7.50,
             "phone": "+8801744556677",
-            "owner_name": "Haji Delwar Hossain",
+            "owner_name": "Demo owner 4",
         },
         {
-            "name": "Dinajpur Uttarbanga Himagar",
+            "name": "Demo Cold Storage 5 (Dinajpur)",
             "district": "Dinajpur",
             "upazila": "Birganj",
             "address": "Birganj Chowrasta, Dinajpur",
@@ -183,7 +183,7 @@ def seed_cold_storages(session):
             "official_rate_per_kg": 6.00,
             "actual_rate_per_kg": 6.25,
             "phone": "+8801755667788",
-            "owner_name": "Md. Aminur Rahman",
+            "owner_name": "Demo owner 5",
         }
     ]
 
@@ -202,7 +202,7 @@ def seed_buyers(session):
     """Seed buyers with realistic purchasing criteria and active bids."""
     buyers = [
         {
-            "name": "Mahasthangarh Arhat Association",
+            "name": "Demo Arhat Group (Bogura)",
             "buyer_type": "arhatdar",
             "district": "Bogura",
             "upazila": "Shibganj",
@@ -214,7 +214,7 @@ def seed_buyers(session):
             "preferred_variety": "deshi"
         },
         {
-            "name": "PRAN Agro Processing Division",
+            "name": "Demo Processor (Dhaka)",
             "buyer_type": "company",
             "district": "Dhaka",
             "upazila": "Savar",
@@ -226,7 +226,7 @@ def seed_buyers(session):
             "preferred_variety": "holland"
         },
         {
-            "name": "Square Food & Beverage Ltd.",
+            "name": "Demo Food Company (Dhaka)",
             "buyer_type": "company",
             "district": "Dhaka",
             "upazila": "Tejgaon",
@@ -238,7 +238,7 @@ def seed_buyers(session):
             "preferred_variety": "holland"
         },
         {
-            "name": "Rangpur Krishak Krishi Samity",
+            "name": "Demo Farmers' Cooperative (Rangpur)",
             "buyer_type": "cooperative",
             "district": "Rangpur",
             "upazila": "Mithapukur",
@@ -250,7 +250,7 @@ def seed_buyers(session):
             "preferred_variety": "any"
         },
         {
-            "name": "Karwan Bazar Wholesale Syndicate",
+            "name": "Demo Wholesale Group (Dhaka)",
             "buyer_type": "wholesaler",
             "district": "Dhaka",
             "upazila": "Karwan Bazar",
@@ -282,7 +282,7 @@ def seed_farmers(session):
     farmers = [
         {
             "phone_number": "+8801711998877",
-            "name": "Abdur Rahim",
+            "name": "Demo farmer 1",
             "district": "Bogura",
             "upazila": "Shibganj",
             "village": "Deuli",
@@ -294,7 +294,7 @@ def seed_farmers(session):
         },
         {
             "phone_number": "+8801722887766",
-            "name": "Mohammad Ali",
+            "name": "Demo farmer 2",
             "district": "Rangpur",
             "upazila": "Mithapukur",
             "village": "Laldighi",

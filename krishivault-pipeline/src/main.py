@@ -1,488 +1,493 @@
 """
-KrishiVault Main Service & API
-==============================
-Main entrypoint for KrishiVault:
-- CLI mode: Run full end-to-end ingestion, model prediction, and decision simulation.
-- Server mode: FastAPI server providing endpoints for market prices, forecasts,
-  decision optimization, and voice/telephony webhooks.
+KrishiVault API and web screens
+===============================
+One FastAPI app for the prototype:
+- `/`      the dashboard (static/index.html): forecasts, the store-or-sell engine, buyers, bank loans,
+           group storage, export and the profit calculator, plus the partner screens;
+- `/call`  the call preview (static/call.html): a farmer's phone call played in the browser.
 
-Usage:
-  python src/main.py --demo      # Run end-to-end demo for Bogura & Rangpur farmers
-  python src/main.py --serve     # Start FastAPI server on port 8000
+Run:  uvicorn src.main:app --port 8000      (from krishivault-pipeline/)
+SMS is a dry run unless SMS_LIVE=1 and the REVE keys are set. Phone calls are preview-only.
 """
 
-import sys
-import argparse
-from pathlib import Path
-from typing import Optional, List
-from datetime import date, timedelta
-from loguru import logger
+from __future__ import annotations
 
-# Add root directory to sys.path
+import sys
+from pathlib import Path
+from typing import Literal, Optional
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from fastapi import FastAPI, HTTPException, Body
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-import uvicorn
 
-from src.database import (
-    init_database, MarketPrice, WeatherData, ColdStorage, Buyer, Farmer
-)
-from src.engine.decision_engine import (
-    DecisionEngine, FarmerSituation, MarketContext, BuyerOffer
-)
-from src.models.price_predictor import FeatureEngineer, HybridEnsemble
-from src.voice.intent_parser import FarmerIntentParser
-from src.voice.farmer_dialog import FarmerVoiceDialog
+from src import demo_data, events as event_log
+from src.engine import export_intel, financing, group_storage, market_access, profit
+from src.engine.facts import MAUND_KG, SACK_KG, SOURCES, StorageTerms
+from src.engine.storage_plan import FarmerLot, StoragePlanner
+from src.models import price_outlook, production_forecast
+from src.notify import sms as sms_client
+from src.voice.conversation import Conversation, advice_sms, receipt_sms
+from src.voice.gemini import GeminiClient
 from src.voice.tts_generator import BengaliVoiceSynthesizer
-from config.settings import DATABASE_URL, MAUND_TO_KG
-
-# Initialize DB
-engine, SessionLocal = init_database(DATABASE_URL)
 
 app = FastAPI(
-    title="KrishiVault API & Dashboard",
-    description="Intelligent Post-Harvest Harvest Timing & Collective Selling System for Bangladesh Farmers",
-    version="1.0.0"
+    title="KrishiVault",
+    description="Store or sell, and until when: potato storage, prices, buyers, bank loans, group storage and export.",
+    version="2.0.0",
 )
 
-# Audio mount for Google Cloud TTS generated voice previews
-audio_dir = Path(__file__).parent.parent / "data" / "audio_out"
+BASE = Path(__file__).parent.parent
+audio_dir = BASE / "data" / "audio_out"
 audio_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/audio", StaticFiles(directory=str(audio_dir)), name="audio")
-
-# Static mount for Dashboard assets
-static_dir = Path(__file__).parent.parent / "static"
-static_dir.mkdir(parents=True, exist_ok=True)
+static_dir = BASE / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 tts_service = BengaliVoiceSynthesizer()
+gemini_client = GeminiClient()
+planner = StoragePlanner()
+conversation = Conversation(gemini=gemini_client, planner=planner)
 
-# ============================================================
-# PYDANTIC SCHEMAS
-# ============================================================
 
-class FarmerEvaluationRequest(BaseModel):
-    crop: str = "potato"
-    quantity_maunds: Optional[float] = None
-    quantity_kg: Optional[float] = None
-    district: str = "Bogura"
-    cash_needed_tk: float = 20000.0
-    deadline_days: int = 7
-    current_offer_per_kg: Optional[float] = None
-    has_cold_storage: bool = False
-    storage_cost_per_kg: float = 6.50
-    transport_cost_per_kg: float = 0.50
-
-class VoiceWebhookRequest(BaseModel):
-    phone_number: str = "+8801711998877"
-    caller_name: Optional[str] = "চাষী ভাই"
-    transcript: str = "আমার ৫০ মণ আলু উঠছে। জরুরি ২০ হাজার টাকা লাগবে ৩ দিনের মধ্যে।"
-
-# ============================================================
-# API & GUI ENDPOINTS
-# ============================================================
+# ============================================================ pages and status
 
 @app.get("/")
-def serve_gui():
-    """Serve the KrishiVault interactive testing GUI."""
-    index_file = static_dir / "index.html"
-    if index_file.exists():
-        return FileResponse(index_file)
-    return {"status": "operational", "message": "GUI index.html not found"}
+def dashboard():
+    return FileResponse(static_dir / "index.html")
+
+
+@app.get("/call")
+def call_preview():
+    return FileResponse(static_dir / "call.html")
+
 
 @app.get("/api/status")
-def api_status():
+def status():
+    """What is switched on. Never returns keys."""
+    sms_cfg = sms_client.sms_config()
     return {
-        "service": "KrishiVault Intelligence Pipeline",
         "status": "operational",
-        "active_commodity": "Potato (দেশী ও হল্যান্ড)",
-        "pilot_districts": ["Bogura", "Rangpur", "Dinajpur", "Rajshahi", "Dhaka"]
+        "gemini": {"on": gemini_client.available, "model": gemini_client.model_used},
+        "google_voice": tts_service.status(),
+        "sms": {"configured": sms_cfg["configured"], "live": sms_cfg["live"]},
+        "calls": "preview only (no phone line in the prototype)",
+        "data": {"prices": price_outlook.model_card()["trained_on"]["prices"],
+                 "production": price_outlook.model_card()["trained_on"]["production"]},
     }
 
-@app.get("/api/prices/latest")
-def get_latest_prices(district: Optional[str] = None):
-    """Retrieve latest potato market prices from database."""
-    session = SessionLocal()
+
+# ============================================================ forecasts and market data
+
+@app.get("/api/forecast/production")
+def forecast_production(district: Optional[str] = None, season_start: Optional[int] = None,
+                        area_ha: Optional[float] = None, weather_adjust_pct: float = 0.0):
     try:
-        query = session.query(MarketPrice)
-        if district:
-            query = query.filter(MarketPrice.district.ilike(f"%{district}%"))
-        prices = query.order_by(MarketPrice.date.desc()).limit(25).all()
+        return production_forecast.production_forecast(district, season_start, area_ha, weather_adjust_pct)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
-        return [
-            {
-                "date": str(p.date),
-                "market": p.market_name,
-                "district": p.district,
-                "division": p.division,
-                "commodity": p.commodity,
-                "retail_avg": p.retail_avg,
-                "wholesale_avg": p.wholesale_avg,
-                "source": p.source
-            }
-            for p in prices
-        ]
-    finally:
-        session.close()
 
-@app.get("/api/prices/predict/{district}")
-def predict_price(district: str):
-    """
-    Generate 7-day, 14-day, and 30-day price projections for a district
-    using historical DAM/WFP prices and seasonal trend factors.
-    """
-    session = SessionLocal()
+@app.get("/api/forecast/price")
+def forecast_price(price_today: float = 16.0, month: int = 3, year: int = 2027, horizon: Optional[int] = None,
+                   gap_override_pct: Optional[float] = None, area_ha: Optional[float] = None):
+    if not 1 <= month <= 12 or price_today <= 0:
+        raise HTTPException(status_code=400, detail="month 1-12 and a positive price_today")
+    h = horizon if horizon is not None else (0 if month == 1 else min(9, 12 - month))
+    return price_outlook.outlook(price_today, month, year, max(0, min(h, 11)), area_ha=area_ha,
+                                 gap_override_pct=gap_override_pct)
+
+
+@app.get("/api/forecast/model")
+def forecast_model():
+    return {"card": price_outlook.model_card(), "national_prices": price_outlook.national_history(),
+            "season_curve": price_outlook.SEASON_CURVE}
+
+
+@app.get("/api/market/regions")
+def market_regions():
+    return {"price_index": price_outlook.regional_index(), "supply": production_forecast.district_supply(),
+            "national_latest": price_outlook.national_latest(),
+            "note": "Retail prices in town markets (WFP), not farm-gate prices. Index 1.00 = the national level."}
+
+
+@app.get("/api/districts")
+def districts():
+    return production_forecast.district_names()
+
+
+# ============================================================ the storage engine
+
+class TermsIn(BaseModel):
+    sack_kg: Optional[float] = Field(None, gt=10, le=150)
+    rent_per_sack: Optional[float] = Field(None, ge=0, le=2000)
+    sack_cost: Optional[float] = Field(None, ge=0)
+    carry_in_per_sack: Optional[float] = Field(None, ge=0)
+    load_unload_per_sack: Optional[float] = Field(None, ge=0)
+    sell_from_store_per_sack: Optional[float] = Field(None, ge=0)
+    sell_now_per_sack: Optional[float] = Field(None, ge=0)
+    monthly_weight_loss: Optional[float] = Field(None, ge=0, le=0.2)
+    exit_sorting_loss: Optional[float] = Field(None, ge=0, le=0.5)
+    cs_advance_per_sack: Optional[float] = Field(None, ge=0)
+    cs_advance_rate_year: Optional[float] = Field(None, ge=0, le=1)
+    bank_rate_year: Optional[float] = Field(None, ge=0, le=1)
+
+    def build(self) -> StorageTerms:
+        return StorageTerms(**{k: v for k, v in self.model_dump().items() if v is not None})
+
+
+class PlanIn(BaseModel):
+    quantity: float = Field(..., gt=0, le=10_000_000)
+    unit: Literal["kg", "maund", "sack"] = "maund"
+    price_today: float = Field(..., gt=0, le=500)
+    month: int = Field(3, ge=1, le=12)
+    year: int = Field(2027, ge=2013, le=2035)
+    stored: Literal["no", "cold"] = "no"
+    stored_since_month: Optional[int] = Field(None, ge=1, le=12)
+    cash_needed_tk: float = Field(0, ge=0, le=100_000_000)
+    cash_days: int = Field(0, ge=0, le=365)
+    loan_source: Literal["cheapest", "cold_storage", "bank", "none"] = "cheapest"
+    production_cost_per_kg: Optional[float] = Field(None, gt=0, le=500)
+    gap_override_pct: Optional[float] = Field(None, ge=-40, le=40)
+    area_ha: Optional[float] = Field(None, gt=0)
+    terms: Optional[TermsIn] = None
+
+    def lot(self) -> FarmerLot:
+        terms = self.terms.build() if self.terms else StorageTerms()
+        factor = {"kg": 1.0, "maund": MAUND_KG, "sack": terms.sack_kg}[self.unit]
+        return FarmerLot(
+            quantity_kg=self.quantity * factor, price_today=self.price_today,
+            decision_month=self.month, decision_year=self.year, stored=self.stored,
+            stored_since_month=self.stored_since_month or (3 if self.stored == "cold" else None),
+            cash_needed_tk=self.cash_needed_tk, cash_days=self.cash_days, loan_source=self.loan_source,
+            production_cost_per_kg=self.production_cost_per_kg, gap_override_pct=self.gap_override_pct,
+            area_ha=self.area_ha, terms=terms,
+        )
+
+
+@app.post("/api/storage/plan")
+def storage_plan(req: PlanIn):
+    return planner.plan(req.lot())
+
+
+class BookIn(BaseModel):
+    sacks: int = Field(..., gt=0, le=100_000)
+    cold_storage_id: str = "cs-a"
+    farmer_name: str = Field(..., min_length=1, max_length=80)
+    phone: Optional[str] = Field(None, max_length=20)
+    advice: Optional[str] = Field(None, max_length=120)
+
+
+@app.post("/api/storage/book")
+def storage_book(req: BookIn):
+    """A cold-storage space request; its number is the receipt a bank loan can use later."""
     try:
-        # Retrieve recent price for district
-        latest_record = (
-            session.query(MarketPrice)
-            .filter(MarketPrice.district.ilike(f"%{district}%"))
-            .order_by(MarketPrice.date.desc())
-            .first()
-        )
-        base_price = latest_record.retail_avg if latest_record else 24.0
+        cs = demo_data.cold_storage(req.cold_storage_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="No such cold storage")
+    return event_log.record("cold_storage_booking", f"{req.farmer_name}: {req.sacks} বস্তা আলু রাখার অনুরোধ",
+                            {"sacks": req.sacks, "cold_storage": cs["name"], "rent_per_sack": cs["rent_per_sack"],
+                             "farmer": req.farmer_name, "advice": req.advice},
+                            district=cs["district"], phone=req.phone)
 
-        # Multi-horizon forecast
-        pred_7d = round(base_price * 1.04, 2)
-        pred_14d = round(base_price * 1.09, 2)
-        pred_30d = round(base_price * 1.20, 2)
 
-        return {
-            "district": district,
-            "base_price_tk_kg": base_price,
-            "forecasts": {
-                "7_days": {
-                    "predicted_price": pred_7d,
-                    "confidence_lower": round(pred_7d * 0.94, 2),
-                    "confidence_upper": round(pred_7d * 1.06, 2),
-                    "confidence": 0.88
-                },
-                "14_days": {
-                    "predicted_price": pred_14d,
-                    "confidence_lower": round(pred_14d * 0.91, 2),
-                    "confidence_upper": round(pred_14d * 1.09, 2),
-                    "confidence": 0.82
-                },
-                "30_days": {
-                    "predicted_price": pred_30d,
-                    "confidence_lower": round(pred_30d * 0.85, 2),
-                    "confidence_upper": round(pred_30d * 1.15, 2),
-                    "confidence": 0.78
-                }
-            },
-            "trend": "up",
-            "model": "SARIMA-LSTM Hybrid Ensemble"
-        }
-    finally:
-        session.close()
+@app.get("/api/storage/terms")
+def storage_terms():
+    return {"defaults": StorageTerms().to_dict(), "sources": SOURCES}
 
-@app.post("/api/decision/evaluate")
-def evaluate_farmer_situation(req: FarmerEvaluationRequest):
-    """
-    Evaluate the 4 core harvest options for a farmer:
-    1. Sell Now
-    2. Sell Part Now (debt mitigation + store remainder)
-    3. Store & Review (break-even against storage cost & spoilage)
-    4. Group Sell (quantity aggregation for buyer premium)
-    """
-    session = SessionLocal()
+
+# ============================================================ market access
+
+class OfferIn(BaseModel):
+    name: Optional[str] = Field(None, max_length=80)
+    price_per_kg: float = Field(..., gt=0, le=500)
+    farmer_transport_per_kg: float = Field(0, ge=0, le=50)
+    payment_days: int = Field(0, ge=0, le=180)
+
+
+class OffersIn(BaseModel):
+    quantity_kg: float = Field(..., gt=0, le=10_000_000)
+    price_today: float = Field(..., gt=0, le=500)
+    extra_offers: list[OfferIn] = Field(default_factory=list, max_length=10)
+
+
+@app.post("/api/market/offers")
+def market_offers(req: OffersIn):
+    return market_access.compare_offers(req.quantity_kg, req.price_today, [o.model_dump() for o in req.extra_offers])
+
+
+class LotIn(BaseModel):
+    kg: float = Field(..., gt=0, le=10_000_000)
+    price_today: float = Field(..., gt=0, le=500)
+    district: str = Field("Bogura", max_length=40)
+    farmer_name: str = Field(..., min_length=1, max_length=80)
+    phone: Optional[str] = Field(None, max_length=20)
+
+
+@app.post("/api/market/lot")
+def market_lot(req: LotIn):
+    """Send a lot to the buyers' screen; buyers answer with offers."""
+    return event_log.record("buyer_lot", f"{req.farmer_name}: {round(req.kg):,} কেজি আলু বিক্রির লট",
+                            {"kg": round(req.kg), "sacks": round(req.kg / SACK_KG, 1), "price_today": req.price_today,
+                             "farmer": req.farmer_name}, district=req.district, phone=req.phone)
+
+
+@app.get("/api/partners")
+def partners():
+    """The demo partners (made up; never real businesses)."""
+    p = demo_data.partners()
+    return {k: p[k] for k in ("_note", "cold_storages", "buyers", "banks", "transport")}
+
+
+# ============================================================ financing
+
+class LoanIn(BaseModel):
+    sacks: int = Field(..., gt=0, le=100_000)
+    price_today: float = Field(..., gt=0, le=500)
+    month: int = Field(3, ge=1, le=12)
+    year: int = Field(2027, ge=2013, le=2035)
+    months: int = Field(6, ge=1, le=9)
+    amount: Optional[float] = Field(None, gt=0)
+    bank_id: str = "bank-a"
+
+
+@app.post("/api/finance/estimate")
+def finance_estimate(req: LoanIn):
+    return financing.compare_banks(req.sacks, req.price_today, req.month, req.year, req.months, req.amount)
+
+
+class ApplyIn(LoanIn):
+    farmer_name: str = Field(..., min_length=1, max_length=80)
+    phone: Optional[str] = Field(None, max_length=20)
+    district: str = "Bogura"
+    cold_storage_id: str = "cs-a"
+    receipt_no: str = Field(..., min_length=1, max_length=40)
+
+
+@app.post("/api/finance/apply")
+def finance_apply(req: ApplyIn):
     try:
-        # Compute quantity in kg
-        qty_kg = req.quantity_kg or ((req.quantity_maunds or 30.0) * MAUND_TO_KG)
+        return financing.apply(req.farmer_name, req.phone, req.district, req.cold_storage_id, req.receipt_no,
+                               req.sacks, req.price_today, req.month, req.year, req.months, req.bank_id, req.amount)
+    except (KeyError, StopIteration):
+        raise HTTPException(status_code=404, detail="Unknown bank or cold storage")
 
-        # Retrieve market price for district
-        latest_record = (
-            session.query(MarketPrice)
-            .filter(MarketPrice.district.ilike(f"%{req.district}%"))
-            .order_by(MarketPrice.date.desc())
-            .first()
-        )
-        current_price = latest_record.retail_avg if latest_record else 22.0
-        offer_price = req.current_offer_per_kg or current_price
 
-        # Retrieve buyer offers
-        db_buyers = session.query(Buyer).filter(Buyer.district.in_([req.district, "Dhaka"])).all()
-        buyer_offers = [
-            BuyerOffer(
-                buyer_name=b.name,
-                buyer_type=b.buyer_type,
-                price_per_kg=b.current_offer_per_kg or (current_price + 1.50),
-                min_quantity_kg=b.min_quantity_kg or 2000.0,
-                payment_days=b.payment_days or 3,
-                district=b.district
-            )
-            for b in db_buyers
-        ]
+@app.get("/api/finance/applications")
+def finance_applications():
+    return financing.applications()
 
-        situation = FarmerSituation(
-            crop=req.crop,
-            quantity_kg=qty_kg,
-            district=req.district,
-            cash_needed_tk=req.cash_needed_tk,
-            deadline_days=req.deadline_days,
-            current_offer_per_kg=offer_price,
-            has_cold_storage=req.has_cold_storage,
-            storage_cost_per_kg=req.storage_cost_per_kg,
-            transport_cost_per_kg=req.transport_cost_per_kg
-        )
 
-        market_ctx = MarketContext(
-            current_price_per_kg=current_price,
-            predicted_7d_price=round(current_price * 1.05, 2),
-            predicted_14d_price=round(current_price * 1.12, 2),
-            predicted_30d_price=round(current_price * 1.25, 2),
-            price_trend="up",
-            confidence_7d=0.88,
-            confidence_30d=0.78
-        )
+class ReceiptCheckIn(BaseModel):
+    sacks_found: int = Field(..., ge=0, le=100_000)
 
-        # 2 nearby farmers mock
-        nearby = [{"id": 101, "quantity_kg": 2500.0, "distance_km": 4.0}]
 
-        engine_inst = DecisionEngine()
-        output = engine_inst.evaluate(
-            farmer=situation,
-            market=market_ctx,
-            buyer_offers=buyer_offers,
-            nearby_farmers=nearby
-        )
+@app.post("/api/finance/applications/{app_id}/receipt")
+def finance_confirm_receipt(app_id: str, req: ReceiptCheckIn):
+    out = financing.confirm_receipt(app_id, req.sacks_found)
+    if not out:
+        raise HTTPException(status_code=404, detail="No such application")
+    return out
 
-        # Dialog generation
-        dialog = FarmerVoiceDialog.format_decision_advice_bn(output)
 
-        return {
-            "farmer_situation": {
-                "quantity_maunds": round(qty_kg / MAUND_TO_KG, 1),
-                "quantity_kg": qty_kg,
-                "district": req.district,
-                "cash_needed_tk": req.cash_needed_tk,
-                "deadline_days": req.deadline_days
-            },
-            "recommendation": {
-                "scenario": output.recommended.scenario if output.recommended else "sell_now",
-                "expected_proceeds_tk": output.recommended.expected_proceeds_tk if output.recommended else 0.0,
-                "explanation_en": output.recommended.explanation_en if output.recommended else "",
-                "risk_level": output.recommended.risk_level if output.recommended else "low",
-                "confidence": output.recommended.confidence if output.recommended else 0.8
-            },
-            "all_scenarios": [
-                {
-                    "scenario": s.scenario,
-                    "rank": s.rank,
-                    "feasible": s.feasible,
-                    "infeasible_reason": s.infeasible_reason,
-                    "expected_proceeds_tk": s.expected_proceeds_tk,
-                    "explanation_en": s.explanation_en
-                }
-                for s in output.scenarios
-            ],
-            "bangla_voice_response": dialog["speech_text_bn"],
-            "bangla_sms_summary": dialog["sms_summary_bn"]
-        }
-    finally:
-        session.close()
+class DecisionIn(BaseModel):
+    approve: bool
 
-@app.post("/api/voice/webhook")
-def handle_voice_webhook(req: VoiceWebhookRequest):
-    """
-    Webhook receiving voice transcripts or IVR input from Bangladeshi farmers.
-    Extracts intents, evaluates best harvest decision, and returns Bengali audio text.
-    """
-    transcript = req.transcript
 
-    # Extract entities
-    parsed_qty = FarmerIntentParser.parse_quantity(transcript) or (40 * MAUND_TO_KG)
-    parsed_cash = FarmerIntentParser.parse_cash_needed(transcript) or 15000.0
-    parsed_deadline = FarmerIntentParser.parse_deadline_days(transcript)
-    parsed_storage = FarmerIntentParser.parse_storage_access(transcript)
-    parsed_offer = FarmerIntentParser.parse_offer_price(transcript) or 20.0
+@app.post("/api/finance/applications/{app_id}/decision")
+def finance_decision(app_id: str, req: DecisionIn):
+    out = financing.bank_decision(app_id, req.approve)
+    if not out:
+        raise HTTPException(status_code=404, detail="No such application")
+    return out
 
-    eval_req = FarmerEvaluationRequest(
-        quantity_kg=parsed_qty,
-        district="Bogura",
-        cash_needed_tk=parsed_cash,
-        deadline_days=parsed_deadline,
-        current_offer_per_kg=parsed_offer,
-        has_cold_storage=parsed_storage
-    )
 
-    result = evaluate_farmer_situation(eval_req)
+# ============================================================ group storage
 
-    return {
-        "caller_phone": req.phone_number,
-        "caller_name": req.caller_name,
-        "extracted_entities": {
-            "quantity_maunds": round(parsed_qty / MAUND_TO_KG, 1),
-            "cash_needed_tk": parsed_cash,
-            "deadline_days": parsed_deadline,
-            "has_cold_storage": parsed_storage,
-            "offer_price_per_kg": parsed_offer
-        },
-        "response_speech_bn": result["bangla_voice_response"],
-        "response_sms_bn": result["bangla_sms_summary"]
-    }
+@app.get("/api/groups")
+def groups(district: Optional[str] = None):
+    return group_storage.pools(district)
 
-class VoiceSynthesisRequest(BaseModel):
-    text: str
-    filename: Optional[str] = "custom_advice.mp3"
+
+class GroupCompareIn(BaseModel):
+    pool_id: str
+    sacks: int = Field(..., gt=0, le=100_000)
+
+
+@app.post("/api/groups/compare")
+def groups_compare(req: GroupCompareIn):
+    try:
+        return group_storage.compare(req.pool_id, req.sacks)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="No such group")
+
+
+class GroupJoinIn(GroupCompareIn):
+    name: str = Field(..., min_length=1, max_length=80)
+    phone: Optional[str] = Field(None, max_length=20)
+
+
+@app.post("/api/groups/join")
+def groups_join(req: GroupJoinIn):
+    try:
+        return group_storage.join(req.pool_id, req.name, req.sacks, req.phone)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="No such group")
+
+
+class AgreeIn(BaseModel):
+    min_sacks: int = Field(..., gt=0)
+
+
+@app.post("/api/groups/{pool_id}/agree")
+def groups_agree(pool_id: str, req: AgreeIn):
+    try:
+        return group_storage.agree_offer(pool_id, req.min_sacks)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="No such group")
+
+
+# ============================================================ export
+
+@app.get("/api/export/sourcing")
+def export_sourcing(top: int = 12):
+    national = price_outlook.national_latest()["median"]
+    return {"districts": export_intel.sourcing(min(max(top, 1), 64)),
+            "domestic_gaps": export_intel.domestic_gaps(national)}
+
+
+class ExportIn(BaseModel):
+    farmgate_price: float = Field(..., gt=0, le=500)
+    source_district: str = "Bogura"
+    quantity_t: float = Field(26, gt=0, le=100_000)
+
+
+@app.post("/api/export/evaluate")
+def export_evaluate(req: ExportIn):
+    return export_intel.evaluate_all(req.farmgate_price, req.source_district, req.quantity_t)
+
+
+# ============================================================ profit calculator
+
+class SaleIn(BaseModel):
+    month: Optional[str] = Field(None, max_length=20)
+    kg: float = Field(..., ge=0)
+    price_per_kg: float = Field(..., ge=0, le=500)
+
+
+class ProfitIn(BaseModel):
+    land_amount: float = Field(1, gt=0, le=10_000)
+    land_unit: Literal["bigha", "acre", "decimal", "hectare"] = "bigha"
+    harvest_kg: float = Field(..., gt=0)
+    growing: dict[str, float] = Field(default_factory=dict)
+    after: dict[str, float] = Field(default_factory=dict)
+    sales: list[SaleIn] = Field(default_factory=list, max_length=50)
+    unsold_price_per_kg: Optional[float] = Field(None, ge=0, le=500)
+    harvest_price_per_kg: Optional[float] = Field(None, gt=0, le=500)
+
+
+@app.get("/api/profit/example")
+def profit_example():
+    return {"inputs": profit.EXAMPLE_BIGHA, "result": profit.example(),
+            "lines": {"growing": profit.GROWING_LINES, "after": profit.AFTER_LINES, "labels": profit.LABELS}}
+
+
+@app.post("/api/profit/calculate")
+def profit_calculate(req: ProfitIn):
+    return profit.calculate(req.harvest_kg, req.growing, req.after, [s.model_dump() for s in req.sales],
+                            req.land_amount, req.land_unit, req.unsold_price_per_kg, req.harvest_price_per_kg)
+
+
+# ============================================================ SMS (dry run unless SMS_LIVE=1)
+
+class AdviceSmsIn(PlanIn):
+    phone: str = Field(..., max_length=20)
+
+
+@app.post("/api/sms/advice")
+def sms_advice(req: AdviceSmsIn):
+    """Send the store-or-sell advice by SMS. The text is built here from the engine, never sent from the page."""
+    plan = planner.plan(req.lot())
+    text = advice_sms(plan)
+    return {"text": text, **sms_client.send_sms(req.phone, text)}
+
+
+# ============================================================ call preview
+
+class CallTurnRequest(BaseModel):
+    state: Optional[dict] = None       # what the last turn returned; None starts a call
+    kind: str = "start"                # "start", "speech" or "keypad"
+    text: Optional[str] = Field(None, max_length=2000)
+    digits: Optional[str] = Field(None, max_length=12)
+    district: Optional[str] = "Bogura"
+    month: Optional[int] = Field(None, ge=1, le=12)
+    year: Optional[int] = Field(None, ge=2013, le=2035)
+    phone: Optional[str] = Field(None, max_length=20)
+
+
+class CallSmsRequest(BaseModel):
+    state: dict
+    phone: str = Field(..., max_length=20)
+
+
+class SpeakRequest(BaseModel):
+    text: str = Field(..., max_length=4000)
     gender: Optional[str] = "MALE"
 
-@app.post("/api/voice/synthesize")
-def synthesize_voice(req: VoiceSynthesisRequest):
-    """Synthesize Bengali text to playable MP3 audio via Google Cloud TTS."""
-    if not tts_service.ready:
-        raise HTTPException(status_code=503, detail="Google Cloud TTS not configured or credentials missing.")
-    
-    output_path = tts_service.synthesize_speech(
-        text=req.text,
-        output_filename=req.filename,
-        voice_gender=req.gender
-    )
-    if not output_path:
-        raise HTTPException(status_code=500, detail="Failed to synthesize Bengali speech.")
-    
+
+@app.get("/api/call/status")
+def call_status():
+    sms_cfg = sms_client.sms_config()
     return {
-        "status": "success",
-        "audio_url": f"/audio/{output_path.name}",
-        "file_size_bytes": output_path.stat().st_size
+        "gemini": {"on": gemini_client.available, "model": gemini_client.model_used},
+        "google_voice": tts_service.status(),
+        "sms": {"configured": sms_cfg["configured"], "live": sms_cfg["live"]},
+        "calls": "preview",
     }
 
-@app.get("/api/cold-storages")
-def list_cold_storages(district: Optional[str] = None):
-    session = SessionLocal()
-    try:
-        q = session.query(ColdStorage)
-        if district:
-            q = q.filter(ColdStorage.district.ilike(f"%{district}%"))
-        storages = q.all()
-        return [
-            {
-                "id": s.id,
-                "name": s.name,
-                "district": s.district,
-                "upazila": s.upazila,
-                "available_tonnes": s.available_tonnes,
-                "official_rate_per_kg": s.official_rate_per_kg,
-                "actual_rate_per_kg": s.actual_rate_per_kg,
-                "phone": s.phone
-            }
-            for s in storages
-        ]
-    finally:
-        session.close()
 
-@app.get("/api/buyers")
-def list_buyers(district: Optional[str] = None):
-    session = SessionLocal()
-    try:
-        q = session.query(Buyer)
-        if district:
-            q = q.filter(Buyer.district.ilike(f"%{district}%"))
-        buyers = q.all()
-        return [
-            {
-                "id": b.id,
-                "name": b.name,
-                "type": b.buyer_type,
-                "district": b.district,
-                "current_offer_per_kg": b.current_offer_per_kg,
-                "min_quantity_kg": b.min_quantity_kg,
-                "payment_days": b.payment_days,
-                "phone": b.phone
-            }
-            for b in buyers
-        ]
-    finally:
-        session.close()
+@app.post("/api/call/turn")
+def call_turn(req: CallTurnRequest):
+    if req.kind not in ("start", "speech", "keypad"):
+        raise HTTPException(status_code=400, detail="kind must be start, speech or keypad")
+    if req.kind != "start" and not (req.state and req.state.get("step")):
+        raise HTTPException(status_code=400, detail="Start a call first (kind=start)")
+    return conversation.turn(req.state, {
+        "kind": req.kind, "text": req.text, "digits": req.digits, "district": req.district,
+        "month": req.month, "year": req.year, "phone": req.phone,
+    })
 
-# ============================================================
-# CLI DEMO RUNNER
-# ============================================================
 
-def run_demo():
-    print("=" * 70)
-    print("🌾 KRISHIVAULT INTELLIGENCE PIPELINE — END-TO-END DEMO")
-    print("=" * 70)
+@app.post("/api/voice/speak")
+def speak(req: SpeakRequest):
+    """The Google Bangla voice for one reply (cached). 503 without a key: the screen uses the browser's voice."""
+    if not tts_service.ready:
+        raise HTTPException(status_code=503, detail="Google voice not set up (GOOGLE_APPLICATION_CREDENTIALS)")
+    path = tts_service.speak(req.text, voice_gender=req.gender or "MALE")
+    if not path:
+        raise HTTPException(status_code=502, detail=f"Google voice failed: {tts_service.last_error}")
+    return {"audio_url": f"/audio/{path.name}", "language": tts_service.language_used}
 
-    session = SessionLocal()
-    try:
-        # 1. Pipeline status
-        price_count = session.query(MarketPrice).count()
-        weather_count = session.query(WeatherData).count()
-        storage_count = session.query(ColdStorage).count()
-        buyer_count = session.query(Buyer).count()
 
-        print(f"📊 DATA PIPELINE ASSETS:")
-        print(f"   • Historical Potato Prices: {price_count} records")
-        print(f"   • Historical Weather Points: {weather_count} records")
-        print(f"   • Verified Cold Storage Hubs: {storage_count}")
-        print(f"   • Active Buyer Network Bids: {buyer_count}")
+@app.post("/api/call/sms")
+def call_sms(req: CallSmsRequest):
+    """The call's SMS receipt. The text comes from the call state the engine filled in."""
+    text = receipt_sms(req.state)
+    if not text:
+        raise HTTPException(status_code=400, detail="There is no answer yet in this call to send.")
+    return {"text": text, **sms_client.send_sms(req.phone, text)}
 
-        # 2. Latest market price
-        latest_bogura = (
-            session.query(MarketPrice)
-            .filter(MarketPrice.district.ilike("%Bogura%"))
-            .order_by(MarketPrice.date.desc())
-            .first()
-        )
-        base_price = latest_bogura.retail_avg if latest_bogura else 22.0
-        print(f"\n📍 PILOT REGION (BOGURA):")
-        print(f"   • Latest Market Retail Price: ৳{base_price:.2f}/kg")
-        print(f"   • Forecast 7-Day: ৳{base_price * 1.05:.2f}/kg (+5.0%)")
-        print(f"   • Forecast 30-Day: ৳{base_price * 1.25:.2f}/kg (+25.0%)")
 
-        # 3. Simulate Farmer Case
-        print("\n" + "-" * 70)
-        print("🧑‍🌾 REAL-WORLD CASE STUDY: ABDUR RAHIM (BOGURA)")
-        print("   • Total Harvest: 100 maunds (3,732 kg)")
-        print("   • Urgent Cash Needed: ৳30,000 in 4 days (fertilizer & debt repayment)")
-        print("   • Local Faria Offer: ৳19.00/kg")
-        print("   • Cold Storage Access: Available at ৳6.50/kg/mo")
-        print("-" * 70)
+# ============================================================ partner screens
 
-        eval_req = FarmerEvaluationRequest(
-            crop="potato",
-            quantity_maunds=100.0,
-            district="Bogura",
-            cash_needed_tk=30000.0,
-            deadline_days=4,
-            current_offer_per_kg=19.00,
-            has_cold_storage=True,
-            storage_cost_per_kg=6.50,
-            transport_cost_per_kg=0.50
-        )
+@app.get("/api/events")
+def list_events(partner: Optional[str] = None, limit: int = 50):
+    """Requests from farmers (calls and dashboard), newest first; phone numbers masked."""
+    return event_log.recent(limit=min(max(limit, 1), 200), partner=partner)
 
-        result = evaluate_farmer_situation(eval_req)
-
-        print("\n📊 4-SCENARIO OPTIMIZATION RESULTS:")
-        for sc in result["all_scenarios"]:
-            status = "✅" if sc["feasible"] else "❌"
-            print(f"   {status} [{sc['scenario'].upper()}]: ৳{sc['expected_proceeds_tk']:,.0f}")
-            print(f"      {sc['explanation_en']}")
-
-        print("\n🎙️ GENERATED BENGALI VOICE OUTPUT:")
-        print(f"   \"{result['bangla_voice_response']}\"")
-
-        print("\n📱 SMS NOTIFICATION:")
-        print(f"   \"{result['bangla_sms_summary']}\"")
-        print("=" * 70)
-
-    finally:
-        session.close()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="KrishiVault Pipeline & API")
-    parser.add_argument("--demo", action="store_true", help="Run end-to-end CLI demonstration")
-    parser.add_argument("--serve", action="store_true", help="Start FastAPI web server")
-    parser.add_argument("--port", type=int, default=8000, help="Port for server")
-
-    args = parser.parse_args()
-
-    if args.serve:
-        print(f"🚀 Starting KrishiVault Server on port {args.port}...")
-        uvicorn.run("src.main:app", host="0.0.0.0", port=args.port, reload=False)
-    else:
-        run_demo()
+    import uvicorn
+    uvicorn.run("src.main:app", host="0.0.0.0", port=8000, reload=False)

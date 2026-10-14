@@ -1,41 +1,5 @@
-# === Data Collection & Scraping ===
-requests>=2.31.0
-beautifulsoup4>=4.12.0
-selenium>=4.15.0
-lxml>=4.9.0
-schedule>=1.2.0
+# Everything the app and tests need (the same list cloud sessions install)
+-r requirements-cloud.txt
 
-# === Data Processing ===
-pandas>=2.1.0
-numpy>=1.24.0
-openpyxl>=3.1.0
-
-# === Database ===
-sqlalchemy>=2.0.0
-psycopg2-binary>=2.9.0
-alembic>=1.12.0
-
-# === Machine Learning & Prediction ===
-scikit-learn>=1.3.0
-statsmodels>=0.14.0
-torch>=2.1.0
-matplotlib>=3.8.0
-seaborn>=0.13.0
-
-# === Weather API ===
-python-dotenv>=1.0.0
-
-# === Voice / Telephony ===
-# openai-whisper>=20231117
-# elevenlabs>=0.3.0
-# twilio>=8.10.0
-
-# === API Server ===
-fastapi>=0.104.0
-uvicorn>=0.24.0
-pydantic>=2.5.0
-
-# === Utilities ===
-loguru>=0.7.0
-tenacity>=8.2.0
-rich>=13.7.0
+# Optional, for a local PostgreSQL database instead of SQLite
+# psycopg2-binary>=2.9.0

@@ -23,9 +23,9 @@ def test_parse_quantity_maund():
     assert qty2 == round(50 * MAUND_TO_KG, 2)
 
 def test_parse_quantity_sacks():
-    # 10 sacks (50 kg each)
+    # 10 cold-storage sacks (84 kg each)
     qty = FarmerIntentParser.parse_quantity("আমার ১০ বস্তা আলু")
-    assert qty == 500.0
+    assert qty == 840.0
 
 def test_parse_quantity_kg():
     qty = FarmerIntentParser.parse_quantity("আমার 1500 কেজি আলু")
