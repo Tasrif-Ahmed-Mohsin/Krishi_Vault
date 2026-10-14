@@ -3,7 +3,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from src.main import app, tts_service
+from src.main import app, gemini_client, tts_service
 
 
 @pytest.fixture(autouse=True)
@@ -11,6 +11,7 @@ def temp_runtime(tmp_path, monkeypatch):
     monkeypatch.setenv("KV_EVENTS_PATH", str(tmp_path / "events.jsonl"))
     monkeypatch.setenv("KV_RUNTIME_DIR", str(tmp_path))
     monkeypatch.setenv("SMS_LIVE", "0")
+    monkeypatch.setattr(gemini_client, "api_key", "")  # no network calls, even when GEMINI_API_KEY is set
 
 
 @pytest.fixture

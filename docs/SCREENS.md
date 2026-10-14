@@ -71,7 +71,8 @@ Set before starting the server (names in `krishivault-pipeline/.env.example`; va
 | Production and prices behind the forecasts | Real data (BBS, WFP) |
 | The engine, loan valuation, group and export sums, profit calculator | Real code, tested; costs partly assumptions (editable) |
 | Cold storages, banks, buyers, groups, export prices | **Demo**, made up, labelled on every screen |
-| Speech, Gemini, Google voice | Work with keys; not yet tried with real keys here |
+| Gemini | Tried with the real key (14 October): understanding and rewording, number-checked |
+| Speech, Google voice | Work with keys; not yet tried with real keys here |
 | SMS | Dry run until switched on |
 | Phone calls | Preview only |
 

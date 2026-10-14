@@ -92,3 +92,21 @@ def test_gemini_not_called_when_parser_placed_everything():
     result = understand("আমার ৫০ মণ আলু আছে", gemini=fake)
     assert fake.calls == 0
     assert result["gemini"] == "not_needed"
+
+
+def test_gemini_price_unit_follows_the_size_of_the_number():
+    # "ফড়িয়া ১৬ টেকা দিবার চায়" has no কেজি or মণ; Gemini once guessed ৳16 a maund (৳0.4 a kg)
+    fake = FakeGemini(json_answer={"offer_price": {"number": 16, "per": "maund"}})
+    result = understand("হামার ৮০ মণ আলু, ফড়িয়া ১৬ টেকা দিবার চায়", gemini=fake)
+    assert result["values"]["offer_per_kg"]["value"] == 16
+    assert result["values"]["offer_per_kg"]["source"] == "gemini"
+    fake = FakeGemini(json_answer={"offer_price": {"number": 1200, "per": "kg"}})
+    result = understand("হামার ৮০ মণ আলু, ফড়িয়া বারোশো দিবার চায়", gemini=fake)
+    assert result["values"]["offer_per_kg"]["value"] == round(1200 / MAUND_TO_KG, 2)
+
+
+def test_gemini_price_below_a_believable_price_is_rejected():
+    fake = FakeGemini(json_answer={"offer_price": {"number": 2, "per": "kg"}})
+    result = understand("হামার ৮০ মণ আলু, ফড়িয়া ২ টেকা দিবার চায়", gemini=fake)
+    assert "offer_per_kg" not in result["values"]
+    assert result["rejected"][0] == {"slot": "offer_per_kg", "number": 2, "reason": "out_of_range"}

@@ -12,15 +12,18 @@ from typing import Optional
 
 from loguru import logger
 
-DEFAULT_MODELS = ["gemini-3.5-flash", "gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-3.8-flash"]
+DEFAULT_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-flash-lite-latest", "gemini-flash-latest"]
+
+# Google refuses a wait shorter than 10 seconds ("Minimum allowed deadline is 10s"), so 8 failed every call
+MIN_TIMEOUT_S = 10.0
 
 
 class GeminiClient:
-    def __init__(self, api_key: Optional[str] = None, models: Optional[list] = None, timeout_s: float = 8.0):
+    def __init__(self, api_key: Optional[str] = None, models: Optional[list] = None, timeout_s: float = 12.0):
         self.api_key = api_key if api_key is not None else os.getenv("GEMINI_API_KEY", "").strip()
         env_models = [m.strip() for m in os.getenv("GEMINI_MODEL", "").split(",") if m.strip()]
         self.models = models or env_models or DEFAULT_MODELS
-        self.timeout_ms = int(timeout_s * 1000)
+        self.timeout_ms = int(max(timeout_s, MIN_TIMEOUT_S) * 1000)
         self._client = None
         self._working_model: Optional[str] = None
 

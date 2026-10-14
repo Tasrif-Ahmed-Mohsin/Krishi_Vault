@@ -27,6 +27,9 @@ LIMITS = {
     "dadon_tk": (0, 1_000_000),
 }
 
+# The lowest believable potato price per kg (the parser uses the same floor); LIMITS allows 0 for "don't know"
+MIN_PRICE_PER_KG = 3
+
 # Answers that mean "none" or "don't know" for the optional money questions
 _NONE_WORDS = ["না", "নাই", "নেই", "জানি না", "জানিনা", "কিছু না", "লাগবে না", "দরকার নাই", "দরকার নেই"]
 
@@ -80,9 +83,10 @@ def _gemini_values(data: dict) -> dict[str, dict]:
             out[slot] = {"number": v, "value": float(v)}
     o = data.get("offer_price")
     if isinstance(o, dict) and isinstance(o.get("number"), (int, float)):
-        per = o.get("per") or "kg"
-        value = o["number"] / MAUND_TO_KG if per == "maund" else o["number"]
-        out["offer_per_kg"] = {"number": o["number"], "value": round(value, 2), "unit": f"taka_per_{per}"}
+        # The parser already reads a price said with কেজি or মণ, so Gemini's "per" is only a guess (it read
+        # "১৬ টেকা" as ৳16 a maund). The size of the number decides, as for a bare answer.
+        ans = bare_answer("offer_per_kg", float(o["number"]))
+        out["offer_per_kg"] = {"number": o["number"], "value": ans["value"], "unit": ans.get("unit", "taka_per_kg")}
     return out
 
 
@@ -149,7 +153,7 @@ def understand(text: str, expecting: Optional[str] = None, asked_text: str = "",
                     if canonical(float(g["number"])) not in said:
                         rejected.append({"slot": slot, "number": g["number"], "reason": "not_said"})
                         continue
-                    if not in_limits(slot, g["value"]):
+                    if not in_limits(slot, g["value"]) or (slot == "offer_per_kg" and g["value"] < MIN_PRICE_PER_KG):
                         rejected.append({"slot": slot, "number": g["number"], "reason": "out_of_range"})
                         continue
                     values[slot] = {"value": g["value"], "said": g["number"], "unit": g.get("unit"),

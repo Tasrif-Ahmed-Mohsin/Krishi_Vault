@@ -113,7 +113,7 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 **Real now:**
 - BBS potato production for 64 districts, 2012-13 to 2024-25, and the production forecast built on it.
 - WFP retail potato prices, February 2024 to July 2026 (19 usable months), and the price outlook fitted on them.
-- The storage engine, market comparison, loan valuation, group storage, export cost build-up and profit calculator: all built and tested (`tests/`, 112 tests).
+- The storage engine, market comparison, loan valuation, group storage, export cost build-up and profit calculator: all built and tested (`tests/`, 114 tests).
 - The call preview with the Bangla number reader and the number lock; the SMS client (dry run).
 
 **Not yet, or demo:**
@@ -123,7 +123,8 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 - **Farm-gate prices:** the outlook moves the farmer's own price by the retail change; real farm-gate history is needed.
 - **Costs and losses** other than the field notes (sack, carrying, selling, weight loss, interest rates) are assumptions to check.
 - **All partners are demo:** cold storages, banks, buyers, exporters, groups. Export prices, freight and duties are demo figures.
-- **Gemini and the Google voice** switch on with their keys but have not been tried with real keys in the call preview. Speech recognition has not been tried with a Bogura speaker.
+- **Gemini was tried with the real key on 14 October** (cloud session): it fills in what the parser cannot place ("ফড়িয়া ১৬ টেকা দিবার চায়" → ৳16 a kg) and rewords the answer; the number check kept every number in the test calls. The number check compares numbers and banned words, not meaning, so listen to a reworded answer before a demo.
+- **The Google voice has not been tried with its key yet**: the key (`GOOGLE_TTS_JSON_B64`) was not in the cloud environment. Speech recognition has not been tried with a Bogura speaker.
 - **No live SMS from KrishiVault's own code yet** (REVE worked from Mati Kohon on 8 October). From this cloud machine the REVE gateway did not answer; try from a laptop first.
 - **No phone line.**
 
@@ -136,7 +137,7 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 5. **Weather in the production forecast:** NASA POWER season weather per district for 2012-2025 (Mati Kohon has the fetcher).
 6. **Real partners:** one cold storage (group rate, receipt confirmation), one bank or microfinance lender (loan terms for stored potato), one buyer and one exporter. Replace the demo entries in `data/demo/demo_partners.json`.
 7. **Export quotes:** real destination prices, freight and duties (Export Promotion Bureau, exporters, shipping lines).
-8. **Gemini and the Google voice** with real keys in the call preview; test speech with a Bogura speaker.
+8. **Gemini and the Google voice** with real keys in the call preview; test speech with a Bogura speaker. Gemini: **done, 14 October** (it needed a 10-second wait and new model names). Google voice: add `GOOGLE_TTS_JSON_B64` to the cloud environment, then check `/api/voice/speak`.
 9. **Update the pitch deck** (`krishivault-pitch-deck.html`) and the farmer interview guide to the new plan; both still describe the old four pillars.
 10. **Onion** as the second crop (home storage 2 to 3 months, different season).
 
