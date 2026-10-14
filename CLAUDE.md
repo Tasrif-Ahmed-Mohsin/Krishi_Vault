@@ -9,20 +9,19 @@ This file is the short version.
 
 ## What KrishiVault is
 
-**A farm business ecosystem, not an agricultural information centre.** It connects farmers who are left behind (button phones, little bargaining power, dadon debt) with buyers, cold storages, fertilizer and pesticide dealers, seed and machinery sellers, lenders, agriculture officers and government. AI and data find the best option for the farmer; the partner network makes it happen.
+**A farm business ecosystem, not an agricultural information centre.** It connects farmers who are left behind (button phones, little bargaining power, dadon debt) with buyers, cold storages, fertilizer and pesticide dealers, seed and machinery sellers, agriculture officers and government. AI and data find the best option for the farmer; the partner network makes it happen.
 
-**Five pillars:**
+**Four pillars:**
 1. **Sell for the best value:** sell now, part, store or as a group, in taka, with cold-storage bookings and group lots for buyers.
 2. **Fertilizer and pesticide supply chain:** the right dose for the soil, the official fair price, on-time delivery; pesticide only when weather favours disease.
 3. **Agricultural goods marketplace:** seeds (including seed potato), machinery to buy or rent, tools and other inputs, from verified sellers, with subsidy information.
 4. **Danger alerts:** heavy rain, heat, cold and fog, floods, crop-disease weather, and price crashes.
-5. **Fair credit:** loans from partner lenders instead of dadon.
 
-**The backbone is the farmer's record (কৃষি খাতা),** filled by the businesses he deals with and confirmed by him by keypad.
+**Not in the plan (decided 14 October):** a farmer money record (খাতা), loans and a lender screen, a phone-number ID with a PIN, farmer keypad reports, a spray record. Do not build them.
 
 **Channels:**
 - **Farmers:** button phones, by voice call (keypad or speech), missed call and callback, and an SMS receipt.
-- **Partners:** web screens for officers, cold storages, buyers, dealers, sellers, lenders and DAE.
+- **Partners:** web screens for officers, cold storages, buyers, dealers and sellers, and a DAE dashboard.
 
 **Vision:** the best value for farmers and honest stakeholders, and less financial, crop and sustainability loss. It must be financially solid (the farmer pays nothing; businesses pay small fees only when they gain; government pays for public-good alerts and dashboards) and practical.
 
@@ -68,7 +67,6 @@ Secrets come from environment variables (names in `krishivault-pipeline/.env.exa
 - **No paid placement:** a partner's fee never changes what a farmer is advised; offers are ranked by value to the farmer.
 - **Farmer safety:** no AI-chosen pesticide names or doses. Crop problems get safe first steps and an officer callback.
 - **Honest claims:** demo partners, sellers and marketplace items are clearly fictional demo data, never real partners. Rename the sample buyer "PRAN Agro" and every sample partner. Check `docs/HANDOFF.md`, section 9, before claiming anything works.
-- **Phone number = farmer key,** linked to an internal farmer ID (shared phones, SIM changes), with a keypad PIN for money matters.
 - **Write plainly:** teammates are not computer-science students; docs, screens and slides use plain language.
 - **Web design:** sharp corners, a subtle bevel and emboss, no floating top navigation bar.
 

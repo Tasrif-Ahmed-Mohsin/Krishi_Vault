@@ -56,18 +56,18 @@ p { margin: 0; }
 header { display: grid; gap: 14px; }
 section { display: grid; gap: 18px; }
 .intro { color: var(--muted); max-width: 68ch; }
-
-/* stamped panels: sharp corners, light bevel */
 .panel { background: var(--paper); border: 1px solid var(--rule); box-shadow: inset 0 1px 0 var(--hi), 0 2px 0 var(--shadow); padding: 20px 22px; display: grid; gap: 10px; min-width: 0; }
 .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
 .panel h3 { color: var(--accent); }
 .panel ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
-
+.pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.pillar { background: var(--paper); border: 1px solid var(--rule); border-top: 3px solid var(--accent); box-shadow: inset 0 1px 0 var(--hi), 0 2px 0 var(--shadow); padding: 14px 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.pillar b { font-family: var(--display); font-size: 16px; }
+.pillar span { font-size: 15px; color: var(--muted); }
 .glance { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 .glance .tile { padding: 14px 16px; border: 1px solid var(--rule); background: var(--paper); box-shadow: inset 0 1px 0 var(--hi), 0 2px 0 var(--shadow); display: grid; gap: 2px; }
 .glance .n { font-family: var(--display); font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .glance .l { font-size: 14px; color: var(--muted); }
-
 .chip { display: inline-block; font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 9px; border: 1px solid currentColor; box-shadow: inset 0 1px 0 var(--hi), 0 1px 0 var(--shadow); white-space: nowrap; }
 .ok   { color: var(--ok);   background: var(--ok-bg); }
 .work { color: var(--work); background: var(--work-bg); }
@@ -77,11 +77,9 @@ section { display: grid; gap: 18px; }
 .glance .tile.ok .n { color: var(--ok); } .glance .tile.work .n { color: var(--work); } .glance .tile.wait .n { color: var(--wait); }
 .glance .tile.demo .n { color: var(--demo); } .glance .tile.plan .n { color: var(--plan); }
 .glance .tile { background: var(--paper); }
-
 .legend { display: grid; gap: 10px; }
 .legend div { display: grid; grid-template-columns: 130px 1fr; gap: 12px; align-items: start; }
 .legend .chip { justify-self: start; }
-
 .group { display: grid; gap: 12px; }
 .group > h3 { padding-bottom: 6px; border-bottom: 2px solid var(--rule); }
 .item { background: var(--paper); border: 1px solid var(--rule); border-left: 4px solid var(--plan); padding: 14px 16px; display: grid; gap: 8px; min-width: 0; }
@@ -95,7 +93,6 @@ section { display: grid; gap: 18px; }
 .item .row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; font-size: 16px; }
 .item .row b { font-family: var(--display); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding-top: 3px; }
 .item .say { color: var(--accent); }
-
 .pairs { display: grid; gap: 10px; }
 .pair { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--rule); background: var(--paper); box-shadow: 0 2px 0 var(--shadow); }
 .pair > div { padding: 12px 16px; min-width: 0; }
@@ -103,13 +100,10 @@ section { display: grid; gap: 18px; }
 .pair .lab { font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; display: block; margin-bottom: 4px; }
 .pair .no .lab { color: #B4442F; }
 .pair .yes .lab { color: var(--ok); }
-
 ol.todo { margin: 0; padding-left: 24px; display: grid; gap: 10px; }
 ol.todo li::marker { font-family: var(--display); font-weight: 700; color: var(--accent); }
-
 .warn { border: 1px solid var(--ochre); background: var(--paper); border-left: 4px solid var(--ochre); padding: 16px 18px; display: grid; gap: 8px; }
 .warn h3 { color: var(--ochre); }
-
 dl.gloss { display: grid; grid-template-columns: 170px 1fr; gap: 10px 18px; margin: 0; }
 dl.gloss dt { font-weight: 700; }
 dl.gloss dd { margin: 0; color: var(--ink); }
@@ -117,7 +111,6 @@ dl.gloss dd { margin: 0; color: var(--ink); }
 .sources a, a { color: var(--accent); }
 a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .verdict { font-size: 18px; }
-
 @media (max-width: 560px) {
   .item .row, .legend div, dl.gloss { grid-template-columns: 1fr; gap: 2px; }
   .pair { grid-template-columns: 1fr; }
@@ -131,26 +124,30 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 <header>
   <span class="eyebrow">KrishiVault · for the team</span>
   <h1>What we can claim, and what we can show</h1>
-  <p class="lead">Before the presentation we checked every promise in the KrishiVault plan against the data and software we really have. This page explains the plan and the prototype in plain words, marks each claim, and gives the safe way to say it to the judges.</p>
-  <p class="meta">Checked on 13 October 2026, against the KrishiVault code, the Mati Kohon data, and public sources.</p>
+  <p class="lead">We checked every promise in the KrishiVault plan against the data and software we really have. This page explains the plan and the prototype in plain words, marks each claim, and gives the safe way to say it to the judges.</p>
+  <p class="meta">Updated on 14 October 2026 for the ecosystem plan. Checked against the KrishiVault code, the Mati Kohon data, and public sources.</p>
 </header>
 
 <section>
   <h2>The idea in one minute</h2>
-  <p class="intro">Many farmers in Bangladesh only have a button phone and cannot use apps. KrishiVault is a free phone service for them. The farmer listens and answers by pressing keys or speaking. KrishiVault warns him before weather or disease costs him money, tells him in taka what to buy, when to sell and when to store, and connects him to a cold storage, a buyer, a fertilizer group or a lender. Potato in Bogura is our example crop.</p>
+  <p class="intro">KrishiVault is a farm business ecosystem, not an agricultural information centre. It connects farmers who are left behind (button phones, little bargaining power, dadon debt) with buyers, cold storages, fertilizer and pesticide dealers, seed and machinery sellers, agriculture officers and government. AI and data find the best option for the farmer; the partner network makes it happen. Farmers use it by voice call and SMS on any phone; partners use web screens. The farmer pays nothing; businesses pay small fees only when they gain. Potato in Bogura is our example crop.</p>
   <p class="bn" style="font-size:18px;color:var(--accent)">ফোনে বলুন — ফসলের দাম আর টাকা দুটোই বাঁচান।</p>
+  <div class="pillars">
+    <div class="pillar"><b>1. Sell for the best value</b><span>Sell now, sell part, store or sell as a group, in taka; cold-storage bookings and group lots for buyers.</span></div>
+    <div class="pillar"><b>2. Fertilizer and pesticide</b><span>The right dose for the soil, the official fair price, on-time delivery; spray only when the weather favours disease.</span></div>
+    <div class="pillar"><b>3. Seeds and machinery</b><span>Certified seed, machinery to buy or rent, tools and inputs from verified sellers, with subsidy information.</span></div>
+    <div class="pillar"><b>4. Danger alerts</b><span>Heavy rain, heat, cold and fog, floods, crop-disease weather, and price crashes.</span></div>
+  </div>
   <div class="two">
     <div class="panel">
       <h3>The plan</h3>
-      <p>The complete product we will build after the competition.</p>
+      <p>The complete ecosystem we will build after the competition.</p>
       <ul>
-        <li>Danger alerts by phone call (disease, rain, heat, cold, flood, price crash)</li>
-        <li>Sell, store or group-sell advice in taka, with a cold-storage booking or group sale in the same call</li>
-        <li>Fertilizer: how much, the fair price, and buying together</li>
-        <li>Loans from a partner instead of <i>dadon</i>, using the farmer's own records</li>
-        <li>The farmer's season record, <span class="bn">কৃষি খাতা</span>, filled by others, not typed by him</li>
+        <li>The four pillars, each ending in an action: a booking, a group sale, an order, a rental, an officer callback</li>
         <li>Talking to the AI on a real phone call through our own phone line</li>
-        <li>Web screens for officers, cold storages, buyers, dealers, lenders and DAE</li>
+        <li>Web screens for officers, cold storages, buyers, dealers and sellers</li>
+        <li>A government (DAE) dashboard with alerts, floods and a weekly fertilizer demand calendar</li>
+        <li>A business model in which the farmer pays nothing</li>
       </ul>
     </div>
     <div class="panel">
@@ -162,7 +159,7 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         <li>Talking to the AI inside an app: it hears Bangla, writes it down, and answers in a Bangla voice</li>
         <li>Today's real NASA alerts for any upazila</li>
         <li>The sell or store decision in taka</li>
-        <li>Simple example screens for the officer, cold storage, buyer and lender</li>
+        <li>Example screens for the marketplace, the officer, cold storage, buyer and dealer</li>
       </ul>
     </div>
   </div>
@@ -172,12 +169,12 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   <h2>The check at a glance</h2>
   <div class="glance" aria-label="Number of claims in each state">
     <div class="tile ok"><span class="n">13</span><span class="l">Ready now</span></div>
-    <div class="tile work"><span class="n">5</span><span class="l">Small work needed</span></div>
+    <div class="tile work"><span class="n">6</span><span class="l">Small work needed</span></div>
     <div class="tile wait"><span class="n">1</span><span class="l">Waiting on Awaj</span></div>
-    <div class="tile demo"><span class="n">3</span><span class="l">Example data only</span></div>
-    <div class="tile plan"><span class="n">10</span><span class="l">Plan only</span></div>
+    <div class="tile demo"><span class="n">4</span><span class="l">Example data only</span></div>
+    <div class="tile plan"><span class="n">6</span><span class="l">Plan only</span></div>
   </div>
-  <p class="verdict">The data foundation is real: NASA alerts for all 544 upazilas, crop and soil records, the decision engine, SMS and the Bangla voice. The gaps are partners (cold storage, buyer, dealer, lender), the price forecast, and the phone line for live conversation. We present those as the plan, not as finished work.</p>
+  <p class="verdict">The data foundation is real: NASA alerts for all 544 upazilas, crop and soil records, the decision engine, SMS and the Bangla voice. The gaps are partners (cold storage, buyer, dealer, seed and machinery sellers), the price forecast, and the phone line for live conversation. We present those as the plan, not as finished work.</p>
 </section>
 
 <section>
@@ -195,60 +192,51 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   <h2>The check, claim by claim</h2>
 
   <div class="group">
-    <h3>Danger alerts</h3>
-
+    <h3>Pillar 4 · Danger alerts</h3>
     <div class="item ok">
       <div class="top"><span class="claim">Late-blight weather alert for potato</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>Daily NASA weather for all 544 upazilas and a published late-blight rule. Over 25 seasons, Bogura has disease-friendly weather on about 40 days of a typical potato season.</span></div>
       <div class="row"><b>Say</b><span class="say">"We warn when the weather favours late blight, and say 'no spray needed' in quiet weeks." Do not promise a spray saving yet; the rule needs local testing first.</span></div>
     </div>
-
     <div class="item ok">
       <div class="top"><span class="claim">Flood alert</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>A NASA OPERA satellite reading of flood water for every upazila (8 October 2026). Example: Sariakandi in Bogura had 25% of its land under water, against 14% at the same time last year.</span></div>
       <div class="row"><b>Say</b><span class="say">"We read flood water from NASA satellites for every upazila." Refresh the reading before the demo so the date is recent.</span></div>
     </div>
-
     <div class="item work">
-      <div class="top"><span class="claim">Rain before harvest, heat on stored potato, cold and fog</span><span class="chip work">Small work</span></div>
+      <div class="top"><span class="claim">Heavy rain, heat, cold and fog alerts for potato</span><span class="chip work">Small work</span></div>
       <div class="row"><b>We have</b><span>The 7-day forecast and daily temperatures for every upazila. Similar alerts already exist for rice and wheat, but the potato ones are not written yet.</span></div>
       <div class="row"><b>Say</b><span class="say">Claim it only after the potato rules are added.</span></div>
     </div>
-
     <div class="item plan">
       <div class="top"><span class="claim">Price-crash alert</span><span class="chip plan">Plan only</span></div>
       <div class="row"><b>We have</b><span>Nothing working yet. It needs the price forecast, which is not trained.</span></div>
-      <div class="row"><b>Say</b><span class="say">"Price alerts come when our forecast is tested."</span></div>
+      <div class="row"><b>Say</b><span class="say">"Price alerts come when our forecast is tested." A demo alert can be shown if it is labelled as a demo.</span></div>
     </div>
   </div>
 
   <div class="group">
-    <h3>Selling and storing</h3>
-
+    <h3>Pillar 1 · Selling for the best value</h3>
     <div class="item ok">
       <div class="top"><span class="claim">Sell, sell part, store or group-sell advice in taka</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>KrishiVault's decision engine, with tests. It weighs cash need, deadline, dadon, storage cost and spoilage.</span></div>
       <div class="row"><b>Say</b><span class="say">"KrishiVault tells the farmer the taka outcome of each choice."</span></div>
     </div>
-
     <div class="item work">
       <div class="top"><span class="claim">Market prices</span><span class="chip work">Small work</span></div>
       <div class="row"><b>We have</b><span>Monthly shop prices for potato from the World Food Programme, February 2024 to July 2026, in 51 markets. The government's daily price page (DAM) moved, so our downloader is broken; the new site works and can be fixed. Shop prices are higher than farm prices.</span></div>
       <div class="row"><b>Say</b><span class="say">"Monthly market prices now; daily government prices after we update the downloader."</span></div>
     </div>
-
     <div class="item plan">
       <div class="top"><span class="claim">AI price forecast</span><span class="chip plan">Plan only</span></div>
       <div class="row"><b>We have</b><span>The forecasting code exists but has never been trained. We have only about 29 months of prices, which is too little.</span></div>
       <div class="row"><b>Say</b><span class="say">"Today the advice uses the usual seasonal pattern and the latest prices. The forecast goes live only when it beats that pattern in testing."</span></div>
     </div>
-
     <div class="item ok">
       <div class="top"><span class="claim">Cost-of-production floor ("the faria's offer is below your cost")</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>Potato production cost from the Agriculture Census 2019: about ৳157,532 per hectare, in 2019 prices.</span></div>
       <div class="row"><b>Say</b><span class="say">Mention that the cost is from 2019 and will be updated with farmers' own costs.</span></div>
     </div>
-
     <div class="item demo">
       <div class="top"><span class="claim">Cold-storage booking and group sale with a buyer</span><span class="chip demo">Example data</span></div>
       <div class="row"><b>We have</b><span>5 example cold storages and 5 example buyers in the database, with made-up phone numbers. No real partner has signed.</span></div>
@@ -257,112 +245,85 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   </div>
 
   <div class="group">
-    <h3>Fertilizer and pesticide</h3>
-
+    <h3>Pillar 2 · Fertilizer and pesticide supply chain</h3>
     <div class="item work">
       <div class="top"><span class="claim">How much fertilizer, matched to the soil</span><span class="chip work">Small work</span></div>
       <div class="row"><b>We have</b><span>SRDI's official union fertilizer cards (frs-bd.com, with Katalyst) and our own downloader for them, already used for 6 pilot unions, including potato. Soil test classes for all 544 upazilas. The Bogura unions still need downloading.</span></div>
       <div class="row"><b>Say</b><span class="say">"Doses come from SRDI's official union fertilizer cards," after the Bogura cards are downloaded.</span></div>
     </div>
-
     <div class="item ok">
       <div class="top"><span class="claim">Fair (official) fertilizer price</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>Official prices from news reports: urea and TSP ৳27 a kg (৳1,350 a 50 kg bag), DAP ৳21, MoP ৳20. This schedule dates from 2023. One 2026 report gives MoP as ৳1,050 a bag, another as ৳1,000.</span></div>
       <div class="row"><b>Say</b><span class="say">Confirm the prices against the Ministry of Agriculture's current order before the presentation.</span></div>
     </div>
-
     <div class="item ok">
       <div class="top"><span class="claim">Proof that farmers are overcharged</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>A news report from August 2026: in Joypurhat, urea sold for ৳1,900–1,950 a bag against the official ৳1,350, and TSP for ৳1,900–2,000.</span></div>
       <div class="row"><b>Say</b><span class="say">Use it on the problem slide, with the source.</span></div>
     </div>
-
     <div class="item plan">
-      <div class="top"><span class="claim">Group fertilizer buying through a dealer</span><span class="chip plan">Plan only</span></div>
+      <div class="top"><span class="claim">Group fertilizer orders through a dealer, delivered on time</span><span class="chip plan">Plan only</span></div>
       <div class="row"><b>We have</b><span>No dealer list and no dealer partner.</span></div>
       <div class="row"><b>Say</b><span class="say">"In the pilot, one dealer fills group orders."</span></div>
     </div>
-
     <div class="item plan">
-      <div class="top"><span class="claim">Fertilizer demand calendar for DAE</span><span class="chip plan">Plan only</span></div>
+      <div class="top"><span class="claim">Fertilizer demand calendar for dealers and DAE</span><span class="chip plan">Plan only</span></div>
       <div class="row"><b>We have</b><span>The pieces exist: crop areas (BBS), crop calendars and doses. The calendar itself is not built.</span></div>
       <div class="row"><b>Say</b><span class="say">"The data to predict fertilizer demand by week already exists; the planner is next."</span></div>
     </div>
-
     <div class="item ok">
       <div class="top"><span class="claim">Spray only when the weather says so</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>The same late-blight weather reading as above.</span></div>
       <div class="row"><b>Say</b><span class="say">Same caution: the savings will be measured in the pilot.</span></div>
     </div>
-
     <div class="item work">
       <div class="top"><span class="claim">Safe first steps for potato pests and diseases</span><span class="chip work">Small work</span></div>
       <div class="row"><b>We have</b><span>A safe-steps list for rice and other crops, but not potato yet. It needs BARI's potato guidance.</span></div>
       <div class="row"><b>Say</b><span class="say">"No AI-chosen pesticide. Safe first steps, then an officer calls back."</span></div>
     </div>
-
-    <div class="item plan">
-      <div class="top"><span class="claim">Spray record and safe-to-harvest date</span><span class="chip plan">Plan only</span></div>
-      <div class="row"><b>We have</b><span>Not built.</span></div>
-      <div class="row"><b>Say</b><span class="say">"Planned, so group lots can be sold to buyers who check for chemical residues."</span></div>
-    </div>
   </div>
 
   <div class="group">
-    <h3>Money record and credit</h3>
-
+    <h3>Pillar 3 · Seeds and machinery marketplace</h3>
     <div class="item demo">
-      <div class="top"><span class="claim">The farmer's season record (<span class="bn">কৃষি খাতা</span>)</span><span class="chip demo">Example data</span></div>
-      <div class="row"><b>We have</b><span>The design is ready. The prototype can show a simple page where an entry appears after a call.</span></div>
-      <div class="row"><b>Say</b><span class="say">"The farmer never types. Dealers, cold storages and buyers record against his phone number, and he confirms by pressing a key."</span></div>
+      <div class="top"><span class="claim">Seed catalog (certified seed potato, improved varieties)</span><span class="chip demo">Example data</span></div>
+      <div class="row"><b>We have</b><span>Crop facts for 13 crops. Variety names come from BARI and BRRI's public lists, and certified seed from BADC; the lists are still to collect. No seed seller has joined.</span></div>
+      <div class="row"><b>Say</b><span class="say">"The marketplace screen uses demo sellers; real seed sellers join in the pilot."</span></div>
     </div>
-
-    <div class="item plan">
-      <div class="top"><span class="claim">Loan instead of dadon</span><span class="chip plan">Plan only</span></div>
-      <div class="row"><b>We have</b><span>The idea only. It needs a lender partner.</span></div>
-      <div class="row"><b>Say</b><span class="say">"The record can become a credit history that a partner lender uses. This is our plan."</span></div>
+    <div class="item demo">
+      <div class="top"><span class="claim">Machinery to buy or rent (tillers, reapers, harvesters, pumps)</span><span class="chip demo">Example data</span></div>
+      <div class="row"><b>We have</b><span>The idea and a demo booking screen. No machinery owner has joined.</span></div>
+      <div class="row"><b>Say</b><span class="say">"Smallholders rent machines by the bigha; machinery owners get steady bookings. Shown with demo owners."</span></div>
     </div>
-
-    <div class="item plan">
-      <div class="top"><span class="claim">Phone number as the farmer's ID, with a PIN and a shared-phone menu</span><span class="chip plan">Plan only</span></div>
-      <div class="row"><b>We have</b><span>The design, not the software.</span></div>
-      <div class="row"><b>Say</b><span class="say">Present it as the design.</span></div>
-    </div>
-
-    <div class="item plan">
-      <div class="top"><span class="claim">Farmers report prices and disease by keypad</span><span class="chip plan">Plan only</span></div>
-      <div class="row"><b>We have</b><span>Mati Kohon has the keypad-survey link with Awaj, but it needs a recorded menu and Awaj's survey permission.</span></div>
-      <div class="row"><b>Say</b><span class="say">"Planned."</span></div>
+    <div class="item work">
+      <div class="top"><span class="claim">Government machinery subsidy information</span><span class="chip work">Small work</span></div>
+      <div class="row"><b>We have</b><span>DAE runs a farm mechanization programme with a subsidy that is higher in haor and coastal areas. The current terms are not yet confirmed.</span></div>
+      <div class="row"><b>Say</b><span class="say">Quote a subsidy rate only after checking the programme's current terms.</span></div>
     </div>
   </div>
 
   <div class="group">
     <h3>Phone, SMS and voice</h3>
-
     <div class="item ok">
       <div class="top"><span class="claim">SMS to farmers</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>The REVE SMS gateway. Real Bangla advice SMS reached two phones on 8 October.</span></div>
       <div class="row"><b>Say</b><span class="say">"We send real SMS today," and show it live.</span></div>
     </div>
-
     <div class="item wait">
       <div class="top"><span class="claim">Voice calls to farmers</span><span class="chip wait">Waiting</span></div>
-      <div class="row"><b>We have</b><span>The calling code works in test mode. Awaj's broadcast permission is expected tomorrow. A call costs about ৳0.55 a minute.</span></div>
+      <div class="row"><b>We have</b><span>The calling code works in test mode. Awaj's broadcast permission is pending. A call costs about ৳0.55 a minute.</span></div>
       <div class="row"><b>Say</b><span class="say">Claim it only after a real test call lands.</span></div>
     </div>
-
     <div class="item ok">
       <div class="top"><span class="claim">Bangla voice for the AI</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>Google's Bangla text-to-speech, working.</span></div>
       <div class="row"><b>Say</b><span class="say">"Every answer is read out in a natural Bangla voice."</span></div>
     </div>
-
     <div class="item work">
       <div class="top"><span class="claim">Talking to the AI inside the app</span><span class="chip work">Small work</span></div>
       <div class="row"><b>We have</b><span>Mati Kohon's dashboard already does it: it hears Bangla in the Chrome browser, writes it down, the engine answers, and the Bangla voice reads it. KrishiVault has its own Bangla number reader and Gemini advisor. A KrishiVault screen still needs building.</span></div>
       <div class="row"><b>Say</b><span class="say">"The conversation works in the app today, and the same pieces will run on the phone line."</span></div>
     </div>
-
     <div class="item plan">
       <div class="top"><span class="claim">Talking to the AI on a real phone call</span><span class="chip plan">Plan only</span></div>
       <div class="row"><b>We have</b><span>The architecture. It needs our own phone line: a licensed 096 number from a Bangladeshi provider and a call server (Asterisk). Speech recognition on phone-quality audio is still untested.</span></div>
@@ -371,38 +332,32 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   </div>
 
   <div class="group">
-    <h3>Screens for helpers, and data scale</h3>
-
+    <h3>Screens for partners, and data scale</h3>
     <div class="item demo">
       <div class="top"><span class="claim">Officer (SAAO) desk</span><span class="chip demo">Example data</span></div>
       <div class="row"><b>We have</b><span>Mati Kohon has an officer desk with farmer records and callbacks. A KrishiVault version is not built.</span></div>
       <div class="row"><b>Say</b><span class="say">Show it as an example screen.</span></div>
     </div>
-
     <div class="item plan">
-      <div class="top"><span class="claim">Cold storage, buyer, dealer and lender screens</span><span class="chip plan">Plan only</span></div>
-      <div class="row"><b>We have</b><span>Not built. Simple example screens can be made for the slides.</span></div>
+      <div class="top"><span class="claim">Cold storage, buyer, dealer and seller screens</span><span class="chip plan">Plan only</span></div>
+      <div class="row"><b>We have</b><span>Not built. Simple example screens can be made for the demo and the slides.</span></div>
       <div class="row"><b>Say</b><span class="say">"Example screens."</span></div>
     </div>
-
     <div class="item ok">
-      <div class="top"><span class="claim">Map for DAE (flood, crop loss, alerts)</span><span class="chip ok">Ready</span></div>
+      <div class="top"><span class="claim">Government (DAE) dashboard: flood, crop loss, alerts</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>Mati Kohon's map of all 544 upazilas, including flood water now and where this year's Aman is missing.</span></div>
       <div class="row"><b>Say</b><span class="say">"The national data already exists."</span></div>
     </div>
-
     <div class="item ok">
       <div class="top"><span class="claim">All 544 upazilas</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>Weather, alerts, soil classes and flood readings for every upazila.</span></div>
       <div class="row"><b>Say</b><span class="say">"Alerts and soil data cover every upazila of Bangladesh."</span></div>
     </div>
-
     <div class="item ok">
       <div class="top"><span class="claim">Many crops, not only potato</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>Full growing facts for 13 crops (rice, wheat, maize, mustard, lentil, jute and more) and government crop statistics for 23 crops in all 64 districts.</span></div>
       <div class="row"><b>Say</b><span class="say">"Potato is our example; the data already covers 13 crops."</span></div>
     </div>
-
     <div class="item ok">
       <div class="top"><span class="claim">Potato facts for Bogura</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>BBS 2024-25: 56,657 hectares of potato in Bogura, producing 1.18 million tonnes.</span></div>
@@ -416,10 +371,10 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   <div class="pairs">
     <div class="pair"><div class="no"><span class="lab">Don't say</span>"Our AI forecasts potato prices."</div><div class="yes"><span class="lab">Say</span>"Our forecaster is built. Today the advice uses the seasonal pattern and the latest prices."</div></div>
     <div class="pair"><div class="no"><span class="lab">Don't say</span>"We have partnered with cold storages and companies."</div><div class="yes"><span class="lab">Say</span>"The partners shown are examples. The pilot signs one cold storage and one buyer in Bogura."</div></div>
+    <div class="pair"><div class="no"><span class="lab">Don't say</span>"Farmers can already buy seeds and rent machines through us."</div><div class="yes"><span class="lab">Say</span>"The marketplace screens use demo sellers; real seed sellers and machinery owners join in the pilot."</div></div>
     <div class="pair"><div class="no"><span class="lab">Don't say</span>"We cut pesticide use by a set percent."</div><div class="yes"><span class="lab">Say</span>"We warn only when the weather favours disease. Savings will be measured in the pilot."</div></div>
     <div class="pair"><div class="no"><span class="lab">Don't say</span>"Farmers can already talk to our AI on the phone."</div><div class="yes"><span class="lab">Say</span>"Real calls and SMS reach phones today. The conversation works in the app and moves to a phone line next."</div></div>
     <div class="pair"><div class="no"><span class="lab">Don't say</span>"We give fertilizer advice for every union."</div><div class="yes"><span class="lab">Say</span>"Doses come from SRDI's official union cards. We have our pilot unions and can fetch any union."</div></div>
-    <div class="pair"><div class="no"><span class="lab">Don't say</span>"We give loans to replace dadon."</div><div class="yes"><span class="lab">Say</span>"The farmer's record can become a credit history for a partner lender. That is our plan."</div></div>
     <div class="pair"><div class="no"><span class="lab">Don't say</span>"Live daily market prices."</div><div class="yes"><span class="lab">Say</span>"Monthly market prices now; daily government prices after the downloader update."</div></div>
   </div>
 </section>
@@ -430,21 +385,22 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   <ol class="todo">
     <li>Build the KrishiVault conversation screen: speak, see the words, see the answer, hear it in Bangla, with "SMS me" and "Call me" buttons.</li>
     <li>Test a real Awaj call as soon as the broadcast permission arrives.</li>
+    <li>Add the potato alerts: heavy rain before harvest, heat on stored potato, cold and fog.</li>
     <li>Download SRDI fertilizer cards for the Bogura potato unions, including Sariakandi.</li>
-    <li>Add the potato alerts: rain before harvest, heat on stored potato, cold and fog.</li>
+    <li>Build the marketplace screens: a seed catalog and a machinery rental booking, with clearly fictional demo sellers.</li>
+    <li>Make the example partner screens: officer, cold storage, buyer, dealer and seller, all updating after a call.</li>
     <li>Update the government price downloader to the new DAM site.</li>
     <li>Refresh the NASA alerts and the flood reading a day before the demo.</li>
-    <li>Confirm official fertilizer prices from the Ministry of Agriculture's current order.</li>
+    <li>Confirm the official fertilizer prices and the machinery subsidy terms.</li>
     <li>Write potato safe first steps from BARI's guidance.</li>
-    <li>Make simple example screens: officer record, cold storage, buyer, lender.</li>
   </ol>
 </section>
 
 <section>
   <div class="warn">
-    <h3>Two things to fix before sharing anything</h3>
+    <h3>Two things to watch</h3>
     <p><b>Example buyers use a real company name.</b> The database lists "PRAN Agro" as a sample buyer. Rename all example partners to clearly made-up names, so no judge thinks we claim a real partnership.</p>
-    <p><b>A Google key file sits in the KrishiVault folder.</b> The folder has no protection against uploading it. Do not share the folder or upload it to GitHub until the key file is excluded.</p>
+    <p><b>Keep the Google key file private.</b> It is now excluded from GitHub, but do not share the KrishiVault folder itself.</p>
   </div>
 </section>
 
@@ -455,6 +411,7 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     <dt>OPERA</dt><dd>A NASA satellite product that maps surface water, which we use for flood water.</dd>
     <dt>HLS</dt><dd>NASA's Landsat and Sentinel-2 images at 30 metres, which we use to see where crops are green.</dd>
     <dt>SRDI</dt><dd>Soil Resource Development Institute. Its union fertilizer cards say how much fertilizer each crop needs.</dd>
+    <dt>BARI, BRRI, BADC</dt><dd>The government's crop research institutes (BARI for potato and other crops, BRRI for rice) and its seed supplier (BADC).</dd>
     <dt>DAM</dt><dd>Department of Agricultural Marketing. Publishes daily market prices.</dd>
     <dt>BBS</dt><dd>Bangladesh Bureau of Statistics. Publishes crop area and production by district.</dd>
     <dt>DAE / SAAO</dt><dd>Department of Agricultural Extension, and its field officer in each union.</dd>

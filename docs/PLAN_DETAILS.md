@@ -2,21 +2,20 @@
 
 The parts of the plan that `HANDOFF.md` only summarizes. Read `HANDOFF.md` first.
 
-## 1. One farmer, one calendar, one record, pillars that move together
+## 1. One farmer, one calendar, four pillars that move together
 
 ```
-                  Farmer: upazila, plots (crop, area, sowing date, land type), dadon
+                  Farmer: phone number, upazila, crops and plots (registered by an officer), dadon
                                               │
      Crop knowledge base (13 crops' traits)   │   Place: soil, flood exposure, dealers, cold storages, sellers
                           └───────────────────┼────────────────────┘
                                    Crop calendar (stage of every plot today)
                                               │
-   ┌───────────────┬──────────────────┬───────┴──────────┬────────────────┬──────────────┐
- Sell for best   Fertilizer and     Seeds, machinery   Danger alerts     Fair credit
- value           pesticide supply   marketplace        (weather, flood,  (instead of
-                                                        disease, price)   dadon)
-   └───────────────┴──────────────────┴───────┬──────────┴────────────────┴──────────────┘
-                     The farmer's record (কৃষি খাতা) and an event bus: one event updates every pillar
+   ┌──────────────────┬──────────────────┬────┴─────────────┬────────────────────┐
+ Sell for the best  Fertilizer and     Seeds and machinery   Danger alerts
+ value              pesticide supply   marketplace           (weather, flood, disease, price)
+   └──────────────────┴──────────────────┴────┬─────────────┴────────────────────┘
+          An event bus: one event updates every pillar and the right partner screen
 ```
 
 **The marketplace in the season:**
@@ -26,17 +25,17 @@ The parts of the plan that `HANDOFF.md` only summarizes. Read `HANDOFF.md` first
 
 Machinery owners and operators get steady bookings, and smallholders get machines they could never buy. Subsidy information comes from the DAE machinery programme; verify current terms before quoting a rate.
 
-**How one event moves every module:**
+**How one event moves every pillar:**
 
-| Event | Danger alert | Inputs | Market and storage | Ledger |
-|---|---|---|---|---|
-| Flood water rising | "25% of your upazila under water" | Hold fertilizer purchase and top-dressing; seed order moves to the drain date | Home-stored potato and seed at risk: move it or sell part; transport may be cut | Loss avoided; damage note for dadon talks |
-| Late-blight weather | "Walk your potato field" | Fungicide only if spots are seen; buy one pack, not a season's stock | Residue clock for premium buyers | Spray saved, or spray cost |
-| Heat wave (April) | "Heat on stored potato" | none | Spoilage up, so store-or-sell is recalculated | Loss avoided |
-| Rain before harvest | "Dig before Thursday" | none | Wet tubers stored are marked higher-risk | none |
-| Urea overcharging reported | none | Fair-price message; group buy offered | Production cost up, so the floor price rises | Extra cost recorded |
+| Event | Danger alert | Fertilizer and pesticide | Seeds and machinery | Selling and storage | Partner screens |
+|---|---|---|---|---|---|
+| Flood water rising | "25% of your upazila under water" | Hold fertilizer purchase and top-dressing until the water leaves | Seed order moves to the drain date; pumps to rent | Home-stored potato and seed at risk: move it or sell part; transport may be cut | Officer desk and DAE dashboard show the flooded area |
+| Late-blight weather | "Walk your potato field" | Fungicide only if spots are seen; buy one pack, not a season's stock | none | none | Officer gets callback requests |
+| Heat wave (April) | "Heat on stored potato" | none | none | Spoilage up, so store-or-sell is recalculated | Cold storage sees new booking requests |
+| Rain before harvest | "Dig before Thursday" | none | A digger or extra labour to book | Wet tubers stored are marked higher-risk | Machinery owners see rush bookings |
+| Price crash expected | "Prices likely to fall: sell part now" | none | none | Sell-part advice; group lot offered to buyers | Buyers see the lot |
 
-**Depth by crop:** potato is the hero (all modules, deepest). The 13 crops with full traits get fertilizer need, crop-stage alerts, market prices and the ledger: Boro, Aman, Aus, wheat, maize, mustard, lentil, mungbean, grass pea, jute, dhaincha and fodder, as well as potato. All 23 crops in the BBS district table are catalogue information.
+**Depth by crop:** potato is the hero (all pillars, deepest). The 13 crops with full traits get fertilizer need, crop-stage alerts and market prices: Boro, Aman, Aus, wheat, maize, mustard, lentil, mungbean, grass pea, jute, dhaincha and fodder, as well as potato. All 23 crops in the BBS district table are catalogue information.
 
 ## 2. Demo story: Abdur Rahim in Sariakandi (char land, button phone)
 
@@ -45,24 +44,23 @@ Real reading from Mati Kohon's NASA OPERA data on 1 October 2026: 25% of Sariaka
 | When | On his phone | Behind it |
 |---|---|---|
 | Oct | Flood alert; plant after the water leaves; keep seed in cold storage | OPERA flood reading; storage cost added to his plan |
-| Nov | Fertilizer need for 2 bigha; fair price; press 1 to join a group buy | Dealer delivers and records the sale; SMS receipt; ledger entry |
-| Dec–Jan | Late-blight weather alerts; "no spray needed" in quiet weeks | Disease weather; spray saved |
-| Feb | Rain before harvest; sell/store call with his cost floor | Decision engine; cold-storage booking |
+| Nov | Fertilizer need for 2 bigha; fair price; press 1 to join a group order; certified seed potato and a power tiller to rent | Dealer fills the group order on time; seed seller and tiller owner get the bookings; SMS receipt |
+| Dec–Jan | Late-blight weather alerts; "no spray needed" in quiet weeks; cold and fog alerts | Disease weather and forecast |
+| Feb | Heavy rain before harvest: dig early, a digger to book; then the sell/store call with his cost floor | Decision engine; cold-storage booking; machinery booking |
 | Apr | Heat wave: selling 20 maunds now is better by ৳Y | Heat-aware spoilage |
-| Season end | "This season KrishiVault saved you ৳Z" | Ledger summary |
+| Any time | Price-crash warning: sell part now, join a group lot | Price watch; buyers see the lot |
 
-## 3. The ledger fills itself (the farmer never types)
+## 3. What partners see
 
-Each entry comes from the easiest reliable source, in this order:
+Each screen shows only what that partner needs, straight after a farmer's call:
+- **Officer desk:** farmers registered in the union, alerts sent, callback requests ("press 9"), overcharge reports.
+- **Cold storage:** booking requests and slots, space and rates.
+- **Buyer:** group lots forming (maunds, variety, area), with offers sent back to the farmers by call.
+- **Dealer:** group fertilizer and pesticide orders with delivery dates, stock, and the weekly demand calendar.
+- **Seed and machinery seller:** orders and rental bookings by date and place.
+- **DAE dashboard:** alerts, flood water, crop loss, the fertilizer demand calendar and overcharge reports by upazila.
 
-1. The system: alerts sent, advice given, sprays skipped, losses avoided, the day's price.
-2. The other side of the deal: dealer sale, cold-storage slip, buyer or group-leader sale, recorded against his phone number.
-3. A keypad confirmation in a call: "Recorded 2 bags of urea at ৳X. Correct? Press 1."
-4. Keypad numbers, only for what nobody else knows (a private sale, dadon).
-5. A short spoken answer, always read back and confirmed by keypad.
-6. Assisted entry by the SAAO, union digital centre or group leader, with the farmer's consent.
-
-Each entry stores its source and whether the farmer confirmed it.
+Phone numbers are masked on partner screens.
 
 ## 4. Rules for every call
 
@@ -96,7 +94,7 @@ Farmer's phone → SIP trunk → Asterisk (ARI from Python) → live audio + key
 → understanding: KrishiVault's Bangla parser for numbers and units, then Gemini with fixed output fields
 → dialogue state machine: asks for missing values, reads numbers back, keypad always works,
   two failures → keypad menu → officer callback
-→ engine (decision, alerts, fertilizer, ledger) → Bangla template filled with the engine's numbers
+→ engine (decision, alerts, fertilizer, marketplace) → Bangla template filled with the engine's numbers
 → number check (Gemini may reword, never change a number) → Google bn-BD voice → back into the call
 ```
 
@@ -126,7 +124,7 @@ About 2 to 4 seconds per turn; a short filler ("একটু শুনুন, �
 | Too wide for a small team | Build the prototype scope first; the rest is the roadmap |
 | Helpers won't use portals | Each gets a reason: volume for dealers, bookings for cold storages, lots for buyers; overcharge reports go to DAE |
 | Bangla speech on phone lines | Keypad first; voice added stepwise and measured |
-| Who pays | Alerts by government or NGO; fees on bookings, group sales and loan referrals |
+| Who pays | Alerts by government or NGO; fees on bookings, group sales, marketplace sales and rentals |
 | Rules and trust | Consent in every call, BTRC-compliant numbers, officer callback always available |
 
 **Go/no-go after one pilot harvest:** pilot farmers' price against the DAM benchmark and neighbours, share sold in glut weeks, fertilizer price paid, sprays, storage losses, "repeat" presses. If the money numbers don't move, change the actions offered, not the features.
@@ -137,7 +135,7 @@ About 2 to 4 seconds per turn; a short filler ("একটু শুনুন, �
 |---|---|
 | Clarity | One sentence, three leaks, five services, one demo |
 | Problem depth | Three money leaks plus two barriers; research on why information alone fails; real Bogura numbers |
-| Differentiation | Decision plus action in the same call; button-phone voice; the khata as credit history against dadon; NASA alerts per upazila |
+| Differentiation | A business ecosystem, not an information service; decision plus action in the same call; button-phone voice; inputs, seeds and machinery on time; NASA alerts per upazila |
 | AI rationale | AI where language and uncertainty live, fixed rules where money and safety live; number lock; honest forecast backtest |
 | Feasibility and scale | Working prototype; Bogura pilot with named partner types; about ৳10 per farmer a season; data for 544 upazilas and 13 crops |
 | Impact | Income, environment (fewer sprays, right fertilizer, less food waste), climate resilience, inclusion, business revenue |
@@ -145,6 +143,6 @@ About 2 to 4 seconds per turn; a short filler ("একটু শুনুন, �
 
 ## 8. Three upgrades that make the idea stronger
 
-1. **Break the dadon trap:** the khata (verified dealer sales, cold-storage slips, crop sales) becomes a credit history a partner lender can use for a pre-harvest or storage loan cheaper than dadon.
-2. **Advice and action in the same call:** every piece of advice ends with something to press (book, join, request a loan, call an officer).
-3. **Farmers become the sensors:** keypad reports of prices received, fertilizer prices paid and disease seen join NASA data, giving DAE ground truth and improving forecasts and alerts as more farmers use it.
+1. **Advice and action in the same call:** every piece of advice ends with something to press (book cold storage, join a group sale or order, order seed, rent a machine, call an officer).
+2. **Inputs on time, not just at a fair price:** group orders and the weekly demand calendar let dealers stock before the planting rush, when shortages and overcharging are worst.
+3. **Machinery as a service:** smallholders rent machines by the bigha; owners and operators get steady bookings; government subsidy information is part of the offer.

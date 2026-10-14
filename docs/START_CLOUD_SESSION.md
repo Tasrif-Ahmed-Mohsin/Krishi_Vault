@@ -6,14 +6,13 @@ Set up the cloud environment once (`docs/CLOUD_SETUP.md`), then start a cloud se
 
 You are building KrishiVault for an idea competition. First read `CLAUDE.md`, then `docs/HANDOFF.md` (the plan, the prototype scope, what is real and what is not, the to-do list), `docs/PLAN_DETAILS.md` and `docs/DATA_SOURCES.md`.
 
-KrishiVault is a farm business ecosystem, not an information centre. Its five pillars:
+KrishiVault is a farm business ecosystem, not an information centre. Its four pillars:
 1. selling crops for the best value with AI and our partner network;
 2. a fertilizer and pesticide supply chain with the right dose, a fair price and on-time delivery;
 3. a marketplace for seeds, machinery (to buy or rent) and other agricultural goods;
-4. danger alerts for heavy rain, heat, cold, floods, crop disease and price crashes;
-5. fair credit instead of dadon.
+4. danger alerts for heavy rain, heat, cold, floods, crop disease and price crashes.
 
-The farmer's record (কৃষি খাতা) ties them together. Farmers use button phones (voice call, keypad, SMS); officers, cold storages, buyers, dealers, sellers and lenders use web screens. The project must be financially solid (the farmer pays nothing; businesses pay only when they gain), practical, and must reduce financial, crop and sustainability losses.
+Farmers use button phones (voice call, keypad, SMS); officers, cold storages, buyers, dealers and sellers use web screens, and DAE gets a dashboard. Not in the plan: a farmer money record, loans and a lender screen, a phone-number ID with a PIN, farmer keypad reports, a spray record. The project must be financially solid (the farmer pays nothing; businesses pay only when they gain), practical, and must reduce financial, crop and sustainability losses.
 
 Data for the prototype is in `krishivault-pipeline/data/reference/mati_kohon/` (a snapshot from the Mati Kohon project). Code to port from Mati Kohon is in `reference/mati_kohon_code/`. The full Mati Kohon project is at https://github.com/muhammadTasin/Mati-Kohon-/tree/feature/crop-loss if you need more.
 
