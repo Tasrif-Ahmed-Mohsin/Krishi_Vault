@@ -138,3 +138,10 @@ def test_booking_and_lot_reach_partner_screens(client):
     lot = client.post("/api/market/lot", json={"kg": 3000, "price_today": 16, "farmer_name": "Demo"}).json()
     assert lot["for"] == "buyer"
     assert client.post("/api/storage/book", json={"sacks": 3, "farmer_name": "x", "cold_storage_id": "zz"}).status_code == 404
+
+
+def test_backtest(client):
+    r = client.get("/api/forecast/backtest")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["seasons"] and data["summary"]["outlook"]["average_miss_pct"] is not None

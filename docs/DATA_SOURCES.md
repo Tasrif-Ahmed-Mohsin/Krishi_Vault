@@ -11,7 +11,7 @@ What we have, where it is, how fresh it is, what uses it, and what is still to c
 | `demo/demo_partners.json` | **Made-up** cold storages, banks, buyers, groups, transport costs, export markets and export costs | none | Dashboard and call preview; every screen says DEMO |
 | `runtime/` (not committed) | What people do in the prototype: requests, group joins, loan applications | created when used | Partner screens |
 
-**Cleaning:** a market that reports the exact same price for 4 or more months running is dropped as a frozen report (Rajshahi Sadar reported ৳62.50 for 16 months). A month is used only with 4 or more market reports, which leaves 19 months.
+**Cleaning:** a market that reports the exact same price for 4 or more months running is dropped as a frozen report (Rajshahi Sadar reported ৳62.50 for 16 months). A month is used only with 4 or more market reports, which leaves 19 months. **Gaps:** March to August 2024 and March and November 2025 have fewer than 4 reports (the backtest starts each season in February and skips missing months).
 
 **What the numbers say:**
 - Potato production grew about 1.8% a year (BBS). 2016-17 (+7%) and 2024-25 (+6%) stand out above the trend.
@@ -34,7 +34,7 @@ Cold-storage sack 84 kg; rent about ৳250 a sack (some ৳300) for up to 9 mont
 
 | Need | Source | How | Status |
 |---|---|---|---|
-| Monthly potato prices, 2010-2026, wholesale and retail, by district | DAM (`https://market.dam.gov.bd/`); FAO GIEWS FPMA (Dhaka wholesale and retail) | Fix `src/scrapers/dam_scraper.py` for the new site, or download; save as `data/raw/price_history.csv` with `date, admin2, market, price` | To do (blocked from the cloud machine; do it on a laptop) |
+| Monthly potato prices, 2010-2026, wholesale and retail, by district | DAM (`https://market.dam.gov.bd/`); FAO GIEWS FPMA (Dhaka wholesale and retail) | Fix `src/scrapers/dam_scraper.py` for the new site, or download; save as `data/raw/price_history.csv` with `date, admin2, market, price`; then run `python -m src.models.backtest` | To do. Blocked from the cloud: the network list does not allow `market.dam.gov.bd`, `fpma.fao.org`, `data.humdata.org` (add them, or do it on a laptop) |
 | Farm-gate prices at harvest and later | DAM farm-gate reports; the field check | A few dated prices per month for Bogura | To do |
 | Season weather per district, 2012-2025 | NASA POWER | Mati Kohon's fetcher; then add to the production model | To do |
 | This season's planted area | DAE district reports (January) | Enter as "planted area" on the Forecasts page | At the season |

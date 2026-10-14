@@ -27,7 +27,7 @@ from src import demo_data, events as event_log
 from src.engine import export_intel, financing, group_storage, market_access, profit
 from src.engine.facts import MAUND_KG, SACK_KG, SOURCES, StorageTerms
 from src.engine.storage_plan import FarmerLot, StoragePlanner
-from src.models import price_outlook, production_forecast
+from src.models import backtest as price_backtest, price_outlook, production_forecast
 from src.notify import sms as sms_client
 from src.voice.conversation import Conversation, advice_sms, receipt_sms
 from src.voice.gemini import GeminiClient
@@ -104,6 +104,12 @@ def forecast_price(price_today: float = 16.0, month: int = 3, year: int = 2027, 
 def forecast_model():
     return {"card": price_outlook.model_card(), "national_prices": price_outlook.national_history(),
             "season_curve": price_outlook.SEASON_CURVE}
+
+
+@app.get("/api/forecast/backtest")
+def forecast_backtest(only_past: bool = False):
+    """The price outlook replayed on past seasons it did not see, against the usual shape and no change."""
+    return price_backtest.backtest(only_past)
 
 
 @app.get("/api/market/regions")
