@@ -125,13 +125,13 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 - **All partners are demo:** cold storages, banks, buyers, exporters, groups. Export prices, freight and duties are demo figures.
 - **Gemini was tried with the real key on 14 October** (cloud session): it fills in what the parser cannot place ("ফড়িয়া ১৬ টেকা দিবার চায়" → ৳16 a kg) and rewords the answer; the number check kept every number in the test calls. The number check compares numbers and banned words, not meaning, so listen to a reworded answer before a demo.
 - **The Google voice has not been tried with its key yet**: the key (`GOOGLE_TTS_JSON_B64`) was not in the cloud environment. Speech recognition has not been tried with a Bogura speaker.
-- **No live SMS from KrishiVault's own code yet** (REVE worked from Mati Kohon on 8 October). From this cloud machine the REVE gateway did not answer; try from a laptop first.
+- **No live SMS from KrishiVault's own code yet** (REVE worked from Mati Kohon on 8 October). From cloud sessions the REVE gateway (`smpp.revesms.com:7790`) closes the connection, tried twice on 14 October: the request leaves the cloud machine and REVE hangs up, so it is likely an address allow-list on REVE's side. Send the first live SMS from a laptop, or ask REVE whether they allow only listed addresses. The SMS keys were also not in the cloud environment. The dry run works: the demo receipt is 168 Bangla characters, 3 SMS parts.
 - **No phone line.**
 
 ## 10. Prototype to-do, in order
 
 1. **Rebuild around the new plan.** **Done, 14 October**: engine, forecasts, dashboard, call preview, docs.
-2. **First live SMS**, only with the user's go-ahead: keys in the environment (`docs/CLOUD_SETUP.md`), `SMS_LIVE=1` for that one send, to a team member's phone.
+2. **First live SMS**, only with the user's go-ahead: keys in the environment (`docs/CLOUD_SETUP.md`), `SMS_LIVE=1` for that one send, to a team member's phone. **Blocked from the cloud** (14 October): REVE closes the connection; do it from a laptop.
 3. **Field check in Bogura** (5 farmers, 2 cold storages): sack size and rent this season (some charge by kg), the cold-storage advance and its interest, weight loss, carrying and selling costs, when farmers sell and why. Replace the assumptions in `src/engine/facts.py`.
 4. **Price history:** get DAM (or FAO GIEWS) monthly potato prices for 2010-2026, wholesale and retail, into `data/raw/price_history.csv` (`date, admin2, market, price`); the outlook refits itself. Then backtest it against "usual seasonal shape only".
 5. **Weather in the production forecast:** NASA POWER season weather per district for 2012-2025 (Mati Kohon has the fetcher).
