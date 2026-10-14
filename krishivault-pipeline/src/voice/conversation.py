@@ -1,114 +1,165 @@
 """
 The farmer's call, step by step
 ===============================
-One state machine for the selling call, used by the web conversation screen today and by a real phone
-line later. Each turn takes the call state and what the farmer did (spoke, or pressed keys) and returns
-the new state and what KrishiVault says next. The state is a plain dict, so the screen keeps it and
-sends it back with each turn.
+One state machine for a farmer's call: the call preview on the web today
+(`/call`), a real phone line later. Each turn takes the call state and what
+the farmer did (spoke, or pressed keys) and returns the new state and what
+KrishiVault says next. The state is a plain dict that the screen keeps and
+sends back each turn.
 
-  menu ── 1 / "আলু বেচব" ──> questions (only what is missing) ──> read-back: "ঠিক হলে ১, ভুল হলে ২"
-       ── 2, 3 ──> "not in this prototype yet"                          │
-       ── 9 ──> officer callback (end)                                  v
-                                       advice in taka (decision engine; Gemini may reword, number lock)
-                                       "২ = book / send the lot, ১ = আবার শুনুন, ৯ = কর্মকর্তা"
-                                                                        │
-                                                       action recorded for the partner screen, SMS text
+  menu ── 1 / "রাখব না বেচব" ── questions ── read-back ── store-or-sell advice ── 2: cold-storage request
+       ── 2 / "দাম কেমন হবে" ── today's price ── read-back ── price outlook ──────── 2: go to the advice
+       ── 3 / "একসাথে রাখব"  ── sacks ── read-back ── group storage ─────────────── 2: join the group
+       ── 4 / "লোন"           ── sacks, price ── read-back ── loan estimate ──────── 2: apply to the bank
+       ── 9 ── a KrishiVault helper calls back (end)
 
-Rules from docs/PLAN_DETAILS.md, section 4: keypad always works; every number read back; two
-failures lead to the keypad and an officer callback; every call ends with "১ = আবার শুনুন,
-৯ = কর্মকর্তা ফোন করবেন". Every number the farmer hears comes from the engine (number lock).
+Rules (docs/PLAN_DETAILS.md): the keypad always works; every number is read
+back for a keypad "yes"; two misunderstandings lead to the helper; every
+answer ends with "১ = আবার শুনুন, ০ = মূল মেনু, ৯ = সহকারী". Every number the
+farmer hears comes from the engine (number lock).
 """
 
-import math
-from typing import Any, Callable, Optional
+from __future__ import annotations
 
-from config.settings import MAUND_TO_KG
-from src import events
-from src.engine.decision_engine import DecisionEngine, FarmerSituation
-from src.engine.market_inputs import partner_context, seasonal_outlook
+import hashlib
+import hmac
+import json
+import math
+import os
+import re
+from typing import Optional
+
+from src import demo_data, events
+from src.engine import financing, group_storage
+from src.engine.facts import MAUND_KG, SACK_KG, MONTHS_BN, StorageTerms
+from src.engine.storage_plan import FarmerLot, StoragePlanner, months_left
+from src.models.price_outlook import SEASON_CURVE, outlook as price_outlook
 from src.voice.bangla_numbers import fmt_num, fmt_taka, nfc, to_bn_digits
 from src.voice.gemini import GeminiClient
-from src.voice.intent_parser import SACK_KG, prepare
+from src.voice.intent_parser import prepare
 from src.voice.number_lock import narrate
-from src.voice.understanding import SLOTS, bare_answer, in_limits, understand
+from src.voice.understanding import bare_answer, in_limits, understand
 
 # ------------------------------------------------------------------ what KrishiVault says
 GREETING = "আসসালামু আলাইকুম, কৃষিভল্টে স্বাগতম। আপনার কথা শুধু আপনাকে পরামর্শ দিতে ব্যবহার হবে।"
 MENU = (
-    "ফসল বেচার দাম আর পরামর্শের জন্য ১ চাপুন। সার ও কীটনাশকের জন্য ২। বীজ ও যন্ত্রপাতির জন্য ৩। "
-    "কৃষি কর্মকর্তা আপনাকে ফোন করবেন, এর জন্য ৯। অথবা আপনার কথা বলুন।"
+    "আলু রাখবেন না বেচবেন, পরামর্শের জন্য ১ চাপুন। দামের পূর্বাভাস শুনতে ২। "
+    "একসাথে হিমাগারে রেখে খরচ কমাতে ৩। হিমাগারের বস্তা জামানতে ব্যাংক ঋণের খোঁজে ৪। "
+    "আমাদের সহকারী আপনাকে ফোন করবেন, এর জন্য ৯। অথবা আপনার কথা বলুন।"
 )
+MENU_KEYS = ["1", "2", "3", "4", "9"]
+MENU_CHOICES = {"1": "advice", "2": "outlook", "3": "group", "4": "loan", "9": "helper"}
+
 QUESTIONS = {
-    "quantity_kg": "আপনার কত মণ আলু আছে? মণের সংখ্যা চেপে হ্যাশ চাপুন, অথবা বলুন।",
+    "quantity_kg": "আপনার কত মণ আলু? মণের সংখ্যা চেপে হ্যাশ চাপুন, অথবা বলুন। বস্তায় বললে বলুন কত বস্তা।",
+    "quantity_sacks": "কত বস্তা আলু? বস্তার সংখ্যা চেপে হ্যাশ চাপুন, অথবা বলুন।",
+    "offer_per_kg": "আজ কেজিতে কত টাকা দাম পাচ্ছেন? টাকার অঙ্ক চেপে হ্যাশ চাপুন। না জানলে ০ চেপে হ্যাশ।",
+    "in_storage": "আলু কি এখন হিমাগারে আছে? থাকলে ১, না থাকলে ২ চাপুন।",
     "cash_needed_tk": "সামনে কত টাকা দরকার? টাকার অঙ্ক চেপে হ্যাশ চাপুন। দরকার না থাকলে ০ চেপে হ্যাশ।",
     "deadline_days": "কত দিনের মধ্যে টাকাটা লাগবে? দিনের সংখ্যা চেপে হ্যাশ চাপুন।",
-    "offer_per_kg": "পাইকার বা ফড়িয়া কেজিতে কত টাকা দিতে চায়? না জানলে ০ চেপে হ্যাশ।",
-    "dadon_tk": "দাদন নেওয়া থাকলে কত টাকা? না থাকলে ০ চেপে হ্যাশ।",
 }
 CONFIRM_KEYS = "ঠিক হলে ১, ভুল হলে ২ চাপুন।"
 NOT_UNDERSTOOD = "দুঃখিত, বুঝতে পারিনি।"
-HELP = "দুঃখিত, আমি বুঝতে পারছি না। আবার চেষ্টা করতে ১ চাপুন। কৃষি কর্মকর্তা আপনাকে ফোন করবেন, এর জন্য ৯ চাপুন।"
-CLOSING = "আবার শুনতে ১, কৃষি কর্মকর্তার ফোনের জন্য ৯ চাপুন।"
-OFFICER = "ঠিক আছে। কৃষি কর্মকর্তা শিগগির আপনাকে ফোন করবেন। কৃষিভল্টে ফোন করার জন্য ধন্যবাদ।"
-NOT_READY = {
-    "fertilizer": "সার ও কীটনাশকের পরামর্শ এই নমুনায় এখনো চালু হয়নি। কর্মকর্তার ফোনের জন্য ৯, মূল মেনুতে ফিরতে ০ চাপুন।",
-    "seeds": "বীজ ও যন্ত্রপাতির বাজার এই নমুনায় এখনো চালু হয়নি। কর্মকর্তার ফোনের জন্য ৯, মূল মেনুতে ফিরতে ০ চাপুন।",
-}
+HELP = "দুঃখিত, আমি বুঝতে পারছি না। আবার চেষ্টা করতে ১ চাপুন। আমাদের সহকারী আপনাকে ফোন করবেন, এর জন্য ৯ চাপুন।"
+CLOSING = "আবার শুনতে ১, মূল মেনুতে ০, সহকারীর ফোনের জন্য ৯ চাপুন।"
+HELPER = "ঠিক আছে। কৃষিভল্টের একজন সহকারী শিগগির আপনাকে ফোন করবেন। কৃষিভল্টে ফোন করার জন্য ধন্যবাদ।"
 ENDED = "কলটি শেষ হয়েছে। ধন্যবাদ।"
-
-SCENARIO_BN = {
-    "sell_now": "এখনই সব বেচা",
-    "sell_part": "কিছু বেচে বাকিটা হিমাগারে রাখা",
-    "store_review": "সব হিমাগারে রাখা",
-    "group_sell": "দল বেঁধে বেচা",
-}
 
 REWORD_PROMPT = """Reword this phone advice for a potato farmer in Bogura, Bangladesh, in simple, warm,
 spoken Bangla. Rules: keep every number exactly as written, in Bangla digits; do not add, drop, round
-or calculate any number; do not add advice, pesticide names, loans or promises; at most four short
-sentences. Return only the reworded Bangla text.
+or calculate any number; do not add advice, promises, loans or certainty; keep it short (at most
+five sentences). Return only the reworded Bangla text.
 
 Advice: \"\"\"{text}\"\"\""""
 
-MENU_KEYS = ["1", "2", "3", "9"]
+# Which questions each part of the menu needs, in order
+FLOW_SLOTS = {
+    "advice": ["quantity_kg", "offer_per_kg", "in_storage", "cash_needed_tk", "deadline_days"],
+    "outlook": ["offer_per_kg"],
+    "group": ["quantity_kg"],
+    "loan": ["quantity_kg", "offer_per_kg"],
+}
+SACK_FLOWS = ("group", "loan")      # these ask for sacks, not maunds
+HARVEST_MONTHS = (2, 3, 4)          # at harvest the potatoes are not in cold storage yet
+DEFAULT_SEASON = (3, 2027)          # demo default: the next harvest, March 2027
+
 SLOT_LABELS = {
     "quantity_kg": ("আলুর পরিমাণ", "Potato"),
+    "offer_per_kg": ("আজকের দাম", "Price today"),
+    "in_storage": ("হিমাগারে আছে?", "Already in cold storage?"),
     "cash_needed_tk": ("টাকার দরকার", "Cash needed"),
     "deadline_days": ("কত দিনে", "Within"),
-    "offer_per_kg": ("পাইকারের দর", "Trader's offer"),
-    "dadon_tk": ("দাদন", "Dadon"),
 }
-NO_DEADLINE_DAYS = 30  # used when no cash is needed, so the deadline does not matter
+FLOW_NAMES = {"advice": ("রাখব না বেচব", "Store or sell"), "outlook": ("দামের পূর্বাভাস", "Price outlook"),
+              "group": ("একসাথে হিমাগার", "Group storage"), "loan": ("বস্তা জামানতে ঋণ", "Loan against sacks")}
 
 
-def new_state(district: str = "Bogura", month: Optional[int] = None, phone: Optional[str] = None) -> dict:
+def new_state(district: str = "Bogura", month: Optional[int] = None, year: Optional[int] = None,
+              phone: Optional[str] = None) -> dict:
     return {
-        "v": 1, "step": "menu", "asking": None, "slots": {}, "fails": 0,
-        "district": district or "Bogura", "month": month, "phone": phone,
-        "last_say": "", "advice_say": "", "advice_body": "", "done_say": "", "help_return": None,
-        "decision": None, "action": None,
+        "v": 2, "step": "menu", "flow": None, "asking": None, "slots": {}, "fails": 0,
+        "district": district or "Bogura", "month": month or DEFAULT_SEASON[0], "year": year or DEFAULT_SEASON[1],
+        "phone": phone, "last_say": "", "result_say": "", "result_body": "", "done_say": "",
+        "help_return": None, "result": None, "action": None, "sms": None, "sms_sig": None, "booking_ref": None,
     }
+
+
+def _clean(state: dict) -> dict:
+    """The state comes back from the browser: keep its settings within sensible bounds."""
+    state = dict(state)
+    state["slots"] = {k: v for k, v in dict(state.get("slots") or {}).items()
+                      if k in SLOT_LABELS and isinstance(v, dict) and isinstance(v.get("value"), (int, float))}
+    try:
+        month, year = int(state.get("month")), int(state.get("year"))
+    except (TypeError, ValueError):
+        month, year = DEFAULT_SEASON
+    state["month"] = month if 1 <= month <= 12 else DEFAULT_SEASON[0]
+    state["year"] = year if 2013 <= year <= 2035 else DEFAULT_SEASON[1]
+    state["district"] = str(state.get("district") or "Bogura")[:40]
+    if state.get("flow") not in FLOW_SLOTS:
+        state["flow"] = None
+    if state.get("step") not in ("menu", "ask", "confirm", "result", "done", "help", "ended"):
+        state["step"] = "menu"
+    if state["step"] in ("ask", "confirm", "result") and not state["flow"]:
+        state["step"] = "menu"
+    if state["step"] == "ask" and state.get("asking") not in SLOT_LABELS:
+        state["step"] = "menu"
+    for key in ("result_say", "done_say", "last_say"):
+        state[key] = str(state.get(key) or "")
+    return state
 
 
 def _value(slots: dict, slot: str, default: float = 0.0) -> float:
     return float(slots.get(slot, {}).get("value", default))
 
 
-def _missing(slots: dict) -> Optional[str]:
-    for slot in SLOTS:
+def _needed(state: dict) -> list[str]:
+    slots, flow = state["slots"], state["flow"]
+    need = []
+    for slot in FLOW_SLOTS.get(flow, []):
         if slot == "deadline_days" and "cash_needed_tk" in slots and _value(slots, "cash_needed_tk") == 0:
             continue
-        if slot not in slots:
-            return slot
-    return None
+        if slot == "in_storage" and state["month"] in HARVEST_MONTHS:
+            continue
+        need.append(slot)
+    return need
 
 
-def _maunds(kg: float) -> float:
-    return kg / MAUND_TO_KG
+def _missing(state: dict) -> Optional[str]:
+    return next((s for s in _needed(state) if s not in state["slots"]), None)
 
 
 def _said_again(text: str) -> bool:
     return any(tok.startswith(nfc("আবার")) for tok in prepare(text).split())
+
+
+def demo_price(month: int) -> float:
+    """Used only when the farmer does not know today's price: a demo price moved by the usual season."""
+    return round(16.0 * SEASON_CURVE[month] / SEASON_CURVE[3], 1)
+
+
+def _sacks(kg: float) -> int:
+    return max(1, math.ceil(kg / SACK_KG - 1e-9))
 
 
 # ------------------------------------------------------------------ reading values back
@@ -116,189 +167,140 @@ def quantity_phrase(slot: dict) -> str:
     kg = slot["value"]
     unit = slot.get("unit") or "maund"
     if unit == "sack":
-        return f"{fmt_num(kg / SACK_KG)} বস্তা আলু, মানে প্রায় {fmt_num(_maunds(kg))} মণ"
+        return f"{fmt_num(kg / SACK_KG, 0)} বস্তা আলু, মানে প্রায় {fmt_num(kg / MAUND_KG)} মণ"
     if unit == "kg":
-        return f"{fmt_num(kg, 0)} কেজি আলু, মানে প্রায় {fmt_num(_maunds(kg))} মণ"
-    return f"{fmt_num(_maunds(kg))} মণ আলু"
+        return f"{fmt_num(kg, 0)} কেজি আলু, মানে প্রায় {fmt_num(kg / SACK_KG, 0)} বস্তা"
+    return f"{fmt_num(kg / MAUND_KG)} মণ আলু, মানে প্রায় {fmt_num(_sacks(kg), 0)} বস্তা"
 
 
-def readback(slots: dict) -> str:
-    parts = [quantity_phrase(slots["quantity_kg"])]
-    cash = _value(slots, "cash_needed_tk")
-    if cash > 0:
-        parts.append(f"{fmt_num(_value(slots, 'deadline_days'), 0)} দিনের মধ্যে {fmt_taka(cash, rounded=False)} টাকা দরকার")
-    else:
-        parts.append("এখন টাকার জরুরি দরকার নেই")
-    offer = slots["offer_per_kg"]
-    if offer["value"] > 0 and offer.get("unit") == "taka_per_maund":
-        parts.append(f"পাইকারের দর মণে {fmt_num(offer['value'] * MAUND_TO_KG, 0)} টাকা, মানে কেজিতে {fmt_num(offer['value'])} টাকা")
-    elif offer["value"] > 0:
-        parts.append(f"পাইকারের দর কেজিতে {fmt_num(offer['value'])} টাকা")
-    else:
-        parts.append("পাইকারের দর জানা নেই")
-    dadon = _value(slots, "dadon_tk")
-    parts.append(f"দাদন {fmt_taka(dadon, rounded=False)} টাকা" if dadon > 0 else "দাদন নেই")
+def readback(state: dict) -> str:
+    slots = state["slots"]
+    parts = []
+    for slot in _needed(state):
+        if slot == "quantity_kg":
+            parts.append(quantity_phrase(slots["quantity_kg"]))
+        elif slot == "offer_per_kg":
+            offer = slots["offer_per_kg"]
+            if offer["value"] > 0 and offer.get("unit") == "taka_per_maund":
+                parts.append(f"আজকের দাম মণে {fmt_num(offer['value'] * MAUND_KG, 0)} টাকা, মানে কেজিতে {fmt_num(offer['value'])} টাকা")
+            elif offer["value"] > 0:
+                parts.append(f"আজকের দাম কেজিতে {fmt_num(offer['value'])} টাকা")
+            else:
+                parts.append("আজকের দাম জানা নেই")
+        elif slot == "in_storage":
+            parts.append("আলু এখন হিমাগারে আছে" if _value(slots, "in_storage") else "আলু এখনো হিমাগারে রাখা হয়নি")
+        elif slot == "cash_needed_tk":
+            cash = _value(slots, "cash_needed_tk")
+            if cash > 0:
+                days = _value(slots, "deadline_days")
+                parts.append(f"{fmt_num(days, 0)} দিনের মধ্যে {fmt_taka(cash, rounded=False)} টাকা দরকার"
+                             if days else f"{fmt_taka(cash, rounded=False)} টাকা দরকার")
+            else:
+                parts.append("এখন টাকার জরুরি দরকার নেই")
     return "আপনি বললেন: " + "। ".join(parts) + "। " + CONFIRM_KEYS
 
 
-def slots_for_screen(slots: dict) -> list[dict]:
+def slots_for_screen(state: dict) -> list[dict]:
+    slots = state["slots"]
+    wanted = _needed(state) if state.get("flow") else []
     rows = []
-    for slot in SLOTS:
+    for slot in wanted:
+        if slot == "deadline_days" and slot not in slots and _value(slots, "cash_needed_tk") == 0:
+            continue
         label_bn, label_en = SLOT_LABELS[slot]
         s = slots.get(slot)
         if s is None:
             display = None
         elif slot == "quantity_kg":
-            display = f"{fmt_num(_maunds(s['value']))} মণ ({fmt_num(s['value'], 0)} কেজি)"
+            display = f"{fmt_num(s['value'] / MAUND_KG)} মণ = {fmt_num(_sacks(s['value']), 0)} বস্তা ({fmt_num(s['value'], 0)} কেজি)"
         elif slot == "deadline_days":
             display = f"{fmt_num(s['value'], 0)} দিন"
         elif slot == "offer_per_kg":
             display = f"৳{fmt_num(s['value'])} / কেজি" if s["value"] > 0 else "জানা নেই"
+        elif slot == "in_storage":
+            display = "হ্যাঁ" if s["value"] else "না"
         else:
             display = f"৳{fmt_taka(s['value'], rounded=False)}" if s["value"] > 0 else "নেই"
-        rows.append({
-            "slot": slot, "label_bn": label_bn, "label_en": label_en, "display": display,
-            "value": None if s is None else s["value"],
-            "source": None if s is None else s.get("source"),
-            "heard": None if s is None else s.get("heard"),
-        })
+        rows.append({"slot": slot, "label_bn": label_bn, "label_en": label_en, "display": display,
+                     "value": None if s is None else s["value"], "source": None if s is None else s.get("source"),
+                     "heard": None if s is None else s.get("heard")})
     return rows
 
 
-# ------------------------------------------------------------------ the advice
-def _alternative(output, rec) -> Optional[Any]:
-    others = [s for s in output.scenarios if s.feasible and s.scenario != rec.scenario]
-    return max(others, key=lambda s: s.expected_proceeds_tk) if others else None
+def advice_sms(plan: dict) -> str:
+    """The store-or-sell advice as one SMS, from the engine's plan (used by the call and the dashboard)."""
+    rec, opts = plan["recommendation"], plan["options"]
+    chosen = opts.get(rec["key"]) or opts["sell_now"]
+    sacks = plan["inputs"]["sacks"]
+    text = f"কৃষিভল্ট: {fmt_num(sacks, 0)} বস্তা আলু। পরামর্শ: {rec['title_bn']}। "
+    if rec["key"] == "sell_now":
+        return text + f"খরচ বাদে প্রায় {fmt_taka(chosen['money_mean'])} টাকা।"
+    return text + (f"গড়ে প্রায় {fmt_taka(chosen['money_mean'])} টাকা (খারাপ হলে {fmt_taka(chosen['money_low'])})। "
+                   f"এখন সব বেচলে {fmt_taka(opts['sell_now']['money_mean'])} টাকা। নিশ্চিত নয়।")
 
 
-def advice_text(output, ctx: dict) -> tuple[str, Optional[dict]]:
-    """(the advice body with the engine's numbers, the action offered or None)."""
-    rec = output.recommended
-    q = ctx["quantity_maunds"]
-    cash = ctx["cash"]
-    dadon = ctx["dadon"]
-    total = rec.expected_proceeds_tk
-    storage = ctx.get("cold_storage")
-    lines: list[str] = []
-    action: Optional[dict] = None
+# The call state lives in the browser, so the SMS text in it is signed: only text this server wrote
+# can be sent. The key is random per server start unless KV_STATE_SECRET is set.
+_SECRET = (os.getenv("KV_STATE_SECRET") or os.urandom(16).hex()).encode()
 
-    if rec.scenario == "sell_now":
-        lines.append(f"পরামর্শ: এখনই সব {fmt_num(q)} মণ বিক্রি করুন।")
-        price = fmt_num(rec.sell_price_per_kg)
-        if ctx.get("network_buyer"):
-            lines.append(f"আমাদের সহযোগী ক্রেতা কেজিতে {price} টাকা দিচ্ছে; গাড়িভাড়া বাদে হাতে আসবে প্রায় {fmt_taka(total)} টাকা।")
-        else:
-            lines.append(f"কেজিতে {price} টাকা দরে গাড়িভাড়া বাদে হাতে আসবে প্রায় {fmt_taka(total)} টাকা।")
-        if cash > 0:
-            lines.append(f"এতে আপনার {fmt_taka(cash, rounded=False)} টাকার দরকার মিটবে।" if total >= cash
-                         else f"তবে এতে আপনার {fmt_taka(cash, rounded=False)} টাকার পুরোটা মিটবে না।")
-        if dadon > 0:
-            lines.append(f"দাদনের {fmt_taka(dadon, rounded=False)} টাকা শোধের পর থাকবে প্রায় {fmt_taka(total - dadon)} টাকা।"
-                         if total >= dadon else f"এতে দাদনের {fmt_taka(dadon, rounded=False)} টাকা পুরো শোধ হবে না।")
-        action = {"kind": "buyer_lot", "maunds": q,
-                  "line": "আমাদের ক্রেতাদের কাছে আপনার আলুর খবর পাঠাতে ২ চাপুন।"}
 
-    elif rec.scenario == "sell_part":
-        sell_m = min(math.ceil(_maunds(rec.sell_quantity_kg)), math.floor(q))
-        store_m = round(q - sell_m, 1)
-        lines.append(f"পরামর্শ: এখন {fmt_num(sell_m)} মণ বিক্রি করুন, তাতে আপনার {fmt_taka(cash, rounded=False)} টাকার দরকার মিটবে।")
-        lines.append(f"বাকি {fmt_num(store_m)} মণ হিমাগারে রাখুন।")
-        lines.append(f"সব মিলিয়ে আনুমানিক {fmt_taka(total)} টাকা হতে পারে, তবে পরে দাম বাড়বেই এমন নিশ্চয়তা নেই।")
-        ctx["sell_maunds"], ctx["store_maunds"] = sell_m, store_m
-        if storage:
-            action = {"kind": "cold_storage_booking", "maunds": store_m,
-                      "line": f"হিমাগারে {fmt_num(store_m)} মণের জায়গার অনুরোধ পাঠাতে ২ চাপুন।"}
+def sign(text: str) -> str:
+    return hmac.new(_SECRET, text.encode("utf-8"), hashlib.sha256).hexdigest()[:24]
 
-    elif rec.scenario == "store_review":
-        lines.append(f"পরামর্শ: সব {fmt_num(q)} মণ হিমাগারে রাখুন।")
-        lines.append(f"দাম কেজিতে {fmt_num(rec.break_even_price)} টাকার বেশি হলে তবেই রাখা লাভজনক।")
-        lines.append(f"মৌসুমি হিসাবে এক মাস পরে দাম কেজিতে প্রায় {fmt_num(ctx['price_in_30d'])} টাকা হতে পারে, তবে নিশ্চয়তা নেই।")
-        if storage:
-            action = {"kind": "cold_storage_booking", "maunds": q,
-                      "line": f"হিমাগারে {fmt_num(q)} মণের জায়গার অনুরোধ পাঠাতে ২ চাপুন।"}
 
-    else:  # group_sell
-        lines.append("পরামর্শ: আশেপাশের কৃষকদের সাথে মিলে একসাথে বড় ক্রেতার কাছে বিক্রি করুন।")
-        lines.append(f"বাছাই আর গাড়িভাড়া বাদে কেজিতে পড়বে প্রায় {fmt_num(rec.sell_price_per_kg)} টাকা, মোট প্রায় {fmt_taka(total)} টাকা।")
-        if dadon > 0 and total >= dadon:
-            lines.append(f"দাদনের {fmt_taka(dadon, rounded=False)} টাকা শোধের পর থাকবে প্রায় {fmt_taka(total - dadon)} টাকা।")
-        action = {"kind": "group_lot_join", "maunds": q,
-                  "line": f"দলের বিক্রিতে আপনার {fmt_num(q)} মণ যোগ করতে ২ চাপুন।"}
-
-    alt = _alternative(output, rec)
-    if alt:
-        lines.append(f"অন্য উপায়, {SCENARIO_BN[alt.scenario]}: প্রায় {fmt_taka(alt.expected_proceeds_tk)} টাকা।")
-        if alt.expected_proceeds_tk > total and cash > 0 and ctx["deadline"] <= 3:
-            # the engine's urgency rule chose quick cash over a larger but slower sum
-            lines.append(f"কিন্তু আপনার {fmt_num(ctx['deadline'], 0)} দিনের মধ্যে টাকা লাগবে, তাই দ্রুত টাকা পাওয়ার এই উপায়টাই নিরাপদ।")
-    return " ".join(lines), action
+def _sign_next(nxt: Optional[dict]) -> Optional[str]:
+    return sign(json.dumps(nxt, sort_keys=True, ensure_ascii=False)) if nxt else None
 
 
 def receipt_sms(state: dict) -> Optional[str]:
-    d = state.get("decision")
-    if not d:
+    """The SMS receipt: built from the engine's numbers when the answer was given, plus the action's number."""
+    text = state.get("sms")
+    if not text or not hmac.compare_digest(sign(text), str(state.get("sms_sig") or "")):
         return None
-    short = {
-        "sell_now": "এখনই সব বেচুন",
-        "sell_part": f"এখন {fmt_num(d.get('sell_maunds') or 0)} মণ বেচুন, {fmt_num(d.get('store_maunds') or 0)} মণ হিমাগারে",
-        "store_review": "সব হিমাগারে রাখুন",
-        "group_sell": "দল বেঁধে বেচুন",
-    }[d["scenario"]]
-    text = f"কৃষিভল্ট: {fmt_num(d['quantity_maunds'])} মণ আলু। পরামর্শ: {short}। আনুমানিক {fmt_taka(d['total'])} টাকা।"
-    action = state.get("action")
-    if action:
-        name = {"cold_storage_booking": "হিমাগার অনুরোধ", "buyer_lot": "ক্রেতার কাছে লট",
-                "group_lot_join": "দলের লট"}[action["kind"]]
-        text += f" {name} নং {to_bn_digits(action['ref'])} (ডেমো)।"
+    action = state.get("action") or {}
+    ref = re.sub(r"\D", "", str(action.get("ref") or ""))[:6]
+    if ref:
+        text += f" নং {to_bn_digits(ref)} (ডেমো)।"
     return text
 
 
 # ------------------------------------------------------------------ the state machine
 class Conversation:
-    def __init__(self, session_factory: Callable, gemini: Optional[GeminiClient] = None):
-        self.session_factory = session_factory
+    def __init__(self, gemini: Optional[GeminiClient] = None, planner: Optional[StoragePlanner] = None):
         self.gemini = gemini
+        self.planner = planner or StoragePlanner()
 
     # -- public -------------------------------------------------------------------------------
     def turn(self, state: Optional[dict], inp: dict) -> dict:
-        kind = (inp or {}).get("kind", "start")
+        inp = inp or {}
+        kind = inp.get("kind", "start")
         if state is None or kind == "start":
-            state = new_state(inp.get("district", "Bogura"), inp.get("month"), inp.get("phone"))
+            state = new_state(inp.get("district", "Bogura"), inp.get("month"), inp.get("year"), inp.get("phone"))
             return self._reply(state, f"{GREETING} {MENU}", "menu", MENU_KEYS)
 
-        state = dict(state)
+        state = _clean(state)
         if inp.get("phone"):
             state["phone"] = inp["phone"]
-        if inp.get("month"):
-            state["month"] = inp["month"]
         text = (inp.get("text") or "").strip()
         digits = (inp.get("digits") or "").strip()
         heard = None
         if kind == "speech":
             if not text:
-                return self._fail(state, None)
-            expecting = state.get("asking") if state["step"] == "sell_ask" else None
-            heard = understand(text, expecting=expecting, asked_text=state.get("last_say", ""), gemini=self.gemini)
+                return self._fail(state)
+            expecting = state.get("asking") if state["step"] == "ask" else None
+            unit = "sack" if state.get("flow") in SACK_FLOWS else "maund"
+            heard = understand(text, expecting=expecting, asked_text=state.get("last_say", ""),
+                               gemini=self.gemini, quantity_unit=unit)
             heard["text"] = text
 
         handler = {
-            "menu": self._menu,
-            "not_ready": self._not_ready,
-            "sell_ask": self._sell_ask,
-            "sell_confirm": self._sell_confirm,
-            "sell_advice": self._sell_advice,
-            "sell_done": self._sell_done,
-            "help": self._help,
-            "ended": self._ended,
+            "menu": self._menu, "ask": self._ask, "confirm": self._confirm, "result": self._result,
+            "done": self._done, "help": self._help, "ended": self._ended,
         }[state["step"]]
         reply = handler(state, kind, digits, heard)
         reply["heard"] = None if heard is None else {
-            "text": text,
-            "values": heard["values"],
-            "rejected": heard["rejected"],
-            "menu": heard["menu"],
-            "yes_no": heard["yes_no"],
-            "gemini": heard["gemini"],
+            "text": text, "values": heard["values"], "rejected": heard["rejected"], "menu": heard["menu"],
+            "yes_no": heard["yes_no"], "in_storage": heard.get("in_storage"), "gemini": heard["gemini"],
         }
         return reply
 
@@ -306,322 +308,460 @@ class Conversation:
     def _reply(self, state: dict, say: str, expects: str, keys: list, **extra) -> dict:
         state["last_say"] = say
         out = {
-            "state": state,
-            "say": say,
+            "state": state, "say": say,
             "expects": expects,   # "menu" / "choice": one key; "number": digits then #; "end"
             "keys": keys,
-            "slots": slots_for_screen(state["slots"]),
-            "decision": None,
-            "narration": None,
-            "event": None,
+            "flow": state.get("flow"),
+            "slots": slots_for_screen(state),
+            "result": state.get("result"),
+            "narration": None, "event": None,
             "sms_text": receipt_sms(state),
             "done": expects == "end",
         }
         out.update(extra)
         return out
 
+    def _result_keys(self, state: dict) -> list:
+        return (["2"] if (state.get("result") or {}).get("next") else []) + ["1", "0", "9"]
+
     def _prompt(self, state: dict) -> tuple[str, str, list]:
-        """What to say to repeat the current step's question."""
         step = state["step"]
-        if step == "sell_ask":
-            return QUESTIONS[state["asking"]], "number", []
-        if step == "sell_confirm":
-            return readback(state["slots"]), "choice", ["1", "2"]
-        if step == "sell_advice":
-            return state["advice_say"], "choice", self._advice_keys(state)
-        if step == "sell_done":
-            return state["done_say"], "choice", ["1", "9"]
-        if step == "not_ready":
-            return state["last_say"], "choice", ["9", "0"]
+        if step == "ask":
+            return self._question(state), ("choice" if state["asking"] == "in_storage" else "number"), \
+                (["1", "2"] if state["asking"] == "in_storage" else [])
+        if step == "confirm":
+            return readback(state), "choice", ["1", "2"]
+        if step == "result":
+            return state["result_say"], "choice", self._result_keys(state)
+        if step == "done":
+            return state["done_say"], "choice", ["1", "0", "9"]
         return MENU, "menu", MENU_KEYS
 
-    def _fail(self, state: dict, _heard) -> dict:
+    def _question(self, state: dict) -> str:
+        slot = state["asking"]
+        if slot == "quantity_kg" and state.get("flow") in SACK_FLOWS:
+            return QUESTIONS["quantity_sacks"]
+        return QUESTIONS[slot]
+
+    def _fail(self, state: dict) -> dict:
         state["fails"] = state.get("fails", 0) + 1
-        if state["fails"] >= 2 and state["step"] != "help":
-            state["help_return"] = {"step": state["step"], "asking": state.get("asking")}
-            state["step"] = "help"
-            state["fails"] = 0
-            return self._reply(state, HELP, "choice", ["1", "9"])
         if state["step"] == "help":
+            return self._reply(state, HELP, "choice", ["1", "9"])
+        if state["fails"] >= 2:
+            state["help_return"] = {"step": state["step"], "asking": state.get("asking")}
+            state["step"], state["fails"] = "help", 0
             return self._reply(state, HELP, "choice", ["1", "9"])
         say, expects, keys = self._prompt(state)
         return self._reply(state, f"{NOT_UNDERSTOOD} {say}", expects, keys)
 
-    def _merge(self, state: dict, values: dict) -> None:
+    def _merge(self, state: dict, heard: dict) -> bool:
         """Take what the farmer said; a newer value replaces an older one (a correction)."""
-        for slot, v in values.items():
-            state["slots"][slot] = dict(v)
+        took = False
+        for slot, v in heard["values"].items():
+            if slot in SLOT_LABELS:
+                state["slots"][slot] = dict(v)
+                took = True
+        if heard.get("in_storage") is not None:
+            state["slots"]["in_storage"] = {"value": 1.0 if heard["in_storage"] else 0.0,
+                                            "heard": heard.get("text"), "source": "parser"}
+            took = True
+        return took
+
+    def _to_menu(self, state: dict, prefix: str = "") -> dict:
+        state.update({"step": "menu", "flow": None, "asking": None, "fails": 0, "result": None})
+        return self._reply(state, (prefix + " " + MENU).strip(), "menu", MENU_KEYS)
 
     # -- steps --------------------------------------------------------------------------------
     def _menu(self, state, kind, digits, heard):
         if kind == "keypad":
-            choice = {"1": "sell", "2": "fertilizer", "3": "seeds", "9": "officer"}.get(digits[:1])
+            choice = MENU_CHOICES.get(digits[:1])
         else:
             choice = heard["menu"]
-            # Selling numbers (maunds, taka, a trader's price) mean a selling call, even if the farmer
-            # also mentions fertilizer ("মহাজনের সার বাবদ ২৫ হাজার লাগবে")
-            if heard["values"] and choice != "officer":
-                choice = "sell"
-        if choice == "sell":
-            if heard:
-                self._merge(state, heard["values"])
-            return self._next_question(state)
-        if choice in NOT_READY:
-            state["step"] = "not_ready"
-            state["fails"] = 0
-            return self._reply(state, NOT_READY[choice], "choice", ["9", "0"])
-        if choice == "officer":
-            return self._officer(state, "pressed 9 at the menu")
-        return self._fail(state, heard)
+            # Potato numbers without a clear choice mean the store-or-sell question
+            if choice is None and heard["values"]:
+                choice = "advice"
+        if choice == "helper":
+            return self._helper(state, "pressed 9 at the menu")
+        if choice in FLOW_SLOTS:
+            return self._start_flow(state, choice, heard)
+        return self._fail(state)
 
-    def _not_ready(self, state, kind, digits, heard):
-        if kind == "keypad" and digits[:1] in ("0", "*"):
-            state["step"] = "menu"
-            state["fails"] = 0
-            return self._reply(state, MENU, "menu", MENU_KEYS)
-        state["step"] = "menu"
-        return self._menu(state, kind, digits, heard)
+    def _start_flow(self, state: dict, flow: str, heard: Optional[dict] = None) -> dict:
+        state["flow"] = flow
+        state["result"] = None
+        if heard:
+            self._merge(state, heard)
+        return self._next_question(state)
 
     def _next_question(self, state):
-        missing = _missing(state["slots"])
+        missing = _missing(state)
         state["fails"] = 0
         if missing:
-            state["step"] = "sell_ask"
-            state["asking"] = missing
-            return self._reply(state, QUESTIONS[missing], "number", [])
-        state["step"] = "sell_confirm"
-        state["asking"] = None
-        return self._reply(state, readback(state["slots"]), "choice", ["1", "2"])
+            state["step"], state["asking"] = "ask", missing
+            say, expects, keys = self._prompt(state)
+            return self._reply(state, say, expects, keys)
+        state["step"], state["asking"] = "confirm", None
+        return self._reply(state, readback(state), "choice", ["1", "2"])
 
-    def _sell_ask(self, state, kind, digits, heard):
+    def _ask(self, state, kind, digits, heard):
         slot = state["asking"]
         if kind == "keypad":
             if digits.startswith("*"):
-                state["step"], state["asking"], state["fails"] = "menu", None, 0
-                return self._reply(state, MENU, "menu", MENU_KEYS)
+                return self._to_menu(state)
+            if slot == "in_storage":
+                if digits[:1] in ("1", "2"):
+                    state["slots"]["in_storage"] = {"value": 1.0 if digits[:1] == "1" else 0.0,
+                                                    "heard": digits[:1], "source": "keypad"}
+                    return self._next_question(state)
+                return self._fail(state)
             number = digits.rstrip("#")
             if number.isdigit():
-                ans = bare_answer(slot, float(number))
+                unit = "sack" if state.get("flow") in SACK_FLOWS else "maund"
+                ans = bare_answer(slot, float(number), unit)
                 if in_limits(slot, ans["value"]):
                     state["slots"][slot] = {**ans, "heard": f"{number}#", "source": "keypad"}
                     return self._next_question(state)
-            return self._fail(state, heard)
-        if heard["values"]:
-            self._merge(state, heard["values"])
+            return self._fail(state)
+        if slot == "in_storage" and heard.get("in_storage") is None and heard["yes_no"] is not None:
+            heard["in_storage"] = heard["yes_no"]
+        if self._merge(state, heard):
             return self._next_question(state)
-        if heard["menu"] == "officer":
-            return self._officer(state, "asked for an officer while answering questions")
-        return self._fail(state, heard)
+        if heard["menu"] == "helper":
+            return self._helper(state, "asked for a person while answering questions")
+        return self._fail(state)
 
-    def _sell_confirm(self, state, kind, digits, heard):
+    def _confirm(self, state, kind, digits, heard):
         if kind == "keypad":
             yes, no = digits[:1] == "1", digits[:1] == "2"
         else:
-            if heard["values"]:  # "না, ৬০ মণ": take the correction and read back again
-                self._merge(state, heard["values"])
+            if heard["values"] or heard.get("in_storage") is not None:   # "না, ৬০ মণ": correct and read back
+                self._merge(state, heard)
                 return self._next_question(state)
             yes, no = heard["yes_no"] is True, heard["yes_no"] is False
         if yes:
-            return self._advise(state)
+            return self._answer(state)
         if no:
             state["slots"] = {}
             reply = self._next_question(state)
             reply["say"] = "ঠিক আছে, আবার শুরু করি। " + reply["say"]
             state["last_say"] = reply["say"]
             return reply
-        return self._fail(state, heard)
+        return self._fail(state)
 
-    def _advice_keys(self, state) -> list:
-        return (["2"] if (state.get("decision") or {}).get("action") else []) + ["1", "9"]
+    def _key_from_speech(self, heard) -> Optional[str]:
+        if heard["menu"] == "helper":
+            return "9"
+        if _said_again(heard["text"]):
+            return "1"
+        if heard["yes_no"] is True:
+            return "2"
+        return None
 
-    def _sell_advice(self, state, kind, digits, heard):
-        decision = state.get("decision") or {}
-        if kind == "keypad":
-            key = digits[:1]
-        elif heard["menu"] == "officer":
-            key = "9"
-        elif _said_again(heard["text"]):
-            key = "1"
-        elif heard["yes_no"] is True:
-            key = "2"
-        else:
-            key = None
-        if key == "2" and decision.get("action"):
-            return self._act(state)
+    def _result(self, state, kind, digits, heard):
+        key = digits[:1] if kind == "keypad" else self._key_from_speech(heard)
+        result = state.get("result") or {}
+        if key == "2" and result.get("next"):
+            return self._next_step(state)
         if key == "1":
-            return self._reply(state, state["advice_say"], "choice", self._advice_keys(state))
+            return self._reply(state, state["result_say"], "choice", self._result_keys(state))
+        if key == "0":
+            return self._to_menu(state)
         if key == "9":
-            return self._officer(state, "pressed 9 after the advice")
-        return self._fail(state, heard)
+            return self._helper(state, f"pressed 9 after the {state.get('flow')} answer")
+        return self._fail(state)
 
-    def _sell_done(self, state, kind, digits, heard):
-        if kind == "keypad":
-            key = digits[:1]
-        else:
-            key = "9" if heard["menu"] == "officer" else ("1" if _said_again(heard["text"]) else None)
+    def _done(self, state, kind, digits, heard):
+        key = digits[:1] if kind == "keypad" else self._key_from_speech(heard)
         if key == "1":
-            return self._reply(state, state["done_say"], "choice", ["1", "9"])
+            return self._reply(state, state["done_say"], "choice", ["1", "0", "9"])
+        if key == "0":
+            return self._to_menu(state)
         if key == "9":
-            return self._officer(state, "pressed 9 after the booking")
+            return self._helper(state, "pressed 9 after the request")
         state["step"] = "ended"
         return self._reply(state, ENDED, "end", [])
 
     def _help(self, state, kind, digits, heard):
-        key = digits[:1] if kind == "keypad" else None
-        if kind == "speech":
-            key = "9" if heard["menu"] == "officer" else ("1" if heard["yes_no"] is True else None)
+        key = digits[:1] if kind == "keypad" else (
+            "9" if heard["menu"] == "helper" else ("1" if heard["yes_no"] is True else None))
         if key == "9":
-            return self._officer(state, "could not be understood twice")
+            return self._helper(state, "could not be understood twice")
         if key == "1":
             back = state.get("help_return") or {"step": "menu", "asking": None}
             state["step"], state["asking"], state["fails"] = back["step"], back["asking"], 0
             say, expects, keys = self._prompt(state)
             return self._reply(state, say, expects, keys)
-        return self._fail(state, heard)
+        return self._fail(state)
 
     def _ended(self, state, kind, digits, heard):
         return self._reply(state, ENDED, "end", [])
 
-    # -- actions ------------------------------------------------------------------------------
-    def _officer(self, state, reason: str) -> dict:
-        details = {"reason": reason, "values": {s["slot"]: s["display"] for s in slots_for_screen(state["slots"]) if s["display"]}}
-        event = events.record("officer_callback", "কৃষক কর্মকর্তার ফোন চেয়েছেন", details,
+    def _helper(self, state, reason: str) -> dict:
+        details = {"reason": reason, "flow": state.get("flow"),
+                   "values": {s["slot"]: s["display"] for s in slots_for_screen(state) if s["display"]}}
+        event = events.record("helper_callback", "কৃষক সহকারীর ফোন চেয়েছেন", details,
                               district=state.get("district", ""), phone=state.get("phone"))
         state["step"] = "ended"
-        return self._reply(state, OFFICER, "end", [], event=event)
+        return self._reply(state, HELPER, "end", [], event=event)
 
-    def _act(self, state) -> dict:
-        d = state["decision"]
-        action = d["action"]
-        q = fmt_num(action["maunds"])
-        kind = action["kind"]
-        summaries = {
-            "cold_storage_booking": f"{q} মণ আলু রাখার অনুরোধ",
-            "buyer_lot": f"{q} মণ আলু বিক্রির লট",
-            "group_lot_join": f"দলের লটে {q} মণ আলু",
-        }
-        details = {
-            "maunds": round(action["maunds"], 1),
-            "scenario": d["scenario"],
-            "expected_total_tk": round(d["total"]),
-            "farmer_offer_per_kg": d["offer"],
-        }
-        if kind == "cold_storage_booking" and d.get("cold_storage"):
-            details["cold_storage"] = d["cold_storage"]["name"]
-            details["rate_per_kg"] = d["cold_storage"]["rate_per_kg"]
-        event = events.record(kind, summaries[kind], details, district=state.get("district", ""), phone=state.get("phone"))
-        state["action"] = {"kind": kind, "ref": event["ref"], "maunds": action["maunds"]}
-        ref = to_bn_digits(event["ref"])
-        say = {
-            "cold_storage_booking": f"হিমাগারে {q} মণের জায়গার অনুরোধ পাঠানো হয়েছে। অনুরোধ নম্বর {ref}। হিমাগার আপনাকে ফোন করে তারিখ আর ভাড়া জানাবে।",
-            "buyer_lot": f"আপনার {q} মণ আলুর খবর আমাদের ক্রেতাদের কাছে গেছে। নম্বর {ref}। ক্রেতার দর পেলে আমরা আপনাকে ফোন করে জানাব।",
-            "group_lot_join": f"দলের বিক্রিতে আপনার {q} মণ যোগ হয়েছে। নম্বর {ref}। দল পুরো হলে ক্রেতার দর নিয়ে আমরা ফোন করব।",
-        }[kind] + " রসিদ এসএমএসে যাবে। " + CLOSING
-        state["done_say"] = say
-        state["step"] = "sell_done"
-        return self._reply(state, say, "choice", ["1", "9"], event=event)
-
-    def _advise(self, state) -> dict:
-        output, ctx, decision_screen = self.decide(state)
-        body, action = advice_text(output, ctx)
+    # -- answers ------------------------------------------------------------------------------
+    def _answer(self, state: dict) -> dict:
+        flow = state["flow"]
+        body, result, sms = {"advice": self._advice, "outlook": self._outlook,
+                             "group": self._group, "loan": self._loan}[flow](state)
         rewrite = None
         if self.gemini is not None and self.gemini.available:
             rewrite = lambda t: self.gemini.text(REWORD_PROMPT.format(text=t))  # noqa: E731
         narration = narrate(body, rewrite)
-        say = narration["text"] + (" " + action["line"] if action else "") + " " + CLOSING
-        state["decision"] = {
-            "scenario": output.recommended.scenario,
-            "total": output.recommended.expected_proceeds_tk,
-            "quantity_maunds": ctx["quantity_maunds"],
-            "sell_maunds": ctx.get("sell_maunds"),
-            "store_maunds": ctx.get("store_maunds"),
-            "offer": ctx["offer"],
-            "cold_storage": ctx.get("cold_storage"),
-            "action": action,
-        }
-        state["advice_say"] = say
-        state["advice_body"] = narration["text"]
-        state["step"] = "sell_advice"
-        state["fails"] = 0
-        narration_screen = {"status": narration["status"], "check": narration["check"],
-                            "template": body, "rejected_text": narration.get("rejected_text"),
+        next_line = (result.get("next") or {}).get("line")
+        say = narration["text"] + (" " + next_line if next_line else "") + " " + CLOSING
+        state.update({"result": result, "result_say": say, "result_body": narration["text"], "sms": sms,
+                      "sms_sig": sign(sms) if sms else None, "next_sig": _sign_next(result.get("next")),
+                      "step": "result", "fails": 0, "action": None})
+        narration_screen = {"status": narration["status"], "check": narration["check"], "template": body,
+                            "rejected_text": narration.get("rejected_text"),
                             "model": getattr(self.gemini, "model_used", None)}
-        return self._reply(state, say, "choice", self._advice_keys(state),
-                           decision=decision_screen, narration=narration_screen)
+        return self._reply(state, say, "choice", self._result_keys(state), narration=narration_screen)
 
-    # -- the engine ---------------------------------------------------------------------------
-    def decide(self, state: dict):
+    def _price(self, state: dict) -> tuple[float, bool]:
+        offer = _value(state["slots"], "offer_per_kg")
+        return (offer, False) if offer > 0 else (demo_price(state["month"]), True)
+
+    def lot(self, state: dict) -> FarmerLot:
         slots = state["slots"]
-        qty_kg = _value(slots, "quantity_kg")
+        price, _ = self._price(state)
+        stored = "cold" if _value(slots, "in_storage") else "no"
         cash = _value(slots, "cash_needed_tk")
-        deadline = int(_value(slots, "deadline_days", NO_DEADLINE_DAYS)) if cash > 0 else NO_DEADLINE_DAYS
-        offer = _value(slots, "offer_per_kg")
-        dadon = _value(slots, "dadon_tk")
-        district = state.get("district") or "Bogura"
-
-        session = self.session_factory()
-        try:
-            partners = partner_context(session, district)
-        finally:
-            session.close()
-
-        price_today = offer if offer > 0 else partners.reference_price
-        price_basis = "the farmer's trader offer" if offer > 0 else partners.reference_label
-        market, outlook = seasonal_outlook(price_today, state.get("month"))
-        storage = partners.cold_storage
-
-        farmer = FarmerSituation(
-            crop="potato",
-            quantity_kg=qty_kg,
-            district=district,
-            cash_needed_tk=cash,
-            deadline_days=deadline,
-            current_offer_per_kg=offer,
-            has_cold_storage=storage is not None,
-            storage_cost_per_kg=(storage or {}).get("rate_per_kg") or FarmerSituation.storage_cost_per_kg,
-            has_dadon=dadon > 0,
-            dadon_amount_tk=dadon,
+        return FarmerLot(
+            quantity_kg=_value(slots, "quantity_kg"), price_today=price,
+            decision_month=state["month"], decision_year=state["year"],
+            stored=stored, stored_since_month=3 if stored == "cold" else None,
+            cash_needed_tk=cash, cash_days=int(_value(slots, "deadline_days", 30)) if cash > 0 else 0,
         )
-        output = DecisionEngine().evaluate(farmer, market, partners.buyer_offers, partners.neighbours)
-        rec = output.recommended
 
-        network_buyer = (rec.scenario == "sell_now" and rec.sell_price_per_kg > price_today)
-        ctx = {
-            "quantity_maunds": round(_maunds(qty_kg), 1),
-            "cash": cash, "deadline": deadline, "dadon": dadon, "offer": offer, "price_today": price_today,
-            "price_in_30d": outlook["price_in_30d"], "cold_storage": storage,
-            "network_buyer": network_buyer,
+    def _advice(self, state: dict):
+        lot = self.lot(state)
+        plan = self.planner.plan(lot)
+        rec = plan["recommendation"]
+        opts = plan["options"]
+        chosen = opts.get(rec["key"]) or opts["sell_now"]
+        now = opts["sell_now"]
+        sacks = lot.sacks
+        price, assumed = self._price(state)
+        lines = []
+        if assumed:
+            lines.append(f"আজকের দাম জানা না থাকায় নমুনা হিসেবে কেজি {fmt_num(price)} টাকা ধরা হলো।")
+        if rec["key"] == "sell_now":
+            lines.append(f"পরামর্শ: এখনই সব {fmt_num(sacks, 0)} বস্তা আলু বেচুন।")
+            lines.append(f"কেজিতে {fmt_num(price)} টাকা দরে খরচ বাদে হাতে আসবে প্রায় {fmt_taka(now['money_mean'])} টাকা।")
+            store = opts.get("store")
+            if store and store["gain_vs_now"] < 0:
+                lines.append(f"হিমাগারে রাখলে ভাড়া আর খরচ বাদে সবচেয়ে ভালো মাসেও গড়ে প্রায় "
+                             f"{fmt_taka(abs(store['gain_vs_now']))} টাকা কম আসতে পারে।")
+            elif plan["months_left"] == 0:
+                lines.append("এ মৌসুমে হিমাগারে রাখার সময় আর নেই।")
+            else:
+                lines.append("রাখলে লাভের সম্ভাবনা কম, ঝুঁকি বেশি।")
+            if plan["outlook"]["k"] <= 0.3:
+                lines.append("এবার ফলন বেশি, তাই দাম তেমন বাড়ার সম্ভাবনা কম।")
+            if lot.cash_needed_tk > 0 and now["money_mean"] >= lot.cash_needed_tk:
+                lines.append(f"এতে আপনার {fmt_taka(lot.cash_needed_tk, rounded=False)} টাকার দরকার মিটবে।")
+            nxt = {"kind": "buyer_lot", "sacks": sacks,
+                   "line": "আমাদের ক্রেতাদের দর তুলনা করে জানাতে ২ চাপুন।"}
+        elif rec["key"] == "store":
+            lines.append(f"পরামর্শ: সব {fmt_num(sacks, 0)} বস্তা হিমাগারে রেখে {chosen['sell_month_bn']} মাসে বেচুন।")
+            lines.append(f"গড়ে হাতে আসতে পারে প্রায় {fmt_taka(chosen['money_mean'])} টাকা, "
+                         f"এখন বেচার চেয়ে প্রায় {fmt_taka(chosen['gain_vs_now'])} টাকা বেশি।")
+            lines.append(f"দাম খারাপ হলে প্রায় {fmt_taka(chosen['money_low'])} টাকা। "
+                         f"১০০ বারের হিসাবে {fmt_num(round(chosen['chance_beats_now'] * 100), 0)} বার রাখাটাই ভালো হয়।")
+            if lot.stored == "no":
+                lines.append(f"ভাড়া এক মাস রাখলেও বস্তায় {fmt_num(lot.terms.rent_per_sack, 0)} টাকা, "
+                             f"{fmt_num(lot.terms.season_months, 0)} মাস রাখলেও একই, তাই আগেভাগে বেচবেন না।")
+            if chosen.get("loan"):
+                loan = chosen["loan"]
+                lines.append(f"টাকার দরকার মেটাতে বস্তার জামানতে প্রায় {fmt_taka(loan['amount'])} টাকা ঋণ লাগবে, "
+                             f"সুদ প্রায় {fmt_taka(loan['interest'])} টাকা।")
+            nxt = None if lot.stored == "cold" else {
+                "kind": "cold_storage_booking", "sacks": sacks,
+                "line": f"হিমাগারে {fmt_num(sacks, 0)} বস্তার জায়গা চাইতে ২ চাপুন।"}
+        else:  # sell_part
+            lines.append(f"পরামর্শ: এখন {fmt_num(chosen['sell_sacks_now'], 0)} বস্তা বেচুন, "
+                         f"হাতে আসবে প্রায় {fmt_taka(chosen['cash_now'])} টাকা।")
+            lines.append(f"বাকি {fmt_num(chosen['store_sacks'], 0)} বস্তা হিমাগারে রেখে {chosen['sell_month_bn']} মাসে বেচুন।")
+            lines.append(f"সব মিলিয়ে গড়ে প্রায় {fmt_taka(chosen['money_mean'])} টাকা, এখন সব বেচার চেয়ে প্রায় "
+                         f"{fmt_taka(chosen['gain_vs_now'])} টাকা বেশি; দাম খারাপ হলে প্রায় {fmt_taka(chosen['money_low'])} টাকা।")
+            if lot.cash_needed_tk > 0 and chosen["cash_now"] >= lot.cash_needed_tk:
+                lines.append(f"এতে আপনার {fmt_taka(lot.cash_needed_tk, rounded=False)} টাকার দরকার মিটবে।")
+            lines.append("দাম বাড়বেই এমন কথা নেই, তাই কিছুটা এখনই বেচা নিরাপদ।")
+            nxt = None if lot.stored == "cold" else {
+                "kind": "cold_storage_booking", "sacks": chosen["store_sacks"],
+                "line": f"হিমাগারে {fmt_num(chosen['store_sacks'], 0)} বস্তার জায়গা চাইতে ২ চাপুন।"}
+
+        result = {
+            "flow": "advice", "title_bn": rec["title_bn"], "title_en": rec["title_en"], "key": rec["key"],
+            "reasons": rec["reasons"], "notes": plan["notes"], "price_today": price, "price_assumed": assumed,
+            "months_left": plan["months_left"], "outlook": plan["outlook"],
+            "options": [dict(o, recommended=(o["key"] == rec["key"])) for o in opts.values() if o],
+            "by_month": [{k: r[k] for k in ("h", "month_bn", "month_en", "price_low", "price_mid", "price_high",
+                                             "net_mean", "net_low", "net_high", "gain_vs_now", "chance_beats_now",
+                                             "break_even_price")} for r in plan["by_month"]],
+            "sacks": sacks, "next": nxt,
         }
-        screen = {
-            "recommended": rec.scenario,
-            "recommended_bn": SCENARIO_BN[rec.scenario],
-            "scenarios": [
-                {
-                    "scenario": s.scenario,
-                    "name_bn": SCENARIO_BN[s.scenario],
-                    "feasible": s.feasible,
-                    "rank": s.rank,
-                    "recommended": s is rec,
-                    "expected_proceeds_tk": round(s.expected_proceeds_tk),
-                    "sell_maunds": round(_maunds(s.sell_quantity_kg), 1),
-                    "store_maunds": round(_maunds(s.store_quantity_kg), 1),
-                    "price_per_kg": round(s.sell_price_per_kg, 2),
-                    "explanation_en": s.explanation_en if s.feasible else s.infeasible_reason,
-                    "risk": s.risk_level,
-                }
-                for s in output.scenarios
-            ],
-            "inputs": {
-                "quantity_maunds": ctx["quantity_maunds"],
-                "cash_needed_tk": cash,
-                "deadline_days": deadline if cash > 0 else None,
-                "dadon_tk": dadon,
-                "price_today_per_kg": price_today,
-                "price_basis": price_basis,
-                "outlook": outlook,
-                "cold_storage": storage,
-                "demo_buyers": len(partners.buyer_offers),
-                "demo_neighbours": len(partners.neighbours),
-            },
-        }
-        return output, ctx, screen
+        return " ".join(lines), result, advice_sms(plan)
+
+    def _outlook(self, state: dict):
+        price, assumed = self._price(state)
+        lot = FarmerLot(quantity_kg=SACK_KG, price_today=price, decision_month=state["month"],
+                        decision_year=state["year"], stored="cold" if state["month"] not in HARVEST_MONTHS else "no",
+                        stored_since_month=3)
+        H = months_left(lot)
+        lines = []
+        if assumed:
+            lines.append(f"আজকের দাম জানা না থাকায় নমুনা হিসেবে কেজি {fmt_num(price)} টাকা ধরা হলো।")
+        if H == 0:
+            lines.append("এ মৌসুমে হিমাগারে রাখার সময় শেষ, নতুন আলু আসছে।")
+            months, o = [], None
+        else:
+            o = price_outlook(price, state["month"], state["year"], horizon=H)
+            months = o["months"]
+            mid = months[min(3, H)] if H > 3 else None
+            last = months[H]
+            if mid:
+                lines.append(f"আজ কেজি {fmt_num(price)} টাকা হলে, {mid['month_bn']} মাসে মাঝামাঝি প্রায় {fmt_num(mid['mid'])} টাকা,")
+                lines.append(f"আর {last['month_bn']} মাসে প্রায় {fmt_num(last['mid'])} টাকা হতে পারে।")
+            else:
+                lines.append(f"আজ কেজি {fmt_num(price)} টাকা হলে, {last['month_bn']} মাসে প্রায় {fmt_num(last['mid'])} টাকা হতে পারে।")
+            lines.append(f"কম হলে {fmt_num(last['low'])} টাকা, বেশি হলে {fmt_num(last['high'])} টাকা পর্যন্ত।")
+            gap = o["rise"]["gap_pct"]
+            if gap > 3 or o["rise"]["k"] <= 0.3:
+                lines.append("এবার ফলন বেশি, তাই দাম কম বাড়তে পারে।")
+            elif gap < -3:
+                lines.append("এবার ফলন কম, তাই দাম বেশি বাড়তে পারে।")
+            lines.append("এটা হিসাব, নিশ্চিত নয়।")
+        result = {"flow": "outlook", "title_bn": "দামের পূর্বাভাস", "title_en": "Price outlook",
+                  "price_today": price, "price_assumed": assumed, "months_left": H,
+                  "outlook": o["rise"] if o else None, "months": months,
+                  "next": {"kind": "go_advice", "line": "রাখবেন না বেচবেন, পরামর্শ শুনতে ২ চাপুন।"}}
+        sms = None
+        if months:
+            last = months[-1]
+            sms = (f"কৃষিভল্ট দামের পূর্বাভাস: আজ কেজি {fmt_num(price)} টাকা। {last['month_bn']} মাসে "
+                   f"{fmt_num(last['low'])} থেকে {fmt_num(last['high'])} টাকা, মাঝামাঝি {fmt_num(last['mid'])}। নিশ্চিত নয়।")
+        return " ".join(lines), result, sms
+
+    def _pool_for(self, district: str) -> Optional[dict]:
+        pools = [p for p in demo_data.partners()["group_pools"] if p["district"].lower() == (district or "").lower()]
+        return pools[0] if pools else None
+
+    def _group(self, state: dict):
+        sacks = _sacks(_value(state["slots"], "quantity_kg"))
+        pool = self._pool_for(state["district"])
+        if not pool:
+            body = "আপনার এলাকায় এখনো কোনো দল নেই। আমাদের সহকারী ফোন করে দল গড়তে সাহায্য করবেন।"
+            result = {"flow": "group", "title_bn": "এলাকায় দল নেই", "title_en": "No group in this area yet", "next": None}
+            return body, result, None
+        cmp = group_storage.compare(pool["id"], sacks)
+        st = cmp["pool"]
+        transport = demo_data.partners()["transport"]
+        per_sack = transport["individual_per_sack"] - transport["group_truck_per_sack"]
+        lines = [f"{pool['name_bn']}: এখন {fmt_num(st['member_count'], 0)} জন কৃষক, মোট {fmt_num(st['total_sacks'] - sacks, 0)} বস্তা।",
+                 f"একসাথে গাড়ি নিলে বস্তায় প্রায় {fmt_num(per_sack, 0)} টাকা, আপনার {fmt_num(sacks, 0)} বস্তায় প্রায় "
+                 f"{fmt_taka(cmp['group_now']['saving'], rounded=False)} টাকা বাঁচবে।"]
+        nt = st["next_tier"]
+        reached = [t for t in st["tiers"] if t["reached"] and not t["agreed"]]
+        if reached:
+            t = reached[-1]
+            lines.append(f"আপনাকে নিয়ে দলে {fmt_num(st['total_sacks'], 0)} বস্তা হয়, তাতে হিমাগার বস্তায় "
+                         f"{fmt_num(t['rent_per_sack'], 0)} টাকা ভাড়ার প্রস্তাব দিয়েছে। হিমাগার রাজি হলে তবেই এটা গণ্য হবে।")
+        elif nt:
+            lines.append(f"আরও {fmt_num(nt['sacks_short'], 0)} বস্তা হলে হিমাগার বস্তায় {fmt_num(nt['rent_per_sack'], 0)} "
+                         f"টাকা ভাড়ার প্রস্তাব দিয়েছে। হিমাগার রাজি হলে তবেই এটা গণ্য হবে।")
+        result = {"flow": "group", "title_bn": f"{pool['name_bn']}-এ যোগ দিন", "title_en": f"Join {pool['name']}",
+                  "compare": cmp, "sacks": sacks,
+                  "next": {"kind": "group_storage_join", "pool_id": pool["id"], "sacks": sacks,
+                           "line": "দলে যোগ দিতে ২ চাপুন।"}}
+        sms = (f"কৃষিভল্ট: {pool['name_bn']}, {fmt_num(sacks, 0)} বস্তা। গাড়ি ভাগ করে প্রায় "
+               f"{fmt_taka(cmp['group_now']['saving'], rounded=False)} টাকা কম খরচ।")
+        return " ".join(lines), result, sms
+
+    def _loan(self, state: dict):
+        sacks = _sacks(_value(state["slots"], "quantity_kg"))
+        price, assumed = self._price(state)
+        months = max(1, months_left(FarmerLot(SACK_KG, price, state["month"], state["year"])))
+        rows = financing.compare_banks(sacks, price, state["month"], state["year"], months)
+        banks = [r for r in rows if r["bank"]["id"] != "cold-storage-advance" and not r["problems"] and r["max_loan"] > 0]
+        adv = next(r for r in rows if r["bank"]["id"] == "cold-storage-advance")
+        lines = []
+        if assumed:
+            lines.append(f"আজকের দাম জানা না থাকায় নমুনা হিসেবে কেজি {fmt_num(price)} টাকা ধরা হলো।")
+        if not banks:
+            lines.append(f"আপনার {fmt_num(sacks, 0)} বস্তায় ডেমো ব্যাংকের ঋণ মিলছে না। হিমাগারের নিজের অগ্রিম "
+                         f"বস্তায় {fmt_num(StorageTerms().cs_advance_per_sack, 0)} টাকা, মোট প্রায় {fmt_taka(adv['max_loan'], rounded=False)} টাকা।")
+            result = {"flow": "loan", "title_bn": "ব্যাংক ঋণ মিলছে না", "title_en": "No bank loan fits", "banks": rows, "next": None}
+            return " ".join(lines), result, None
+        best = min(banks, key=lambda r: r["bank"]["rate_year"])
+        bank = demo_data.bank(best["bank"]["id"])
+        lines.append(f"আপনার {fmt_num(sacks, 0)} বস্তা আলুর জামানতে {bank['name_bn']} সর্বোচ্চ প্রায় "
+                     f"{fmt_taka(best['max_loan'])} টাকা ঋণ দিতে পারে।")
+        lines.append(f"{fmt_num(best['months'], 0)} মাসে সুদ প্রায় {fmt_taka(best['interest'])} টাকা। হিমাগারের ভাড়া আগে কাটা হবে।")
+        if best.get("sacks_to_repay"):
+            lines.append(f"শোধ করতে {MONTHS_BN[best['repay_month']]} মাসে প্রায় "
+                         f"{fmt_num(best['sacks_to_repay'], 0)} বস্তা বেচতে হবে।")
+        lines.append("এটা ডেমো ব্যাংকের হিসাব; ব্যাংক যাচাই করে সিদ্ধান্ত নেবে।")
+        result = {"flow": "loan", "title_bn": f"{bank['name_bn']}: সর্বোচ্চ {fmt_taka(best['max_loan'])} টাকা",
+                  "title_en": f"{bank['name']}: up to ৳{best['max_loan']:,}", "banks": rows, "best": best,
+                  "next": {"kind": "loan_application", "bank_id": bank["id"], "sacks": sacks, "price": price,
+                           "months": best["months"], "line": "আবেদন পাঠাতে ২ চাপুন।"}}
+        sms = (f"কৃষিভল্ট: {fmt_num(sacks, 0)} বস্তা জামানতে {bank['name_bn']} সর্বোচ্চ প্রায় "
+               f"{fmt_taka(best['max_loan'])} টাকা, সুদ প্রায় {fmt_taka(best['interest'])} টাকা (ডেমো হিসাব)।")
+        return " ".join(lines), result, sms
+
+    # -- the "press 2" step -------------------------------------------------------------------
+    def _next_step(self, state: dict) -> dict:
+        nxt = state["result"]["next"]
+        if not hmac.compare_digest(_sign_next(nxt) or "", str(state.get("next_sig") or "")):
+            return self._fail(state)   # only an action this server offered can be taken
+        kind = nxt["kind"]
+        if kind == "go_advice":
+            price = state["slots"].get("offer_per_kg")
+            state["slots"] = {"offer_per_kg": price} if price else {}
+            return self._start_flow(state, "advice")
+        district = state.get("district", "")
+        phone = state.get("phone")
+        sacks = nxt.get("sacks")
+        if kind == "cold_storage_booking":
+            cs = next((c for c in demo_data.partners()["cold_storages"]
+                       if c["district"].lower() == district.lower()), demo_data.partners()["cold_storages"][0])
+            event = events.record(kind, f"{sacks} বস্তা আলু রাখার অনুরোধ",
+                                  {"sacks": sacks, "cold_storage": cs["name"], "rent_per_sack": cs["rent_per_sack"],
+                                   "advice": state["result"]["title_en"]}, district=district, phone=phone)
+            state["booking_ref"] = event["ref"]
+            say = (f"{cs['name_bn']}-তে {fmt_num(sacks, 0)} বস্তার জায়গার অনুরোধ পাঠানো হয়েছে। অনুরোধ নম্বর "
+                   f"{to_bn_digits(event['ref'])}। হিমাগার ফোন করে তারিখ জানাবে। এই নম্বর দিয়ে পরে বস্তার জামানতে ঋণের আবেদন করা যাবে।")
+        elif kind == "buyer_lot":
+            event = events.record(kind, f"{sacks} বস্তা আলু বিক্রির লট",
+                                  {"sacks": sacks, "kg": round(sacks * SACK_KG),
+                                   "price_today": state["result"].get("price_today")}, district=district, phone=phone)
+            say = (f"আপনার {fmt_num(sacks, 0)} বস্তা আলুর খবর আমাদের ক্রেতাদের কাছে গেছে। নম্বর "
+                   f"{to_bn_digits(event['ref'])}। ভালো দর পেলে আমরা ফোন করে জানাব।")
+        elif kind == "group_storage_join":
+            joined = group_storage.join(nxt["pool_id"], "Caller (call preview)", sacks, phone)
+            event = joined["event"]
+            say = (f"দলে আপনার {fmt_num(sacks, 0)} বস্তা যোগ হয়েছে। নম্বর {to_bn_digits(joined['ref'])}। "
+                   f"দলে এখন মোট {fmt_num(joined['pool']['total_sacks'], 0)} বস্তা।")
+        elif kind == "loan_application":
+            cs = next((c for c in demo_data.partners()["cold_storages"]
+                       if c["district"].lower() == district.lower()), demo_data.partners()["cold_storages"][0])
+            booking = re.sub(r"\D", "", str(state.get("booking_ref") or ""))[:6]
+            receipt = f"DEMO-{booking or 'R' + events.new_reference()}"
+            app = financing.apply("Caller (call preview)", phone, district, cs["id"], receipt, sacks, nxt["price"],
+                                  state["month"], state["year"], nxt["months"], nxt["bank_id"])
+            event = {"ref": app["ref"], "kind": kind, "application": app["id"]}
+            say = (f"ঋণের আবেদন পাঠানো হয়েছে। নম্বর {to_bn_digits(app['ref'])}। হিমাগার আপনার বস্তা মিলিয়ে "
+                   f"দেখলে তারপর ব্যাংক সিদ্ধান্ত জানাবে।")
+        else:
+            return self._fail(state)
+        state["action"] = {"kind": kind, "ref": event["ref"]}
+        state["done_say"] = say + " রসিদ এসএমএসে যাবে। " + CLOSING
+        state["step"] = "done"
+        return self._reply(state, state["done_say"], "choice", ["1", "0", "9"], event=event)

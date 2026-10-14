@@ -1,7 +1,7 @@
 """
 Event log: what happened in farmers' calls that a partner must act on
 =====================================================================
-A cold-storage booking request, a lot sent to buyers, a group-lot join, an officer callback request.
+A cold-storage booking, a lot sent to buyers, a group-storage join, a loan application, a helper callback.
 Each is one JSON line in data/runtime/events.jsonl (not committed), so the partner screens can show it
 straight after the call. Phone numbers are stored masked.
 
@@ -21,9 +21,10 @@ from config.settings import DATA_DIR
 # Who acts on each kind of event
 PARTNER_FOR = {
     "cold_storage_booking": "cold_storage",
+    "group_storage_join": "cold_storage",
     "buyer_lot": "buyer",
-    "group_lot_join": "buyer",
-    "officer_callback": "officer",
+    "loan_application": "bank",
+    "helper_callback": "helper",
 }
 
 
@@ -49,7 +50,7 @@ def record(kind: str, summary_bn: str, details: dict, district: str = "", phone:
         "ref": new_reference(),
         "time": datetime.now().isoformat(timespec="seconds"),
         "kind": kind,
-        "for": PARTNER_FOR.get(kind, "officer"),
+        "for": PARTNER_FOR.get(kind, "helper"),
         "district": district,
         "phone": mask_phone(phone),
         "summary_bn": summary_bn,

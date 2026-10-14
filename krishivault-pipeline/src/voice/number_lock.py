@@ -17,8 +17,10 @@ from loguru import logger
 
 from src.voice.bangla_numbers import extract_numbers, nfc
 
-# Words no farmer message may contain: loans, interest, cash asks, free-fertilizer offers, promises
-FORBIDDEN_TERMS = ["ঋণ", "সুদ", "টাকা দিন", "ফ্রি সার", "গ্যারান্টি", "নিশ্চিত লাভ"]
+# Promises and asks no farmer message may contain. Loan words (ঋণ, সুদ) are allowed only when the
+# engine's own template already uses them (the loan flow); the AI may not bring them in.
+FORBIDDEN_TERMS = ["টাকা দিন", "গ্যারান্টি", "নিশ্চিত লাভ", "নিশ্চিত", "অবশ্যই বাড়বে"]
+ONLY_IF_IN_TEMPLATE = ["ঋণ", "সুদ", "লোন"]
 
 
 @dataclass
@@ -41,8 +43,9 @@ def check_numbers(template: str, reworded: str) -> NumberCheck:
     t_set, r_set = set(t_nums), set(r_nums)
     added = [n for n in dict.fromkeys(r_nums) if n not in t_set]
     missing = [n for n in dict.fromkeys(t_nums) if n not in r_set]
-    text = nfc(reworded)
-    forbidden = [w for w in FORBIDDEN_TERMS if nfc(w) in text]
+    text, base = nfc(reworded), nfc(template)
+    forbidden = [w for w in FORBIDDEN_TERMS if nfc(w) in text and nfc(w) not in base]
+    forbidden += [w for w in ONLY_IF_IN_TEMPLATE if nfc(w) in text and nfc(w) not in base]
     return NumberCheck(
         passed=not added and not missing and not forbidden,
         template_numbers=t_nums,

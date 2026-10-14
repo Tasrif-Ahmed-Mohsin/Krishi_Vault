@@ -1,0 +1,364 @@
+{
+  "_note": "Made-up partners for the prototype. None of these is a real business, bank or person. Prices, rates and offers are demo figures to show how the screens work.",
+  "cold_storages": [
+    {
+      "id": "cs-a",
+      "name": "Demo Cold Storage A",
+      "name_bn": "ডেমো হিমাগার এ",
+      "district": "Bogura",
+      "upazila": "Shibganj",
+      "capacity_sacks": 120000,
+      "booked_sacks": 84500,
+      "rent_per_sack": 250,
+      "season_months": 9,
+      "advance_per_sack": 250,
+      "advance_rate_year": 0.14,
+      "group_offers": [
+        {
+          "min_sacks": 300,
+          "rent_per_sack": 240
+        },
+        {
+          "min_sacks": 500,
+          "rent_per_sack": 230
+        }
+      ],
+      "offer_status": "demo offer, not yet agreed"
+    },
+    {
+      "id": "cs-b",
+      "name": "Demo Cold Storage B",
+      "name_bn": "ডেমো হিমাগার বি",
+      "district": "Bogura",
+      "upazila": "Bogura Sadar",
+      "capacity_sacks": 200000,
+      "booked_sacks": 151000,
+      "rent_per_sack": 260,
+      "season_months": 9,
+      "advance_per_sack": 200,
+      "advance_rate_year": 0.13,
+      "group_offers": [
+        {
+          "min_sacks": 200,
+          "rent_per_sack": 250
+        },
+        {
+          "min_sacks": 400,
+          "rent_per_sack": 240
+        }
+      ],
+      "offer_status": "demo offer, not yet agreed"
+    },
+    {
+      "id": "cs-c",
+      "name": "Demo Cold Storage C",
+      "name_bn": "ডেমো হিমাগার সি",
+      "district": "Rangpur",
+      "upazila": "Pirganj",
+      "capacity_sacks": 60000,
+      "booked_sacks": 41000,
+      "rent_per_sack": 300,
+      "season_months": 9,
+      "advance_per_sack": 300,
+      "advance_rate_year": 0.15,
+      "group_offers": [
+        {
+          "min_sacks": 250,
+          "rent_per_sack": 285
+        }
+      ],
+      "offer_status": "demo offer, not yet agreed"
+    }
+  ],
+  "buyers": [
+    {
+      "id": "b-haat",
+      "name": "Local trader at the haat",
+      "type": "trader",
+      "demo": false,
+      "price_premium_per_kg": 0.0,
+      "farmer_transport_per_kg": 0.3,
+      "payment_days": 0,
+      "commission_pct": 0.0,
+      "reject_pct": 0.0,
+      "min_kg": 0,
+      "max_kg": null,
+      "conditions": "The price the farmer is offered today; cash on the spot"
+    },
+    {
+      "id": "b-retail",
+      "name": "Retail to local shops and neighbours",
+      "type": "retail",
+      "demo": false,
+      "price_premium_per_kg": 4.0,
+      "farmer_transport_per_kg": 0.8,
+      "payment_days": 0,
+      "commission_pct": 0.0,
+      "reject_pct": 0.0,
+      "min_kg": 0,
+      "max_kg": 300,
+      "conditions": "Higher price, but only small amounts a week and the farmer's own time"
+    },
+    {
+      "id": "b-wholesale",
+      "name": "Demo Wholesaler A (Dhaka)",
+      "type": "wholesaler",
+      "demo": true,
+      "price_premium_per_kg": 1.0,
+      "farmer_transport_per_kg": 0.0,
+      "payment_days": 3,
+      "commission_pct": 0.0,
+      "reject_pct": 0.02,
+      "min_kg": 2000,
+      "max_kg": 50000,
+      "conditions": "Collects from the cold-storage gate; pays in 3 days"
+    },
+    {
+      "id": "b-processor",
+      "name": "Demo Chips Factory B",
+      "type": "processor",
+      "demo": true,
+      "price_premium_per_kg": 2.0,
+      "farmer_transport_per_kg": 0.6,
+      "payment_days": 15,
+      "commission_pct": 0.0,
+      "reject_pct": 0.08,
+      "min_kg": 5000,
+      "max_kg": 100000,
+      "conditions": "Processing varieties only, size and dry-matter test; pays in 15 days"
+    },
+    {
+      "id": "b-supermarket",
+      "name": "Demo Supermarket Chain C",
+      "type": "retail chain",
+      "demo": true,
+      "price_premium_per_kg": 3.5,
+      "farmer_transport_per_kg": 1.2,
+      "payment_days": 30,
+      "commission_pct": 0.0,
+      "reject_pct": 0.06,
+      "min_kg": 500,
+      "max_kg": 5000,
+      "conditions": "Sorted, washed and packed (about ৳1/kg); weekly deliveries; pays in 30 days"
+    },
+    {
+      "id": "b-exporter",
+      "name": "Demo Exporter D",
+      "type": "exporter",
+      "demo": true,
+      "price_premium_per_kg": 2.5,
+      "farmer_transport_per_kg": 0.4,
+      "payment_days": 7,
+      "commission_pct": 0.0,
+      "reject_pct": 0.15,
+      "min_kg": 10000,
+      "max_kg": 200000,
+      "conditions": "Export varieties, 40-75 mm, no soil, no disease; pays in 7 days"
+    }
+  ],
+  "banks": [
+    {
+      "id": "bank-a",
+      "name": "Demo Bank A",
+      "name_bn": "ডেমো ব্যাংক এ",
+      "ltv": 0.6,
+      "rate_year": 0.11,
+      "max_months": 9,
+      "min_sacks": 10,
+      "processing_fee_pct": 0.5,
+      "needs": [
+        "Cold-storage receipt confirmed on KrishiVault",
+        "National ID",
+        "Mobile number"
+      ]
+    },
+    {
+      "id": "bank-b",
+      "name": "Demo Bank B",
+      "name_bn": "ডেমো ব্যাংক বি",
+      "ltv": 0.5,
+      "rate_year": 0.1,
+      "max_months": 8,
+      "min_sacks": 20,
+      "processing_fee_pct": 1.0,
+      "needs": [
+        "Cold-storage receipt confirmed on KrishiVault",
+        "National ID",
+        "Land record or lease"
+      ]
+    },
+    {
+      "id": "mfi-c",
+      "name": "Demo Microfinance C",
+      "name_bn": "ডেমো ক্ষুদ্রঋণ সি",
+      "ltv": 0.5,
+      "rate_year": 0.18,
+      "max_months": 6,
+      "min_sacks": 3,
+      "processing_fee_pct": 0.0,
+      "needs": [
+        "Cold-storage receipt",
+        "National ID",
+        "Group member guarantee"
+      ]
+    }
+  ],
+  "group_pools": [
+    {
+      "id": "g-shibganj",
+      "name": "Shibganj potato group",
+      "name_bn": "শিবগঞ্জ আলু দল",
+      "district": "Bogura",
+      "upazila": "Shibganj",
+      "cold_storage_id": "cs-a",
+      "members": [
+        {
+          "name": "Demo farmer 1",
+          "sacks": 60
+        },
+        {
+          "name": "Demo farmer 2",
+          "sacks": 45
+        },
+        {
+          "name": "Demo farmer 3",
+          "sacks": 38
+        },
+        {
+          "name": "Demo farmer 4",
+          "sacks": 52
+        },
+        {
+          "name": "Demo farmer 5",
+          "sacks": 30
+        },
+        {
+          "name": "Demo farmer 6",
+          "sacks": 41
+        },
+        {
+          "name": "Demo farmer 7",
+          "sacks": 44
+        }
+      ]
+    },
+    {
+      "id": "g-sariakandi",
+      "name": "Sariakandi char group",
+      "name_bn": "সারিয়াকান্দি চর দল",
+      "district": "Bogura",
+      "upazila": "Sariakandi",
+      "cold_storage_id": "cs-b",
+      "members": [
+        {
+          "name": "Demo farmer 8",
+          "sacks": 25
+        },
+        {
+          "name": "Demo farmer 9",
+          "sacks": 32
+        },
+        {
+          "name": "Demo farmer 10",
+          "sacks": 28
+        },
+        {
+          "name": "Demo farmer 11",
+          "sacks": 35
+        }
+      ]
+    }
+  ],
+  "transport": {
+    "individual_per_sack": 60,
+    "group_truck_per_sack": 35,
+    "truck_sacks": 150,
+    "_note": "Demo figures: a small van or trolley per farmer, against one shared truck for the group"
+  },
+  "export_markets": [
+    {
+      "id": "my",
+      "country": "Malaysia",
+      "quote_usd_t": 330,
+      "freight_usd_t": 55,
+      "duty_pct": 0,
+      "route": "sea, Chattogram",
+      "requirements": [
+        "Phytosanitary certificate (DAE Plant Quarantine Wing)",
+        "Sorted and sized, no soil"
+      ]
+    },
+    {
+      "id": "sg",
+      "country": "Singapore",
+      "quote_usd_t": 360,
+      "freight_usd_t": 60,
+      "duty_pct": 0,
+      "route": "sea, Chattogram",
+      "requirements": [
+        "Phytosanitary certificate",
+        "Sorted and sized, no soil",
+        "Buyer's variety"
+      ]
+    },
+    {
+      "id": "lk",
+      "country": "Sri Lanka",
+      "quote_usd_t": 300,
+      "freight_usd_t": 45,
+      "duty_pct": 15,
+      "route": "sea, Chattogram",
+      "requirements": [
+        "Phytosanitary certificate",
+        "Import levy changes often: check before quoting"
+      ]
+    },
+    {
+      "id": "np",
+      "country": "Nepal",
+      "quote_usd_t": 240,
+      "freight_usd_t": 30,
+      "duty_pct": 10,
+      "route": "road, Banglabandha",
+      "requirements": [
+        "Phytosanitary certificate",
+        "Land-port clearance"
+      ]
+    },
+    {
+      "id": "ae",
+      "country": "United Arab Emirates",
+      "quote_usd_t": 380,
+      "freight_usd_t": 75,
+      "duty_pct": 5,
+      "route": "sea, Chattogram",
+      "requirements": [
+        "Phytosanitary certificate",
+        "Residue test",
+        "Sorted, sized, packed"
+      ]
+    },
+    {
+      "id": "ru",
+      "country": "Russia",
+      "quote_usd_t": 290,
+      "freight_usd_t": 120,
+      "duty_pct": 0,
+      "route": "sea, Chattogram",
+      "requirements": [
+        "Phytosanitary certificate",
+        "Has stopped Bangladesh potato over plant disease before: check current status"
+      ]
+    }
+  ],
+  "export_costs": {
+    "usd_to_bdt": 122,
+    "sort_pack_per_kg": 3.0,
+    "truck_per_kg_km": 0.005,
+    "port_docs_per_kg": 1.5,
+    "insurance_pct": 0.5,
+    "reject_pct": 8,
+    "container_t": 26,
+    "_note": "Demo figures; replace with quotes from exporters, the port and shipping lines"
+  }
+}

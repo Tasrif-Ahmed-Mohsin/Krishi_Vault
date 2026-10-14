@@ -74,7 +74,17 @@ def test_yes_no_and_menu_words():
     assert P.parse_yes_no("হ্যাঁ ঠিক আছে") is True
     assert P.parse_yes_no("না, ভুল") is False
     assert P.parse_yes_no("আলু") is None
-    assert P.parse_menu_choice("আলু বেচতে চাই") == "sell"
-    assert P.parse_menu_choice("সারের দাম জানতে চাই") == "fertilizer"
-    assert P.parse_menu_choice("বীজ আলু লাগবে") == "seeds"
-    assert P.parse_menu_choice("কর্মকর্তার সাথে কথা বলব") == "officer"
+    assert P.parse_menu_choice("আলু বেচতে চাই") == "advice"
+    assert P.parse_menu_choice("হিমাগারে রাখব না বেচব") == "advice"
+    assert P.parse_menu_choice("দাম কেমন হবে সামনে") == "outlook"
+    assert P.parse_menu_choice("সবাই মিলে একসাথে রাখতে চাই") == "group"
+    assert P.parse_menu_choice("বস্তা জামানত রেখে লোন পাব?") == "loan"
+    assert P.parse_menu_choice("কর্মকর্তার সাথে কথা বলব") == "helper"
+
+
+def test_in_storage():
+    assert P.parse_in_storage("আলু হিমাগারে রাখছি") is True
+    assert P.parse_in_storage("কোল্ডে রাখা আছে") is True
+    assert P.parse_in_storage("হিমাগারে রাখি নাই") is False
+    assert P.parse_in_storage("আলু এখনো ঘরে") is False
+    assert P.parse_in_storage("৫০ মণ আলু") is None

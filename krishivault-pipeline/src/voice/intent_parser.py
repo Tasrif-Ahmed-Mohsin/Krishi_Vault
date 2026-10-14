@@ -6,7 +6,7 @@ into structured FarmerSituation parameters.
 
 Handles:
 - Bengali numerals (০-৯) and English numerals (0-9), and number words (পঞ্চাশ, বিশ হাজার, দেড় লাখ)
-- Local agricultural units: মণ (maund ~ 37.32 kg), বস্তা (sack ~ 50 or 85 kg), কেজি (kg)
+- Local agricultural units: মণ (maund ~ 37.32 kg), বস্তা (the 84 kg cold-storage sack), কেজি (kg)
 - Currency terms: টাকা (Tk), হাজার (thousand), লাখ (lakh); northern forms টেকা, নাগবে
 - Time deadlines: দিন (days), সপ্তাহ (weeks), কাল/পরশু (tomorrow/day after)
 - Storage access: হিমাগার/কোল্ড স্টোরেজ আছে/নাই
@@ -19,6 +19,7 @@ cash need of 25,000 and dadon of 20,000 rather than mixing them up.
 import re
 from typing import Dict, Any, Optional
 from config.settings import MAUND_TO_KG
+from src.engine.facts import SACK_KG  # the cold-storage sack: 84 kg
 from src.voice.bangla_numbers import nfc, to_en_digits, words_to_digits
 
 # Mapping Bengali digits to English digits
@@ -27,7 +28,6 @@ BN_TO_EN_DIGITS = {
     '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
 }
 
-SACK_KG = 50.0  # a standard potato sack (বস্তা) in Bangladesh today
 
 # Northern and colloquial forms heard in Bogura and Rangpur, mapped to the standard word
 _DIALECT = [
@@ -135,7 +135,7 @@ class FarmerIntentParser:
             maunds = float(maund_match.group(1))
             return round(maunds * MAUND_TO_KG, 2), maund_match.group(0), "maund"
 
-        # Sacks / বস্তা (a standard potato sack is 50 kg)
+        # Sacks / বস্তা (the cold-storage sack, 84 kg)
         sack_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:বস্তা|ব্যাগ|sacks?|bags?)', text_norm)
         if sack_match:
             sacks = float(sack_match.group(1))
@@ -259,25 +259,45 @@ class FarmerIntentParser:
 
     @staticmethod
     def parse_menu_choice(text: str) -> Optional[str]:
-        """The keypad-menu choice said in words: 'sell', 'fertilizer', 'seeds', 'officer' or None."""
+        """
+        The keypad-menu choice said in words, or None:
+          'advice' (store or sell), 'outlook' (price forecast), 'group' (group storage),
+          'loan' (a loan against stored sacks), 'helper' (a person calls back).
+        """
         t = prepare(text)
         tokens = _tokens(t)
 
         def starts(words: list[str]) -> bool:
             return any(tok.startswith(nfc(w)) for tok in tokens for w in words)
 
-        def exact(words: list[str]) -> bool:
-            ws = {nfc(w) for w in words}
-            return any(tok in ws for tok in tokens)
+        if starts(["কর্মকর্তা", "অফিসার", "সহকারী", "মানুষের", "officer", "helper", "person"]):
+            return "helper"
+        if starts(["ঋণ", "লোন", "ব্যাংক", "ব্যাঙ্ক", "জামানত", "loan", "bank"]):
+            return "loan"
+        if starts(["দল", "একসাথে", "গ্রুপ", "সমিতি", "group"]):
+            return "group"
+        future = starts(["হবে", "বাড়বে", "কমবে", "উঠবে", "নামবে"])
+        if starts(["পূর্বাভাস", "forecast", "outlook"]) or (starts(["দাম", "দর"]) and future):
+            return "outlook"
+        if starts(["বেচ", "বিক্রি", "বিক্রয়", "রাখ", "হিমাগার", "কোল্ড", "দাম", "দর", "আলু",
+                   "sell", "store", "price", "potato"]):
+            return "advice"
+        return None
 
-        if starts(["কর্মকর্তা", "অফিসার", "officer"]):
-            return "officer"
-        if exact(["সার", "সারের", "সারে", "বিষ", "ওষুধ", "ঔষধ"]) or starts(["কীটনাশক", "ইউরিয়া", "পটাশ", "টিএসপি", "fertili", "pestic"]):
-            return "fertilizer"
-        if starts(["বীজ", "যন্ত্র", "ট্রাক্টর", "টিলার", "হারভেস্টার", "মেশিন", "পাম্প", "seed", "machin", "tractor"]):
-            return "seeds"
-        if starts(["বেচ", "বিক্রি", "বিক্রয়", "দাম", "দর", "আলু", "হিমাগার", "কোল্ড", "sell", "price", "potato"]):
-            return "sell"
+    @staticmethod
+    def parse_in_storage(text: str) -> Optional[bool]:
+        """True if the potatoes are already in cold storage, False if not (still at home or in the field)."""
+        t = prepare(text)
+        tokens = _tokens(t)
+
+        def starts(words: list[str]) -> bool:
+            return any(tok.startswith(nfc(w)) for tok in tokens for w in words)
+
+        in_store = starts(["হিমাগার", "কোল্ড", "স্টোর"])
+        if in_store and starts(["আছে", "রাখা", "রেখে", "রাখছি", "রাখি", "ঢুকিয়ে", "ঢুকাইছি"]):
+            return not _has_negation(t)
+        if starts(["মাঠে", "ঘরে", "বাড়িতে", "বাড়ীতে", "তুলছি", "তুলেছি", "উঠছে", "উঠেছে", "উঠল"]) and not in_store:
+            return False
         return None
 
     @staticmethod

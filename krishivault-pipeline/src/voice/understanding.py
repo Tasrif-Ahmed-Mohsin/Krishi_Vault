@@ -1,7 +1,8 @@
 """
 Understanding what the farmer said
 ==================================
-1. KrishiVault's Bangla parser reads numbers and units (মণ, বস্তা, টাকা, দিন, দাদন).
+1. KrishiVault's Bangla parser reads numbers and units (মণ, বস্তা, টাকা, দিন), and whether the
+   potatoes are already in cold storage.
 2. If a number was said that the parser could not place, Gemini is asked to fill fixed fields.
    Each number Gemini returns must be one the farmer actually said (the parser checks it); a number
    that was not said is rejected and shown as rejected.
@@ -35,8 +36,10 @@ def in_limits(slot: str, value: float) -> bool:
     return lo <= value <= hi
 
 
-def bare_answer(slot: str, number: float) -> dict:
+def bare_answer(slot: str, number: float, quantity_unit: str = "maund") -> dict:
     """A number said or pressed in answer to a question about one slot, in that slot's usual unit."""
+    if slot == "quantity_kg" and quantity_unit == "sack":
+        return {"value": round(number * SACK_KG, 2), "said": number, "unit": "sack"}
     if slot == "quantity_kg":
         return {"value": round(number * MAUND_TO_KG, 2), "said": number, "unit": "maund"}
     if slot == "offer_per_kg" and number > 200:  # a price per maund ("৮০০")
@@ -48,14 +51,17 @@ GEMINI_PROMPT = """You read what a Bangladeshi potato farmer said on a phone cal
 northern dialect, and may contain speech-recognition mistakes.
 {asked}
 Return only a JSON object with exactly these fields (null when the farmer did not say it):
-{{"intent": "sell" | "fertilizer" | "seeds" | "officer" | "yes" | "no" | null,
+{{"intent": "advice" | "outlook" | "group" | "loan" | "helper" | "yes" | "no" | null,
  "quantity": {{"number": <number>, "unit": "maund" | "sack" | "kg"}} | null,
+ "in_cold_storage": true | false | null,
  "cash_needed_taka": <number> | null,
  "deadline_days": <number> | null,
  "offer_price": {{"number": <number>, "per": "kg" | "maund"}} | null,
  "dadon_taka": <number> | null}}
 Rules: write each number in digits exactly as the farmer said it ("বিশ হাজার" is 20000).
 Never calculate, convert or guess a number. "dadon" is an advance taken from a trader.
+intent: advice = whether to store or sell; outlook = the price forecast; group = storing together with
+neighbours; loan = a loan against stored sacks; helper = wants a person to call back.
 
 The farmer said: \"\"\"{text}\"\"\""""
 
@@ -81,12 +87,13 @@ def _gemini_values(data: dict) -> dict[str, dict]:
 
 
 def understand(text: str, expecting: Optional[str] = None, asked_text: str = "",
-               gemini: Optional[GeminiClient] = None) -> dict[str, Any]:
+               gemini: Optional[GeminiClient] = None, quantity_unit: str = "maund") -> dict[str, Any]:
     """
     {
       "values":   {slot: {"value", "heard", "source": "parser" | "gemini"}},
       "rejected": [{"slot", "number", "reason"}],
-      "menu":     "sell" | "fertilizer" | "seeds" | "officer" | None,
+      "menu":     "advice" | "outlook" | "group" | "loan" | "helper" | None,
+      "in_storage": True | False | None,
       "yes_no":   True | False | None,
       "gemini":   "not_set_up" | "not_needed" | "used" | "no_answer",
     }
@@ -106,7 +113,7 @@ def understand(text: str, expecting: Optional[str] = None, asked_text: str = "",
     # A bare answer to the question that was asked
     if expecting in SLOTS and expecting not in values:
         if len(said_numbers) == 1:
-            ans = bare_answer(expecting, float(said_numbers[0]))
+            ans = bare_answer(expecting, float(said_numbers[0]), quantity_unit)
             if in_limits(expecting, ans["value"]):
                 values[expecting] = {**ans, "heard": said_numbers[0], "source": "parser"}
         elif not said_numbers and expecting in ("cash_needed_tk", "offer_per_kg", "dadon_tk"):
@@ -115,6 +122,7 @@ def understand(text: str, expecting: Optional[str] = None, asked_text: str = "",
 
     menu = FarmerIntentParser.parse_menu_choice(text)
     yes_no = FarmerIntentParser.parse_yes_no(text)
+    in_storage = FarmerIntentParser.parse_in_storage(text)
 
     # Numbers the parser did not place
     used = set()
@@ -147,9 +155,12 @@ def understand(text: str, expecting: Optional[str] = None, asked_text: str = "",
                     values[slot] = {"value": g["value"], "said": g["number"], "unit": g.get("unit"),
                                     "heard": str(g["number"]), "source": "gemini"}
                 intent = data.get("intent")
-                if menu is None and intent in ("sell", "fertilizer", "seeds", "officer"):
+                if menu is None and intent in ("advice", "outlook", "group", "loan", "helper"):
                     menu = intent
+                if in_storage is None and isinstance(data.get("in_cold_storage"), bool):
+                    in_storage = data["in_cold_storage"]
                 if yes_no is None and intent in ("yes", "no"):
                     yes_no = intent == "yes"
 
-    return {"values": values, "rejected": rejected, "menu": menu, "yes_no": yes_no, "gemini": gemini_status}
+    return {"values": values, "rejected": rejected, "menu": menu, "yes_no": yes_no, "in_storage": in_storage,
+            "gemini": gemini_status}
