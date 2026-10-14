@@ -60,6 +60,9 @@ K_LIMITS = (-0.6, 1.8)
 SIGMA_MONTH_FLOOR = 0.06             # prices wander at least 6% a month (log), per month
 K_SPREAD_FLOOR = 0.25                # the crop-size link is uncertain even when the gap is known
 SIMULATIONS = 2000
+# Used only when fewer than two seasons are known, so the crop-size link cannot be fitted: k falls by 1.5
+# for every 10% bigger crop. An assumption, close to what the two WFP seasons give (1.3).
+SLOPE_ASSUMED = -15.0
 
 
 def log_s(month: int) -> float:
@@ -140,13 +143,16 @@ class Calibration:
     seasons: list             # what it was fitted on
 
 
-@lru_cache(maxsize=1)
-def calibrate() -> Calibration:
+@lru_cache(maxsize=16)
+def calibrate(exclude: tuple = (), slope_assumed: float = SLOPE_ASSUMED) -> Calibration:
+    """Fit the crop-size link on every season with prices, except the seasons in `exclude` (the backtest)."""
     prices = monthly_prices()
     gaps = _gap_history()
     seasons, resid_all = [], []
     for season, rows in prices[prices.season.notna()].groupby("season"):
         season = int(season)
+        if season in exclude:
+            continue
         fit = _season_k(rows[rows.month.isin(SEASON_MONTHS)])
         if fit is None or season not in gaps:
             continue
@@ -165,9 +171,10 @@ def calibrate() -> Calibration:
         slope, k0 = np.polyfit(g, kk, 1)
         spread = float(np.sqrt(((kk - (k0 + slope * g)) ** 2).sum() / max(len(g) - 2, 1))) if len(g) > 2 else 0.0
     elif len(seasons) == 1:
-        k0, slope, spread = seasons[0]["k"], -15.0, 0.4
+        slope, spread = slope_assumed, 0.4
+        k0 = seasons[0]["k"] - slope * seasons[0]["gap_pct"] / 100   # the line through the one known season
     else:
-        k0, slope, spread = 0.8, -15.0, 0.4
+        k0, slope, spread = 0.8, slope_assumed, 0.4
     sigma = float(np.std(resid_all, ddof=1)) if len(resid_all) > 3 else SIGMA_MONTH_FLOOR
     return Calibration(k0=float(k0), slope=float(slope), k_spread=max(spread, K_SPREAD_FLOOR),
                        sigma_month=max(sigma / math.sqrt(2), SIGMA_MONTH_FLOOR), seasons=seasons)
@@ -184,9 +191,10 @@ def season_for_decision(year: int, month: int) -> int:
 
 def rise_strength(season_start: int, area_ha: Optional[float] = None, gap_override_pct: Optional[float] = None,
                   weather_adjust_pct: float = 0.0, decision_year: Optional[int] = None,
-                  decision_month: Optional[int] = None, use_season_prices: bool = True) -> dict:
+                  decision_month: Optional[int] = None, use_season_prices: bool = True,
+                  cal: Optional[Calibration] = None) -> dict:
     """k for a season: from the crop gap, corrected by the season's own prices so far."""
-    cal = calibrate()
+    cal = cal or calibrate()
     gap, gap_sd = crop_gap(season_start, area_ha, weather_adjust_pct, gap_override_pct)
     prior = cal.k0 + cal.slope * gap
     prior_sd = math.sqrt((cal.slope * gap_sd) ** 2 + cal.k_spread ** 2)
@@ -212,14 +220,14 @@ def rise_strength(season_start: int, area_ha: Optional[float] = None, gap_overri
 
 
 def simulate(decision_month: int, horizon: int, k: float, k_sd: float,
-             n: int = SIMULATIONS, seed: int = 7) -> np.ndarray:
+             n: int = SIMULATIONS, seed: int = 7, sigma: Optional[float] = None) -> np.ndarray:
     """
     Price paths relative to today's price: an (n x horizon+1) array, column 0 is 1.0.
     Each path draws its own rise strength and its own monthly wander.
     """
     rng = np.random.default_rng(seed)
     ks = np.clip(rng.normal(k, k_sd, size=n), *K_LIMITS)
-    sigma = calibrate().sigma_month
+    sigma = calibrate().sigma_month if sigma is None else sigma
     base = log_s(decision_month)
     shape = np.array([log_s(month_after(decision_month, h)) - base for h in range(horizon + 1)])
     shocks = np.concatenate([np.zeros((n, 1)), rng.normal(0, sigma, size=(n, horizon)).cumsum(axis=1)], axis=1)
@@ -267,7 +275,8 @@ def model_card() -> dict:
             "Only two full price seasons: the crop-size link is fitted to two points. A scenario, not a promise.",
             "Retail town-market prices; the farmer's own price today anchors the outlook.",
             "Weather is not in the production model yet (needs NASA POWER season history).",
-            "No backtest possible yet; needs the DAM price history (to-do).",
+            "Backtested on two seasons only (12 months): it beat the usual seasonal shape on both, but that is far "
+            "too little to judge it; the DAM price history is needed (to-do). See /api/forecast/backtest.",
         ],
     }
 

@@ -293,6 +293,8 @@
     <div class="panel"><h2>How the price model works <span class="bn">মডেল</span></h2>
       <div class="panel-body" id="modelCard"></div></div>
   </div>
+  <div class="panel" style="margin-top:14px"><h2>Backtest: the outlook on seasons it had not seen <span class="bn">যাচাই</span> <span class="tag real">REAL PRICES</span></h2>
+    <div class="panel-body" id="backtest"></div></div>
   <div class="panel" style="margin-top:14px"><h2>Regional prices and supply <span class="bn">অঞ্চলভেদে দাম ও সরবরাহ</span></h2>
     <div class="panel-body grid two">
       <div><h3 style="margin:0 0 6px;font-size:.95rem">Price level by district (1.00 = national)</h3><div class="chart" id="regChart"></div>
@@ -812,7 +814,7 @@ async function loadForecast() {
     $('#xDist').innerHTML = ds.map(d => `<option ${d === 'Bogura' ? 'selected' : ''}>${esc(d)}</option>`).join('');
     districtsLoaded = true;
   }
-  await Promise.all([runProduction(), runPriceOutlook(), loadModel(), loadRegions()]);
+  await Promise.all([runProduction(), runPriceOutlook(), loadModel(), loadBacktest(), loadRegions()]);
 }
 async function runProduction() {
   const q = new URLSearchParams({season_start: $('#fSeason').value});
@@ -847,6 +849,25 @@ async function loadModel() {
     <div class="table-wrap"><table><thead><tr><th>Season fitted</th><th class="n">Crop gap</th><th class="n">Rise strength</th><th class="n">Months</th></tr></thead><tbody>
     ${c.seasons_fitted.map(s => `<tr><td>${esc(s.season)}</td><td class="n">${s.gap_pct > 0 ? '+' : ''}${s.gap_pct}%</td><td class="n">${s.k} ± ${s.k_se}</td><td class="n">${s.months}</td></tr>`).join('')}</tbody></table></div>
     <p class="note honest"><b>Limits.</b> ${c.limits.map(esc).join(' ')}</p>`;
+}
+async function loadBacktest() {
+  const b = await api('/api/forecast/backtest');
+  const rows = Object.values(b.summary).map(v => `<tr><td>${esc(v.name)}</td><td class="n">${v.average_miss_pct}%</td>
+    <td class="n">${v.in_range_pct == null ? '–' : v.in_range_pct + '%'}</td><td class="n">${esc(v.store_or_sell_right)}</td>
+    <td class="n">৳${num(v.gain_per_sack_total)}</td></tr>`).join('');
+  const seasons = b.seasons.map(s => {
+    const st = s.storage;
+    return `<li><b>${esc(s.season)}</b> (crop ${s.crop_gap_pct > 0 ? '+' : ''}${s.crop_gap_pct}% against the trend; learned from ${esc(s.trained_on.join(', ') || 'nothing')}):
+      from ${esc(s.start)} at ৳${s.start_price}/kg, ${st.real.storing_paid ? `storing one sack paid (best: ${esc(st.real.best_month_en)}, ৳${num(st.real.best_gain_per_sack)} more than selling)` : `storing one sack did not pay (even the best month, ${esc(st.real.best_month_en)}, lost ৳${num(-st.real.best_gain_per_sack)})`}.
+      The outlook said <b>${esc(st.outlook.says)}</b>${st.outlook.right ? '' : ' (wrong)'}; the usual shape said ${esc(st.usual.says)}${st.usual.right ? '' : ' (wrong)'}.</li>`;
+  }).join('');
+  const slopes = b.slope_check ? `<p class="small"><b>How much rests on an assumption.</b> With one season left to learn from, how much a bigger crop holds prices down had to be assumed.
+    The store-or-sell calls were right ${b.slope_check.map(c => `${esc(c.store_or_sell_right)} times if a 10% bigger crop cuts the rise by ${Math.abs(c.rise_change_per_10pct_bigger_crop)}`).join('; ')}.
+    (The backtest assumes ${b.rise_cut_per_10pct.assumed}; all seasons together give ${b.rise_cut_per_10pct.fitted_on_all}.)</p>` : '';
+  $('#backtest').innerHTML = `<p>Each past season is replayed from its first month with prices, with a model that has <b>not seen</b> that season's prices, and compared with what really happened, up to December. ${b.months_scored} months scored.</p>
+    <div class="table-wrap"><table><thead><tr><th>Way of guessing</th><th class="n">Average miss</th><th class="n">Real price inside the 8-in-10 range</th><th class="n">Store or sell right</th><th class="n">Gain a sack (all seasons)</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <ul class="plain">${seasons}</ul>${slopes}
+    <p class="note honest"><b>Limits.</b> ${b.limits.map(esc).join(' ')}</p>`;
 }
 async function loadRegions() {
   const r = await api('/api/market/regions');

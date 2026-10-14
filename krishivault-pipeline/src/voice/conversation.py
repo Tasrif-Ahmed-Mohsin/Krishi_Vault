@@ -66,9 +66,15 @@ HELPER = "ঠিক আছে। কৃষিভল্টের একজন স
 ENDED = "কলটি শেষ হয়েছে। ধন্যবাদ।"
 
 REWORD_PROMPT = """Reword this phone advice for a potato farmer in Bogura, Bangladesh, in simple, warm,
-spoken Bangla. Rules: keep every number exactly as written, in Bangla digits; do not add, drop, round
-or calculate any number; do not add advice, promises, loans or certainty; keep it short (at most
-five sentences). Return only the reworded Bangla text.
+spoken Bangla. The call is already under way: no greeting, no name, no চাচা or ভাই.
+Rules:
+- Keep every number exactly as written, in Bangla digits, and keep what each number counts (sacks,
+  taka per kg, taka in hand after costs, a month, a chance out of 10).
+- Keep the meaning exactly: the same action, the same month; "খরচ বাদে" (after costs) stays after costs;
+  storing means the cold storage (হিমাগার), not the home.
+- Do not add, drop, round or calculate any number; do not add reasons, advice, promises, loans or certainty.
+- Keep it short: no more sentences than the advice has.
+Return only the reworded Bangla text.
 
 Advice: \"\"\"{text}\"\"\""""
 

@@ -430,7 +430,7 @@ async function loadStatus() {
   chips.push(chip(SR ? (window.isSecureContext ? "on" : "warn") : "off", SR ? (window.isSecureContext ? "Speech-to-text: browser (Google)" : "Speech-to-text: needs HTTPS") : "Speech-to-text: not in this browser"));
   if (status) {
     chips.push(chip(status.gemini.on ? "on" : "off", status.gemini.on ? "Gemini: on (checked)" : "Gemini: off (parser only)"));
-    chips.push(chip(status.google_voice.ready ? "on" : "warn", status.google_voice.ready ? "Google Bangla voice: on" : "Google voice: off, phone voice used"));
+    chips.push(chip(status.google_voice.ready ? "on" : "warn", status.google_voice.ready ? "Google Bangla voice: on" : "Google voice: off, phone voice used", status.google_voice.last_error));
     chips.push(chip(status.sms.live ? "bad" : "on", status.sms.live ? "SMS: LIVE (real, billed)" : (status.sms.configured ? "SMS: keys set, dry run" : "SMS: dry run")));
     chips.push(chip("warn", "Phone calls: preview only"));
     $("notifyMode").textContent = status.sms.live
@@ -441,7 +441,7 @@ async function loadStatus() {
   }
   $("status").innerHTML = chips.join("");
 }
-const chip = (cls, text) => `<span class="chip ${cls}">${esc(text)}</span>`;
+const chip = (cls, text, note) => `<span class="chip ${cls}"${note ? ` title="${esc(note)}"` : ""}>${esc(text)}</span>`;
 
 // ---------------------------------------------------------------- the call
 async function startCall() {

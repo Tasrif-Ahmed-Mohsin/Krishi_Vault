@@ -46,7 +46,9 @@ Code: `krishivault-pipeline/src/engine/storage_plan.py`, costs in `src/engine/fa
 4. 2,000 paths: each draws its own rise (crop uncertainty) and a monthly wander of about 6%. The outlook gives the middle and the 8-in-10 range.
 5. The farmer's own price today anchors the path. Retail and farm-gate prices are assumed to move together (a conservative assumption; farm-gate prices usually swing more).
 
-**Honest limits** (also on the dashboard): two full price seasons; no backtest yet; no weather in production; retail prices. Adding a longer price history refits it automatically (`data/raw/price_history.csv`).
+**Backtest** (`src/models/backtest.py`, the Forecasts page, `/api/forecast/backtest`): each past season is replayed from its first month with prices, with a model fitted on the other seasons only, against "usual seasonal shape only" and "no change". Scores: average miss, how often the real price fell inside the 8-in-10 range, and whether "store until the best month" or "sell now" was right for one sack. A slope check shows how much the calls depend on the assumed crop-size link. With a long history, `only_past=True` predicts each season from earlier seasons only.
+
+**Honest limits** (also on the dashboard): two full price seasons, backtested on 12 months only; no weather in production; retail prices. Adding a longer price history refits it automatically (`data/raw/price_history.csv`).
 
 ## 3. Demo story (5 minutes)
 

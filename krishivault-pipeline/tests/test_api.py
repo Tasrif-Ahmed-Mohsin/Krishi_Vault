@@ -3,7 +3,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from src.main import app, tts_service
+from src.main import app, gemini_client, tts_service
 
 
 @pytest.fixture(autouse=True)
@@ -11,6 +11,7 @@ def temp_runtime(tmp_path, monkeypatch):
     monkeypatch.setenv("KV_EVENTS_PATH", str(tmp_path / "events.jsonl"))
     monkeypatch.setenv("KV_RUNTIME_DIR", str(tmp_path))
     monkeypatch.setenv("SMS_LIVE", "0")
+    monkeypatch.setattr(gemini_client, "api_key", "")  # no network calls, even when GEMINI_API_KEY is set
 
 
 @pytest.fixture
@@ -137,3 +138,10 @@ def test_booking_and_lot_reach_partner_screens(client):
     lot = client.post("/api/market/lot", json={"kg": 3000, "price_today": 16, "farmer_name": "Demo"}).json()
     assert lot["for"] == "buyer"
     assert client.post("/api/storage/book", json={"sacks": 3, "farmer_name": "x", "cold_storage_id": "zz"}).status_code == 404
+
+
+def test_backtest(client):
+    r = client.get("/api/forecast/backtest")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["seasons"] and data["summary"]["outlook"]["average_miss_pct"] is not None

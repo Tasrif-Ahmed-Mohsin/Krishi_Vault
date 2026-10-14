@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).parent.parent.parent
 load_dotenv(BASE_DIR / ".env")
 AUDIO_DIR = BASE_DIR / "data" / "audio_out"
+CLOUD_KEY_FILE = "/tmp/gcp-tts.json"  # written by .claude/hooks/session-start.sh
 
 try:
     from google.cloud import texttospeech
@@ -33,7 +34,10 @@ class BengaliVoiceSynthesizer:
     """Generates natural Bengali spoken audio files for KrishiVault voice telephony."""
 
     def __init__(self, credentials_path: Optional[str] = None):
-        self.cred_path = credentials_path or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+        # The configured path first; then the file the cloud SessionStart hook writes from GOOGLE_TTS_JSON_B64,
+        # so a wrong GOOGLE_APPLICATION_CREDENTIALS in the cloud settings does not switch the voice off
+        candidates = [credentials_path or os.getenv("GOOGLE_APPLICATION_CREDENTIALS"), CLOUD_KEY_FILE]
+        self.cred_path = next((p for p in candidates if p and os.path.isfile(p)), candidates[0])
         configured = os.getenv("TTS_LANGUAGE", "").strip()
         self.languages = [configured] if configured else ["bn-BD", "bn-IN"]
         self.language_used: Optional[str] = None
@@ -41,8 +45,13 @@ class BengaliVoiceSynthesizer:
         self.client = None
         self.ready = False
         if not GCP_TTS_AVAILABLE:
+            self.last_error = "google-cloud-texttospeech is not installed"
             logger.warning("google-cloud-texttospeech is not installed.")
-        elif self.cred_path and os.path.exists(self.cred_path):
+        elif not (self.cred_path and os.path.isfile(self.cred_path)):
+            self.last_error = ("no key file: in a cloud session set GOOGLE_TTS_JSON_B64; "
+                               "on a laptop set GOOGLE_APPLICATION_CREDENTIALS to the key file's path")
+            logger.warning(f"Google Cloud TTS credentials not found at: {self.cred_path}")
+        else:
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = self.cred_path
             try:
                 self.client = texttospeech.TextToSpeechClient()
@@ -51,8 +60,6 @@ class BengaliVoiceSynthesizer:
             except Exception as e:
                 self.last_error = str(e)
                 logger.warning(f"Google Cloud TTS could not start: {e}")
-        else:
-            logger.warning(f"Google Cloud TTS credentials not found at: {self.cred_path}")
 
     def status(self) -> dict:
         return {

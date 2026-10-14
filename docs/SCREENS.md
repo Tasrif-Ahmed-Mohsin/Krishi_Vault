@@ -28,7 +28,7 @@ For helpers, partners, judges and the team. Pick a **season** at the top; every 
 |---|---|
 | Season overview | The crop, the price outlook with its range, what storing 36 sacks gains or loses month by month, and why farmers lose money in cold storage |
 | Store or sell | The engine: the farmer's quantity, price, cash need and costs → sell now, store until a month, or sell part; the chance, the bad case, the price at which storing pays; send the advice by SMS; ask the cold storage for space |
-| Forecasts | Production by district (BBS) with a range; the price outlook table; WFP prices so far; how the model works and its limits; regional price levels and the biggest districts |
+| Forecasts | Production by district (BBS) with a range; the price outlook table; WFP prices so far; how the model works and its limits; the backtest (the outlook on past seasons it had not seen, against the usual seasonal shape); regional price levels and the biggest districts |
 | Buyers | Offers ranked by money in the farmer's hand; add the farmer's own offers; send the lot to the buyers' screen |
 | Bank loan | How much 36 sacks can borrow, from which lender, at what risk; what the bank sees; apply |
 | Group storage | Groups, discount tiers, alone against the group; join |
@@ -71,7 +71,8 @@ Set before starting the server (names in `krishivault-pipeline/.env.example`; va
 | Production and prices behind the forecasts | Real data (BBS, WFP) |
 | The engine, loan valuation, group and export sums, profit calculator | Real code, tested; costs partly assumptions (editable) |
 | Cold storages, banks, buyers, groups, export prices | **Demo**, made up, labelled on every screen |
-| Speech, Gemini, Google voice | Work with keys; not yet tried with real keys here |
+| Gemini | Tried with the real key (14 October): understanding and rewording, number-checked |
+| Speech, Google voice | Work with keys; not yet tried with real keys here |
 | SMS | Dry run until switched on |
 | Phone calls | Preview only |
 
