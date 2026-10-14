@@ -2,20 +2,29 @@
 
 The parts of the plan that `HANDOFF.md` only summarizes. Read `HANDOFF.md` first.
 
-## 1. One farmer, one calendar, one ledger, modules that move together
+## 1. One farmer, one calendar, one record, pillars that move together
 
 ```
                   Farmer: upazila, plots (crop, area, sowing date, land type), dadon
                                               │
-     Crop knowledge base (13 crops' traits)   │   Place: soil, flood exposure, dealers, cold storages
+     Crop knowledge base (13 crops' traits)   │   Place: soil, flood exposure, dealers, cold storages, sellers
                           └───────────────────┼────────────────────┘
                                    Crop calendar (stage of every plot today)
                                               │
-        ┌──────────────────┬──────────────────┼──────────────────┬──────────────────┐
-   Market & storage      Inputs supply      Danger alerts       Season ledger (কৃষি খাতা)
-                                              │
-                          Event bus: one event updates every module
+   ┌───────────────┬──────────────────┬───────┴──────────┬────────────────┬──────────────┐
+ Sell for best   Fertilizer and     Seeds, machinery   Danger alerts     Fair credit
+ value           pesticide supply   marketplace        (weather, flood,  (instead of
+                                                        disease, price)   dadon)
+   └───────────────┴──────────────────┴───────┬──────────┴────────────────┴──────────────┘
+                     The farmer's record (কৃষি খাতা) and an event bus: one event updates every pillar
 ```
+
+**The marketplace in the season:**
+- **Before planting:** certified seed potato and improved varieties, fertilizer as a group order, a power tiller to rent.
+- **At harvest:** a harvester, reaper or digger to rent, booked by the bigha.
+- **After harvest:** storage bags, and the cold-storage booking.
+
+Machinery owners and operators get steady bookings, and smallholders get machines they could never buy. Subsidy information comes from the DAE machinery programme; verify current terms before quoting a rate.
 
 **How one event moves every module:**
 

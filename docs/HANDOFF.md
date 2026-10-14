@@ -1,108 +1,209 @@
 # KrishiVault handoff (14 October 2026)
 
-Everything decided so far, in one place, so work can continue in a cloud session.
+Everything decided so far, in one place. This is the project's main plan document: start here in every new session. Details that support it are in `PLAN_DETAILS.md`, data in `DATA_SOURCES.md`.
 
-## 1. The idea
+## 1. What KrishiVault is
 
-**KrishiVault is a free voice line that protects a farmer's money through the whole season.** A farmer with a button phone talks or presses keys. KrishiVault warns him before weather or disease costs him money, tells him in taka what to buy, when to sell and when to store, and connects him to the cold storage, buyer, fertilizer group or lender that makes it happen.
+**KrishiVault is a farm business ecosystem, not an agricultural information centre.** It connects farmers who are left behind (button phones, little bargaining power, dadon debt) with everyone who buys from them, sells to them, stores for them, lends to them and supports them: buyers, cold storages, dealers, seed and machinery sellers, lenders, agriculture officers and government. AI and data find the best option for the farmer; the network makes it happen.
+
+**Vision:** the best possible value for farmers and for every honest stakeholder, and less agricultural loss of every kind:
+- **financial loss:** forced sales in the glut, overcharged inputs, dadon interest;
+- **crop and food loss:** disease, extreme weather, floods, rot in storage;
+- **sustainability loss:** excess fertilizer and pesticide, wasted food, depleted groundwater.
+
+**It must be financially solid and practical:** every service either saves the farmer money or earns it, and the ecosystem pays for itself through fees from the businesses that gain from it, never from the farmer's advice.
 
 > ফোনে বলুন — ফসলের দাম আর টাকা দুটোই বাঁচান।
 
-**Why this design:** research shows market-price information alone rarely raises what farmers are paid (Fafchamps and Minten, India; Aker and Fafchamps, Niger). Gains come when information changes bargaining or lets the farmer act (Shimamoto and others, Cambodia). So every piece of advice ends with something the farmer can do.
+**Hero crop for the demo:** potato in Bogura, including the Sariakandi char. The data already covers 13 crops and all 544 upazilas.
 
-**Three money leaks:** buying inputs (fertilizer overcharged, doses guessed), protecting the crop (calendar spraying, late blight), selling (glut, dadon, no storage). **Two barriers:** button phones and literacy; no way to act on information.
+## 2. The five pillars
 
-## 2. The plan (the complete product)
-
-| Service | What the farmer hears | What he can do in the call |
+| Pillar | What the farmer gets | Who he is connected to |
 |---|---|---|
-| 1. Danger alerts | Late blight, rain before harvest, heat on stored potato, cold and fog, flood, price crash; "no spray needed" in quiet weeks | Repeat; officer callback |
-| 2. Sell / store / group | Taka for each option, his cost-of-production floor, a sell-part safety net | Book cold storage; join a group lot |
-| 3. Inputs | Fertilizer sacks for his crop and soil, fair price, buy-by date; spray only when weather says so | Join a group buy; report the price paid |
-| 4. Credit instead of dadon | A loan offer from a partner lender, based on his khata | Request the loan |
-| 5. কৃষি খাতা | Season summary: spent, saved, sold, owed | Confirm entries; becomes his credit history |
+| **1. Sell for the best value** | AI advice in taka: sell now, sell part, store or sell as a group, with his cost-of-production floor and a sell-part safety net | Buyers and aggregators (group lots), cold storages (bookings) |
+| **2. Fertilizer and pesticide supply chain** | The right dose for his crop and soil, the official fair price, delivered on time before the planting rush; pesticide only when the weather favours disease | Dealers (group orders, stock), DAE (fair-price and shortage reports) |
+| **3. Agricultural goods marketplace** | Seeds (certified seed potato, improved varieties), machinery to buy or rent (tillers, reapers, harvesters, pumps), tools and other inputs, from verified sellers at fair prices, with government subsidy information | Seed sellers, machinery owners and dealers, service providers |
+| **4. Danger alerts** | Warnings before heavy rain, heat waves, cold waves and fog, floods, crop-disease weather, and a **price crash**; "nothing needed this week" in quiet weeks | Agriculture officers (callback) |
+| **5. Fair credit** | A loan from a partner lender instead of dadon, based on his own record | Lenders (banks, microfinance) |
 
-Plus **farmer reports by keypad** (price got, fertilizer price paid, disease seen) feeding the forecasts and a DAE map.
+**The backbone that holds the pillars together: the farmer's record (কৃষি খাতা).** The farmer never types. Every sale, purchase, booking and alert is recorded against his phone number by the business on the other side, and he confirms by keypad. That record shows his costs and savings, builds his credit history, and makes every pillar aware of the others.
 
-**How farmers use it:** free (missed call, then we call back), keypad menu (১ দাম ও পরামর্শ, ২ সার, ৩ আমার খাতা, ৯ কর্মকর্তা), Bangla voice, an SMS receipt after each call. **The farmer never types.** Dealers, cold storages, buyers and the SAAO record against his phone number and he confirms by keypad.
+**Web screens for partners (not for farmers):** agriculture officer desk, cold storage, buyer, dealer, seed and machinery seller, lender, and a government (DAE) dashboard. All work on the same farmer records.
 
-**Phone number as ID:** the number links to an internal farmer record. One number can hold several farmers (shared phone menu); a SIM change moves the record; a 4-digit keypad PIN protects the khata and bookings; every entry made by a helper needs the farmer's keypad confirmation.
+## 3. How a farmer uses it
 
-**Helper portals (web, not for farmers):** SAAO desk, cold storage, buyer, dealer, lender, DAE map. All write to the same farmer record.
+The farmer has a button phone, so KrishiVault comes to him by **voice call and SMS**:
 
-**AI, and why:** "AI where language and uncertainty live; fixed rules where money and safety live."
-- Speech recognition (Bangla), always with keypad fallback and number read-back.
-- Gemini for understanding colloquial Bangla, with fixed output fields.
-- Price forecast only if it beats simple seasonality in a backtest; uncertainty said out loud; sell-part advice.
-- NASA satellite and climate rules for alerts (published thresholds).
-- Gemini wording with a **number lock**; Google Bangla voice.
-- The decision engine is deterministic and explainable.
+- **Free for him:** he gives a missed call and KrishiVault calls back, or KrishiVault calls him when there is an alert or it is time to act.
+- **Keypad menu:**
 
-**Phone line architecture (production):** licensed IPTSP SIP trunk (096 number) into Asterisk on a Linux cloud server; Python voice service talks to Asterisk through ARI. The pipeline: turn detection, speech-to-text, Bangla parser and Gemini, engine, number check, Google voice. Awaj broadcast stays for one-way alerts; REVE for SMS. Do not use GSM/SIM gateways (treated as illegal VoIP in Bangladesh). Secure the server before connecting a trunk (firewall SIP to the provider's IPs, fail2ban, no guest calls, outbound cap). Incoming calls cost the farmer, so use missed call and callback.
+```
+১ — ফসল বেচা: দাম আর পরামর্শ    (selling: price and advice)
+২ — সার ও কীটনাশক               (fertilizer and pesticide)
+৩ — বীজ ও যন্ত্রপাতি             (seeds and machinery)
+৪ — আমার খাতা                   (my record)
+৯ — কৃষি কর্মকর্তা ফোন করবেন      (an agriculture officer calls back)
+```
 
-**Execution:** prototype now; pilot of 150 to 300 potato farmers in Bogura through the upazila agriculture office with one cold storage, one buyer, one dealer and one lender; then district; then national with DAE and a2i. Data already covers 544 upazilas and 13 crops. Calls cost about ৳10 per farmer per season (about 20 minutes at ৳0.4 to 0.55 a minute).
+- **Voice:** he can also speak; the AI listens, answers in a Bangla voice, and confirms every number by keypad.
+- **An SMS receipt** after every call, which a family member can read.
+- **Phone number as ID:** it links to his farmer record. A shared phone gets a "press 1 for Rahim, 2 for Karim" menu; a keypad PIN protects money matters.
 
-**Impact to measure:** price received against the DAM benchmark and neighbours, share sold in glut weeks, fertilizer price paid, sprays per season, storage loss, dadon share, how often callers press "repeat".
+**Every piece of advice ends with something to press:** book a cold-storage slot, join a group sale, join a group fertilizer order, order seed, book a harvester, request a loan, call an officer. Research shows market information alone rarely raises farmers' prices (Fafchamps and Minten, India; Aker and Fafchamps, Niger); gains come when the farmer can act (Shimamoto and others, Cambodia). This is why KrishiVault is an ecosystem, not an information service.
 
-## 3. The prototype (what we show now)
+## 4. Who gains, and what they give
+
+| Stakeholder | What they gain | What they give |
+|---|---|---|
+| Farmers | Better prices, fair and on-time inputs, better seed, machinery access, early warnings, cheaper credit | Their crop and purchases; keypad confirmations and reports |
+| Buyers and aggregators | Ready, sorted group lots; traceable, residue-checked produce | A fee on each group lot |
+| Cold storages | Filled capacity, advance bookings | A fee per booking |
+| Fertilizer and pesticide dealers | Bulk group orders, a demand forecast, verified customers | A subscription or a fee per group order; fair prices |
+| Seed and machinery sellers, machinery owners | Verified customers; rental bookings that keep machines busy | A commission per sale or rental booking |
+| Lenders | Verified borrowers with a real record | A referral fee per loan |
+| Agricultural workers and machinery operators | Steady bookings through the season | Their service |
+| Government and DAE | Early-warning map, fertilizer demand by week, overcharge and shortage reports, data for policy | A contract for alerts and dashboards; officers as the human contact |
+
+## 5. Business model
+
+**Rule:** advice and alerts are free for farmers and never for sale. A seller's fee never changes what KrishiVault advises; group sales and orders go to the best offer for the farmer.
+
+**Revenue lines (rates to test in the pilot):**
+- Group-sale fee paid by the buyer, a small share of the lot value.
+- Cold-storage booking fee.
+- Marketplace commission on seeds, machinery and inputs, paid by the seller.
+- Machinery rental booking fee.
+- Dealer subscription or group-order fee.
+- Lender referral fee.
+- Government and NGO contracts for alerts, the officer desk and the DAE dashboard.
+
+**Costs:** calls and SMS (about ৳10 per farmer per season: about 20 minutes at ৳0.4 to 0.55 a minute), servers, the phone line, and field agents for onboarding.
+
+**Why it holds up:**
+- The farmer pays nothing.
+- Each business pays only when it gains a sale, booking or customer.
+- Government pays for the public-good part (alerts, dashboards).
+
+The illustrative farmer gain is large: selling 100 maunds at ৳24 instead of ৳19 a kg is ৳5 × 3,732 kg ≈ ৳18,660 more in one season. Fees are a small share of that value.
+
+## 6. AI and technology, and why
+
+**"AI where language and uncertainty live; fixed rules where money and safety live."**
+
+| Where AI is used | Why it is needed | Guardrail |
+|---|---|---|
+| Bangla speech recognition | Farmers cannot type | Keypad always works; numbers read back |
+| Language understanding (Gemini + Bangla parser) | Colloquial speech: "৫০ মণ উঠছে, ২০ হাজার লাগবে" | Fixed output fields; the parser checks numbers |
+| Price forecast and price-crash alerts | Glut and shortage cycles | Used only if it beats simple seasonality in a backtest; uncertainty said out loud; sell-part advice |
+| Satellite and weather rules (NASA POWER, IMERG, SMAP, OPERA, HLS) | Alerts for every upazila | Physical rules and published thresholds |
+| Demand forecast for dealers and DAE | Fertilizer and seed on time | Crop area × dose × crop calendar |
+| Matching (lots to buyers, orders to dealers, rentals to machines) | The best offer for the farmer | Transparent ranking, no paid placement |
+| Bangla narration (Gemini + Google voice) | Advice that sounds natural | **Number lock:** the AI cannot change any number from the engine |
+| Decision engine | Exact taka outcomes | Deterministic and explainable |
+
+**Safety:** no AI-chosen pesticide names or doses; crop problems get safe first steps and an officer callback. Consent at the start of every call.
+
+**The phone line (production):** a licensed 096 number from a Bangladeshi IP-telephony provider into our own Asterisk call server, with the voice AI on it. Awaj broadcast calls for one-way alerts, REVE for SMS. Details in `PLAN_DETAILS.md`, section 5.
+
+## 7. Execution and scale
+
+| Stage | Scope |
+|---|---|
+| Prototype (now) | What we show in the competition (section 8) |
+| Pilot, one season | 150 to 300 potato farmers in Bogura through the upazila agriculture office, with one buyer, one cold storage, one fertilizer dealer, one seed seller, one machinery service provider and one lender |
+| District | All Bogura potato upazilas; our own phone line for voice conversation |
+| National | With DAE and a2i; more crops (data already covers 13) and districts (data covers all 544 upazilas) |
+
+**Impact to measure in the pilot:**
+- **Income:** price received against the DAM benchmark and neighbours; share sold in glut weeks.
+- **Inputs:** fertilizer and seed prices paid, and on-time delivery; dadon share.
+- **Crop safety:** sprays per season; storage loss; losses avoided by alerts.
+- **Machinery:** hours booked.
+- **Understanding:** how often callers press "repeat".
+
+If the money numbers do not move, change the actions offered before adding features.
+
+## 8. The prototype (what we show now)
 
 | Part | Status | How we show it |
 |---|---|---|
-| Voice conversation | Build | In-app screen: speak Bangla, see the transcript, see what was understood, see the decision, hear the Bangla reply |
-| Keypad flow | Build | Same screen, keypad mode (১ ২ ৩ ৯) |
-| Phone calls | Waiting on Awaj | Awaj broadcast call to a judge's phone |
-| SMS | Ready | REVE SMS (two real sends worked on 8 October from Mati Kohon) |
-| Danger alerts | Ready (data) | Pick an upazila: today's NASA alerts (from Mati Kohon's daily files) |
+| Voice conversation | Build | In-app screen: speak Bangla, see the transcript, what was understood and the decision; hear the Bangla reply |
+| Keypad flow | Build | The same screen in keypad mode (১ ২ ৩ ৪ ৯) |
+| Phone calls | Waiting on Awaj | Awaj broadcast call to a judge's phone (text-to-speech or our audio) |
+| SMS | Ready to port | REVE SMS (two real sends worked on 8 October from Mati Kohon) |
+| Danger alerts | Ready (data) | Pick an upazila: today's NASA alerts from `data/reference/mati_kohon/`; price-crash alert shown as a demo |
 | Sell / store decision | Ready | KrishiVault's engine, driven by the conversation |
-| Fertilizer need | Small work | Bogura SRDI cards still to fetch |
-| Khata, credit view | Mock | Officer page and lender view update after the call |
-| Partner portals | Mock | Cold storage, buyer, dealer with clearly fictional demo data |
+| Fertilizer need and fair price | Small work | SRDI union cards (6 pilot unions in the data; Bogura to fetch); official prices |
+| Seed and machinery marketplace | Mock | A catalog screen: real variety names (BARI and BRRI), clearly fictional demo sellers, a machinery rental booking with the subsidy note |
+| Farmer record, credit view | Mock | Officer page and lender view update after the call |
+| Partner screens | Mock | Cold storage, buyer, dealer, seller, lender with fictional demo data |
+| Government dashboard | Shown | Mati Kohon's NASA map layers as proof the national data exists |
 
-**The demo moment:** a judge's phone rings with a Bangla alert; a teammate speaks to the app as a farmer and gets a taka decision and a cold-storage booking; the SMS arrives; the officer page updates.
+**The demo moment:**
+1. A judge's phone rings with a Bangla alert.
+2. A teammate speaks to the app as a farmer and gets a taka decision and a cold-storage booking.
+3. The SMS arrives.
+4. The officer page, the cold-storage screen and the farmer record update together.
 
-## 4. What is real and what is not (checked 13 October)
+## 9. What is real and what is not
 
-Full detail in `docs/readiness_check.html`. Summary: 13 claims ready, 5 small work, 1 waiting, 3 example data only, 10 plan only.
+Full check in `docs/readiness_check.html` (13 October). Do not present plan items as finished.
 
-**Ready:** NASA late-blight and flood alerts for 544 upazilas; the decision engine; SMS; the Bangla voice; crop data for 13 crops; Bogura potato facts (BBS 2024-25: 56,657 ha, 1.18 million tonnes); cost of production (Agriculture Census 2019, about ৳157,532 per hectare in 2019 prices); official fertilizer prices (urea and TSP ৳27/kg or ৳1,350 a bag, DAP ৳21, MoP ৳20, the 2023 schedule; confirm with the Ministry's current order); overcharging evidence (Joypurhat, August 2026: urea ৳1,900 to ৳1,950 a bag).
+**Real now:**
+- NASA late-blight and flood alerts for 544 upazilas.
+- The decision engine; SMS; the Bangla voice.
+- Crop data for 13 crops, and Bogura potato facts (BBS 2024-25: 56,657 ha, 1.18 million tonnes).
+- Cost of production: Agriculture Census 2019, about ৳157,532 per hectare in 2019 prices.
+- Official fertilizer prices: urea and TSP ৳27/kg (৳1,350 a bag), DAP ৳21, MoP ৳20. This is the 2023 schedule; confirm the current order.
+- Overcharging evidence: Joypurhat, August 2026, urea at ৳1,900 to ৳1,950 a bag.
 
-**Must not be claimed as done:**
-- The AI price forecast: never trained; too little data. Say "seasonal pattern plus latest prices today".
-- Daily DAM prices: the downloader is broken (site moved). Say "monthly prices now".
-- Fertilizer advice for every union: only 6 pilot unions fetched. Say "from SRDI's official union cards".
-- Partners and loans: demo data and an idea only.
-- Talking to the AI on a real phone call: plan only.
+**Not yet:**
+- **AI price forecast:** never trained, too little data. Say "seasonal pattern plus latest prices today".
+- **Daily DAM prices:** the downloader is broken because the site moved.
+- **Fertilizer cards:** for 6 pilot unions only.
+- **The marketplace, partners and loans:** demo data and plan only.
+- **Talking to the AI on a real phone call:** plan only.
 
-**Fix before sharing anything:** rename the sample buyer "PRAN Agro" (and every sample partner) to clearly fictional names.
+**Fix before sharing anything:** rename the sample buyer "PRAN Agro", and every sample partner, to clearly fictional names.
 
-## 5. Prototype to-do, in order
+## 10. Prototype to-do, in order
 
-1. **KrishiVault conversation screen** (mobile web): mic, then speech-to-text, then `intent_parser` + Gemini, then decision engine, then number check, then Google Bangla voice. Show transcript, understood values ("৫০ মণ, ২০,০০০ টাকা, ৩ দিন") and the decision. Add keypad mode, and "SMS me" / "Call me" buttons. Browser speech recognition needs HTTPS outside localhost; downsample to 8 kHz before speech-to-text when testing phone realism.
-2. **Real Awaj test call** once the broadcast permission arrives (text-to-speech broadcast `/broadcasts/direct-tts`, or audio broadcast `/broadcasts/direct` with a public audio URL). Port `awaj.ts` from Mati Kohon. Live only with the user's go-ahead.
-3. **SMS:** port `sms.ts` (REVE `GET /sendtext`, numbers as 8801XXXXXXXXX, Unicode Bangla in 70 and 67-character parts). Dry run by default.
-4. **Bogura SRDI fertilizer cards** for the potato unions, including Sariakandi, using Mati Kohon's `research/acquire/srdi_frs.py` approach.
-5. **Potato alerts:** rain before harvest, heat on stored potato, cold and fog, from the forecast and temperatures in Mati Kohon's `upazila_conditions.json`. Late blight is already there.
-6. **DAM price downloader** to the new site.
-7. **Refresh the NASA alert and flood files** a day before the demo (in Mati Kohon).
-8. **Potato safe first steps** for pests and disease, from BARI's guidance.
-9. **Example screens:** officer record (khata), cold storage, buyer, lender.
+1. **Conversation screen** (mobile web):
+   - The pipeline: mic → speech-to-text → `intent_parser` + Gemini → decision engine → number check → Google Bangla voice.
+   - On screen: transcript, the understood values and the decision.
+   - Keypad mode, plus "SMS me" and "Call me" buttons.
+   - Browser speech recognition needs HTTPS outside localhost.
+2. **SMS and calls:** port `reference/mati_kohon_code/sms.ts` and `awaj.ts` to Python. Dry run by default; live only with the user's go-ahead.
+3. **Danger alerts:** read `data/reference/mati_kohon/upazila_conditions.json` and `flood_now.json`.
+   - Show today's alerts for any upazila.
+   - Add the potato rules (rain before harvest, heat on stored potato, cold and fog) by porting `field_alerts.ts`; late blight is already in the data.
+   - Show a price-crash alert as a demo.
+4. **Fertilizer:** need from `srdi_frs_doses.csv` and soil classes; the official price; a "price you paid" report. Fetch Bogura cards with the `srdi_frs.py` approach.
+5. **Marketplace screens:** seeds (BARI and BRRI variety names; seed potato), machinery rental booking with the subsidy note, clearly fictional demo sellers.
+6. **Partner screens and farmer record:** officer, cold storage, buyer, dealer, seller, lender, all updating from the same farmer record after a call.
+7. **DAM price downloader** to the new site (`https://market.dam.gov.bd/`).
+8. **Rename sample partners** to fictional names.
+9. **Refresh the NASA files** a day before the demo (in Mati Kohon), then copy them into `data/reference/mati_kohon/`.
 
-## 6. Field work and slides
+## 11. Field work and slides
 
-`docs/KrishiVault_Farmer_Interview_Guide.pdf` holds the consent script, 26 questions (Bangla with English), a one-page answer form per farmer, a tally sheet, and slide templates. Only real farmer answers go on the slides; never invent quotes or numbers.
+`docs/KrishiVault_Farmer_Interview_Guide.pdf`: consent script, 26 questions in Bangla with English, a one-page answer form per farmer, a tally sheet, slide templates. Only real farmer answers go on slides.
 
-The judging criteria: clarity, depth of problem understanding, solution strength and differentiation, AI application and technical rationale, feasibility and scalability, impact (societal, environmental, business), Q&A.
+**Judging criteria:** clarity, depth of problem understanding, solution strength and differentiation, AI application and technical rationale, feasibility and scalability, impact (societal, environmental, business), Q&A. How the plan covers each: `PLAN_DETAILS.md`, section 7.
 
-## 7. Prepared Q&A
+## 12. Prepared Q&A
 
 | Question | Short answer |
 |---|---|
+| Isn't this just another agri-information app? | No. It is an ecosystem where every piece of advice ends in an action: a group sale, a booking, an order, a rental, a loan. Information alone does not raise farmers' prices; action does. |
+| How is it financially sustainable? | The farmer pays nothing. Buyers, cold storages, dealers, sellers and lenders pay small fees only when they gain business; government pays for public-good alerts and dashboards. |
+| Won't paid sellers bias the advice? | No paid placement: fees never change what the farmer is told; offers are ranked by value to the farmer. |
 | Why would farmers trust an AI? | It calls with useful alerts first; numbers come from a checked engine; an officer is one keypress away. |
 | What if the price forecast is wrong? | We never say "store everything": sell part, say the uncertainty, use forecasts only when they beat seasonality. |
 | Bangla dialect speech recognition? | Keypad works for everything; speech is added stepwise and tested on Bogura voices; numbers confirmed. |
-| How do you get partners? | Each gets something: bookings, ready lots, verified borrowers. One of each in Bogura through the agriculture office. |
+| How do you get partners? | Each gets a reason to join: lots, bookings, orders, borrowers. One of each in Bogura through the agriculture office. |
 | Won't dadon lenders and dealers resist? | Overcharge reports go to DAE; the farmer chooses; we add a cheaper option. |
 | How is this different from the Krishi Call Centre (16123)? | We call first, scale with AI, give taka decisions with actions, and hand over to officers. |
-| Who pays? | Alerts by government or NGO partners; booking, group-sale and loan-referral fees. About ৳10 per farmer per season. |
-| Privacy? | Consent in every call; PIN for money matters; masked numbers in portals; individual data never sold. |
+| Privacy? | Consent in every call; PIN for money matters; masked numbers on partner screens; individual data never sold. |
 | Why potato only? | Potato is the demo hero; the data and engine already cover 13 crops and 544 upazilas. |
