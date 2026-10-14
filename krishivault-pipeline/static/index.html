@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KrishiVault | Intelligent Post-Harvest Decision System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #070c11;
+      --card-bg: rgba(16, 26, 36, 0.75);
+      --card-border: rgba(45, 75, 100, 0.35);
+      --card-hover: rgba(23, 38, 52, 0.85);
+      --primary: #10b981;
+      --primary-glow: rgba(16, 185, 129, 0.25);
+      --primary-dark: #059669;
+      --accent: #06b6d4;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font-en: 'Outfit', sans-serif;
+      --font-bn: 'Hind Siliguri', 'Outfit', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(15, 23, 42, 0.5) 0px, transparent 100%);
+      background-attachment: fixed;
+      color: var(--text);
+      font-family: var(--font-en);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .bn { font-family: var(--font-bn); }
+
+    /* Top Navigation */
+    header {
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(7, 12, 17, 0.85);
+      backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 0.85rem 2rem;
+    }
+
+    .nav-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #10b981, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      box-shadow: 0 0 20px var(--primary-glow);
+    }
+
+    .brand h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .brand h1 span {
+      background: linear-gradient(90deg, #34d399, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Tab Switcher */
+    .tabs-nav {
+      display: flex;
+      gap: 0.5rem;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 0.35rem;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.5rem 1.1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.88rem;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #042f2e;
+      font-weight: 600;
+      box-shadow: 0 2px 10px var(--primary-glow);
+    }
+
+    .tab-btn:hover:not(.active) {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Main Container */
+    main {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Grid Layout for Simulator */
+    .sim-grid {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .sim-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(52, 211, 153, 0.4), transparent);
+    }
+
+    .card-header {
+      margin-bottom: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Presets */
+    .preset-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .preset-chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .preset-chip:hover, .preset-chip.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--primary);
+      color: #34d399;
+    }
+
+    /* Form Controls */
+    .form-group {
+      margin-bottom: 1.15rem;
+    }
+
+    .form-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .form-label span.val {
+      color: #34d399;
+      font-weight: 600;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      background: rgba(8, 14, 20, 0.7);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 0.65rem 0.85rem;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    }
+
+    /* Range slider */
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--primary);
+    }
+
+    /* Toggle switches */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .toggle-label {
+      font-size: 0.88rem;
+      color: var(--text);
+    }
+
+    .toggle-sub {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #334155;
+      transition: .3s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    /* Submit Button */
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border: none;
+      color: #042f2e;
+      padding: 0.85rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 15px var(--primary-glow);
+      transition: all 0.2s;
+      margin-top: 1rem;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    /* Results Header / Recommendation Hero */
+    .hero-rec {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 182, 212, 0.1));
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+
+    .rec-badge {
+      background: #10b981;
+      color: #042f2e;
+      padding: 0.35rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .hero-proceeds {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #34d399;
+      letter-spacing: -1px;
+    }
+
+    .hero-proceeds span {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .hero-text-bn {
+      font-size: 1.05rem;
+      color: #e2e8f0;
+      margin-top: 0.5rem;
+      line-height: 1.6;
+    }
+
+    /* Scenario Cards Grid */
+    .scenarios-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .scenario-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+
+    .scenario-card:hover {
+      border-color: rgba(52, 211, 153, 0.5);
+      background: var(--card-hover);
+      transform: translateY(-3px);
+    }
+
+    .scenario-card.recommended {
+      border-color: var(--primary);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+    }
+
+    .scenario-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.85rem;
+    }
+
+    .scenario-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .scenario-rank {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .scenario-card.recommended .scenario-rank {
+      background: var(--primary);
+      color: #042f2e;
+    }
+
+    .scenario-amount {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .scenario-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 0.85rem;
+    }
+
+    .scenario-pill {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .pill-feasible { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+    .pill-infeasible { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+    /* Voice Lab Tab */
+    .voice-lab-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 1024px) {
+      .voice-lab-grid { grid-template-columns: 1fr; }
+    }
+
+    .audio-player-box {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      margin-top: 1.25rem;
+    }
+
+    audio {
+      width: 100%;
+      height: 40px;
+      margin-top: 0.75rem;
+      border-radius: 8px;
+    }
+
+    .entity-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      color: #38bdf8;
+      padding: 0.25rem 0.65rem;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      margin: 0.2rem;
+    }
+
+    .sms-preview {
+      background: #0f172a;
+      border-left: 3px solid #10b981;
+      padding: 0.85rem 1rem;
+      border-radius: 0 10px 10px 0;
+      font-size: 0.88rem;
+      margin-top: 1rem;
+      color: #cbd5e1;
+    }
+
+    /* Market Tab Table */
+    .market-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    .market-table th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--card-border);
+      font-weight: 500;
+    }
+
+    .market-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+    }
+
+    .market-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text);
+    }
+
+    .badge-price {
+      font-weight: 700;
+      color: #34d399;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header>
+    <div class="nav-container">
+      <div class="brand">
+        <div class="logo-badge">🥔</div>
+        <div>
+          <h1>Krishi<span>Vault</span> <span class="bn" style="font-size:1.1rem; color:#94a3b8; font-weight:400;">(কৃষিভল্ট)</span></h1>
+          <div class="brand-sub">Post-Harvest AI Decision Engine & Voice Telephony</div>
+        </div>
+      </div>
+
+      <div class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab('sim')">
+          <span>🌾</span> Harvest Simulator
+        </button>
+        <button class="tab-btn" onclick="switchTab('voice')">
+          <span>🎙️</span> AI Voice Lab
+        </button>
+        <button class="tab-btn" onclick="switchTab('market')">
+          <span>📈</span> Market & Prices
+        </button>
+        <button class="tab-btn" onclick="switchTab('network')">
+          <span>🏪</span> Buyers & Storage
+        </button>
+      </div>
+
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        <span>Live System</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ============================================================ -->
+    <!-- TAB 1: HARVEST DECISION SIMULATOR                            -->
+    <!-- ============================================================ -->
+    <div id="tab-sim" class="tab-content active">
+      <div class="sim-grid">
+        <!-- Input Form Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">👨‍🌾 Farmer Constraints</div>
+            <span style="font-size:0.75rem; color:var(--text-dim);">Real-world Parameters</span>
+          </div>
+
+          <!-- Presets -->
+          <div class="preset-bar">
+            <button class="preset-chip active" onclick="loadPreset('abdur_rahim')">Abdur Rahim (Bogura)</button>
+            <button class="preset-chip" onclick="loadPreset('mohammad_ali')">Mohammad Ali (Rangpur)</button>
+            <button class="preset-chip" onclick="loadPreset('dadon_case')">Dadon Loan Case</button>
+          </div>
+
+          <form id="simForm" onsubmit="event.preventDefault(); runSimulation();">
+            <div class="form-group">
+              <label class="form-label">Target District</label>
+              <select id="district" class="form-select" onchange="updateDistrictPrices()">
+                <option value="Bogura" selected>Bogura (বগুড়া)</option>
+                <option value="Rangpur">Rangpur (রংপুর)</option>
+                <option value="Dinajpur">Dinajpur (দিনাজপুর)</option>
+                <option value="Rajshahi">Rajshahi (রাজশাহী)</option>
+                <option value="Munshiganj">Munshiganj (মুন্সীগঞ্জ)</option>
+                <option value="Dhaka">Dhaka (ঢাকা)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Harvest Quantity</span>
+                <span class="val" id="qtyDisplay">100 মণ (3,732 kg)</span>
+              </div>
+              <input type="range" id="quantityMaunds" min="10" max="500" step="5" value="100" oninput="updateQtyDisplay(this.value)">
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Urgent Cash Need</span>
+                <span class="val" id="cashDisplay">৳30,000</span>
+              </div>
+              <input type="range" id="cashNeeded" min="5000" max="150000" step="2500" value="30000" oninput="updateCashDisplay(this.value)">
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Debt / Cash Deadline</span>
+                <span class="val" id="deadlineDisplay">4 Days</span>
+              </div>
+              <input type="range" id="deadlineDays" min="1" max="30" step="1" value="4" oninput="updateDeadlineDisplay(this.value)">
+            </div>
+
+            <div class="form-group">
+              <div class="form-label">
+                <span>Local Faria/Buyer Offer</span>
+                <span class="val" id="offerDisplay">৳19.00 / kg</span>
+              </div>
+              <input type="range" id="offerPrice" min="12" max="32" step="0.5" value="19.0" oninput="updateOfferDisplay(this.value)">
+            </div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Cold Storage Access</div>
+                <div class="toggle-sub">Has space/booking in local hub</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="hasStorage" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div>
+                <div class="toggle-label">Bound by Dadon (দাদন)?</div>
+                <div class="toggle-sub">Advance cash loan from arhatdar</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="hasDadon" onchange="toggleDadonRow(this.checked)">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="form-group" id="dadonAmountRow" style="display:none; margin-top:0.75rem;">
+              <label class="form-label">Dadon Debt Balance (৳)</label>
+              <input type="number" id="dadonAmount" class="form-input" value="20000" step="1000">
+            </div>
+
+            <button type="submit" class="btn-submit" id="simSubmitBtn">
+              <span>⚡</span> Run Decision Optimization
+            </button>
+          </form>
+        </div>
+
+        <!-- Output Cards -->
+        <div id="simResults">
+          <!-- Hero Banner -->
+          <div class="hero-rec">
+            <div class="hero-top">
+              <div class="rec-badge" id="recBadge">RECOMMENDED STRATEGY</div>
+              <div style="font-size:0.85rem; color:var(--text-muted);" id="recRisk">Confidence: 95% | Risk: Low</div>
+            </div>
+            <div class="hero-proceeds" id="heroProceeds">৳80,247 <span>Net Expected In Pocket</span></div>
+            <p class="hero-text-bn bn" id="heroTextBn">
+              লোডিং... দয়া করে 'Run Decision Optimization' চাপুন।
+            </p>
+          </div>
+
+          <!-- 4 Scenarios Side-by-Side -->
+          <div class="scenarios-grid" id="scenariosGrid">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 2: AI VOICE & TELEPHONY LAB (GEMINI + TTS)               -->
+    <!-- ============================================================ -->
+    <div id="tab-voice" class="tab-content">
+      <div class="voice-lab-grid">
+        <!-- Caller Simulation Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📞 Telephony IVR Simulator</div>
+            <span class="status-pill" style="font-size:0.75rem;">Gemini 3.5 + Google TTS</span>
+          </div>
+
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">
+            Test how KrishiVault receives raw spoken Bengali voice transcripts from rural farmers, parses dialect entities, runs decision math, and synthesizes audio.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Caller Phone</label>
+            <input type="text" id="voicePhone" class="form-input" value="+8801711998877">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Farmer Name</label>
+            <input type="text" id="voiceCallerName" class="form-input" value="আব্দুর রহিম">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Quick Transcripts Sample</label>
+            <select class="form-select" onchange="document.getElementById('voiceTranscript').value = this.value">
+              <option value="হামার শিবগঞ্জের জমিতে ৮০ মণ আলু উঠছে বাহে। পোলাপানের স্কুলের বেতন আর মহাজনের সার বাবদ জরুরি ২৫ হাজার টেকা নাগবে ৪ দিনের মইধ্যে। স্থানীয় ফড়িয়া ১৮ টেকা কেজি দিবার চায়। আড়তদারের কাছে ২০ হাজার টেকা দাদন নেওয়া আছে।">
+                Dialect 1: Bogura Shibganj (Dadon Loan + School Fees)
+              </option>
+              <option value="রংপুরের মিঠাপুকুরে ৪০ বস্তা আলু উঠাইছি। কালকের মধ্যে জরুরি ১০ হাজার টাকা লাগবে। হিমাগারে কোনো জায়গা পাই নাই।">
+                Dialect 2: Rangpur Mithapukur (Urgent 24h + Sacks)
+              </option>
+              <option value="আমার দেড়শো মণ আলু আছে। কোনো তাড়া নেই, দাম বাড়লে বিক্রি করব। মহাস্থানগড় হিমাগারে জায়গা বুকিং দেওয়া আছে।">
+                Dialect 3: Bogura Commercial (150 Maunds + Storage Booking)
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Spoken Transcript</label>
+            <textarea id="voiceTranscript" class="form-input bn" rows="4" style="resize:vertical;">হামার শিবগঞ্জের জমিতে ৮০ মণ আলু উঠছে বাহে। পোলাপানের স্কুলের বেতন আর মহাজনের সার বাবদ জরুরি ২৫ হাজার টেকা নাগবে ৪ দিনের মইধ্যে। স্থানীয় ফড়িয়া ১৮ টেকা কেজি দিবার চায়। আড়তদারের কাছে ২০ হাজার টেকা দাদন নেওয়া আছে।</textarea>
+          </div>
+
+          <button class="btn-submit" onclick="runVoiceSimulation()" id="voiceSimBtn">
+            <span>🎙️</span> Process Spoken Transcript & Synthesize Audio
+          </button>
+        </div>
+
+        <!-- Voice Lab Output -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔊 Audio & Dialog Output</div>
+            <span style="font-size:0.75rem; color:#38bdf8;" id="geminiModelTag">Model: Gemini 3.5 Flash</span>
+          </div>
+
+          <div style="margin-bottom:1rem;">
+            <div style="font-size:0.8rem; color:var(--text-dim); margin-bottom:0.4rem;">PARSED ENTITIES (DIALECT NORMALIZATION):</div>
+            <div id="entityTagsContainer">
+              <span class="entity-tag">🌾 80 maunds</span>
+              <span class="entity-tag">💰 ৳25,000 need</span>
+              <span class="entity-tag">⏱️ 4 days</span>
+              <span class="entity-tag">⚠️ Dadon: ৳20,000</span>
+            </div>
+          </div>
+
+          <div class="form-label">Spoken Natural Bengali Guidance:</div>
+          <div class="bn" id="spokenTextBn" style="background:rgba(0,0,0,0.3); border:1px solid var(--card-border); padding:1rem; border-radius:10px; font-size:0.95rem; line-height:1.7; min-height:90px;">
+            আসসালামু আলাইকুম আব্দুর রহিম ভাই। আপনার তথ্যের ভিত্তিতে আমরা বিশ্লেষণ সম্পন্ন করেছি...
+          </div>
+
+          <!-- HTML5 Live Audio Player -->
+          <div class="audio-player-box">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.82rem; font-weight:600; color:#34d399;">🎧 Live Google Cloud TTS Audio</span>
+              <span style="font-size:0.75rem; color:var(--text-dim);" id="audioMeta">Wavenet / Chirp3-HD</span>
+            </div>
+            <audio id="audioPlayer" controls>
+              <source src="/audio/advice_আব্দুর_রহিম.mp3" type="audio/mpeg">
+              Your browser does not support the audio element.
+            </audio>
+          </div>
+
+          <div class="sms-preview">
+            <div style="font-size:0.75rem; color:#34d399; font-weight:700; margin-bottom:0.25rem;">📱 SMS TO FARMER'S FEATURE PHONE:</div>
+            <div class="bn" id="smsTextBn">কৃষিভল্ট পরামর্শ: SELL_NOW। প্রত্যাশিত নিট আয়: ৳80,247 টাকা। সহায়তার জন্য কল করুন 16123।</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 3: MARKET PRICES & TIME-SERIES FORECASTS                 -->
+    <!-- ============================================================ -->
+    <div id="tab-market" class="tab-content">
+      <div style="display:grid; grid-template-columns:1fr 2fr; gap:2rem;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📈 Regional Price Forecast</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Select Region</label>
+            <select id="marketDistrictSelect" class="form-select" onchange="loadDistrictForecast(this.value)">
+              <option value="Bogura">Bogura</option>
+              <option value="Rangpur">Rangpur</option>
+              <option value="Dinajpur">Dinajpur</option>
+              <option value="Rajshahi">Rajshahi</option>
+              <option value="Munshiganj">Munshiganj</option>
+              <option value="Dhaka">Dhaka</option>
+            </select>
+          </div>
+
+          <div id="forecastBox" style="margin-top:1.5rem;">
+            <!-- Forecast Pills -->
+            <div style="padding:1rem; background:rgba(0,0,0,0.25); border-radius:12px; margin-bottom:0.75rem; border-left:3px solid #10b981;">
+              <div style="display:flex; justify-content:space-between;">
+                <span style="font-weight:600; font-size:0.85rem;">7-Day Forecast</span>
+                <span style="color:#34d399; font-weight:700;" id="fc7">৳23.10 / kg</span>
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.25rem;">Confidence Range: ৳21.70 – ৳24.50 (88%)</div>
+            </div>
+
+            <div style="padding:1rem; background:rgba(0,0,0,0.25); border-radius:12px; margin-bottom:0.75rem; border-left:3px solid #06b6d4;">
+              <div style="display:flex; justify-content:space-between;">
+                <span style="font-weight:600; font-size:0.85rem;">14-Day Forecast</span>
+                <span style="color:#38bdf8; font-weight:700;" id="fc14">৳24.20 / kg</span>
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.25rem;">Confidence Range: ৳22.00 – ৳26.40 (82%)</div>
+            </div>
+
+            <div style="padding:1rem; background:rgba(0,0,0,0.25); border-radius:12px; border-left:3px solid #f59e0b;">
+              <div style="display:flex; justify-content:space-between;">
+                <span style="font-weight:600; font-size:0.85rem;">30-Day Lean Transition</span>
+                <span style="color:#fbbf24; font-weight:700;" id="fc30">৳27.50 / kg</span>
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-dim); margin-top:0.25rem;">Confidence Range: ৳23.40 – ৳31.60 (78%)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🗂️ Historical WFP & DAM Market Database</div>
+            <span style="font-size:0.75rem; color:var(--text-muted);" id="marketTableCount">347 Records</span>
+          </div>
+          <div style="overflow-x:auto; max-height:450px;">
+            <table class="market-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Market</th>
+                  <th>District</th>
+                  <th>Retail Avg (৳)</th>
+                  <th>Wholesale (৳)</th>
+                  <th>Source</th>
+                </tr>
+              </thead>
+              <tbody id="marketTableBody">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TAB 4: BUYERS & COLD STORAGE NETWORK                         -->
+    <!-- ============================================================ -->
+    <div id="tab-network" class="tab-content">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem;">
+        <!-- Cold Storages -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">❄️ Verified Cold Storage Hubs</div>
+            <span style="font-size:0.75rem; color:#34d399;">5 Tracked Hubs</span>
+          </div>
+          <div id="coldStorageList" style="display:flex; flex-direction:column; gap:0.75rem;">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Buyers -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">💼 Institutional Buyer Network</div>
+            <span style="font-size:0.75rem; color:#38bdf8;">Active Bids</span>
+          </div>
+          <div id="buyerList" style="display:flex; flex-direction:column; gap:0.75rem;">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Tab Switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+      if (activeBtn) activeBtn.classList.add('active');
+      
+      const activeTab = document.getElementById('tab-' + tabId);
+      if (activeTab) activeTab.classList.add('active');
+
+      if (tabId === 'market') loadMarketData();
+      if (tabId === 'network') loadNetworkData();
+    }
+
+    // Input Slider Updaters
+    function updateQtyDisplay(val) {
+      const kg = Math.round(val * 37.3242);
+      document.getElementById('qtyDisplay').innerText = `${val} মণ (${kg.toLocaleString()} kg)`;
+    }
+    function updateCashDisplay(val) {
+      document.getElementById('cashDisplay').innerText = `৳${parseInt(val).toLocaleString()}`;
+    }
+    function updateDeadlineDisplay(val) {
+      document.getElementById('deadlineDisplay').innerText = `${val} Days`;
+    }
+    function updateOfferDisplay(val) {
+      document.getElementById('offerDisplay').innerText = `৳${parseFloat(val).toFixed(2)} / kg`;
+    }
+    function toggleDadonRow(isChecked) {
+      document.getElementById('dadonAmountRow').style.display = isChecked ? 'block' : 'none';
+    }
+
+    // Presets
+    function loadPreset(name) {
+      document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+      const activeChip = Array.from(document.querySelectorAll('.preset-chip')).find(c => c.getAttribute('onclick').includes(name));
+      if (activeChip) activeChip.classList.add('active');
+
+      if (name === 'abdur_rahim') {
+        document.getElementById('district').value = 'Bogura';
+        document.getElementById('quantityMaunds').value = 100;
+        document.getElementById('cashNeeded').value = 30000;
+        document.getElementById('deadlineDays').value = 4;
+        document.getElementById('offerPrice').value = 19.0;
+        document.getElementById('hasStorage').checked = true;
+        document.getElementById('hasDadon').checked = false;
+        toggleDadonRow(false);
+      } else if (name === 'mohammad_ali') {
+        document.getElementById('district').value = 'Rangpur';
+        document.getElementById('quantityMaunds').value = 40;
+        document.getElementById('cashNeeded').value = 12000;
+        document.getElementById('deadlineDays').value = 2;
+        document.getElementById('offerPrice').value = 18.0;
+        document.getElementById('hasStorage').checked = false;
+        document.getElementById('hasDadon').checked = false;
+        toggleDadonRow(false);
+      } else if (name === 'dadon_case') {
+        document.getElementById('district').value = 'Bogura';
+        document.getElementById('quantityMaunds').value = 80;
+        document.getElementById('cashNeeded').value = 25000;
+        document.getElementById('deadlineDays').value = 4;
+        document.getElementById('offerPrice').value = 18.0;
+        document.getElementById('hasStorage').checked = false;
+        document.getElementById('hasDadon').checked = true;
+        document.getElementById('dadonAmount').value = 20000;
+        toggleDadonRow(true);
+      }
+      updateQtyDisplay(document.getElementById('quantityMaunds').value);
+      updateCashDisplay(document.getElementById('cashNeeded').value);
+      updateDeadlineDisplay(document.getElementById('deadlineDays').value);
+      updateOfferDisplay(document.getElementById('offerPrice').value);
+      runSimulation();
+    }
+
+    // Run Decision Simulation
+    async function runSimulation() {
+      const btn = document.getElementById('simSubmitBtn');
+      btn.innerText = 'Calculating Optimal Strategy...';
+
+      const payload = {
+        crop: 'potato',
+        quantity_maunds: parseFloat(document.getElementById('quantityMaunds').value),
+        district: document.getElementById('district').value,
+        cash_needed_tk: parseFloat(document.getElementById('cashNeeded').value),
+        deadline_days: parseInt(document.getElementById('deadlineDays').value),
+        current_offer_per_kg: parseFloat(document.getElementById('offerPrice').value),
+        has_cold_storage: document.getElementById('hasStorage').checked
+      };
+
+      try {
+        const res = await fetch('/api/decision/evaluate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        renderSimResults(data);
+      } catch (err) {
+        console.error(err);
+        alert('Failed to connect to KrishiVault Decision API');
+      } finally {
+        btn.innerHTML = '<span>⚡</span> Run Decision Optimization';
+      }
+    }
+
+    function renderSimResults(data) {
+      const rec = data.recommendation;
+      document.getElementById('recBadge').innerText = `TOP RECOMMENDATION: ${rec.scenario.toUpperCase()}`;
+      document.getElementById('recRisk').innerText = `Confidence: ${(rec.confidence * 100).toFixed(0)}% | Risk: ${rec.risk_level.toUpperCase()}`;
+      document.getElementById('heroProceeds').innerHTML = `৳${Math.round(rec.expected_proceeds_tk).toLocaleString()} <span>Expected Net In Pocket</span>`;
+      document.getElementById('heroTextBn').innerText = data.bangla_voice_response.split('আপনার পরবর্তী পদক্ষেপের জন্য')[0];
+
+      const grid = document.getElementById('scenariosGrid');
+      grid.innerHTML = '';
+
+      const titles = {
+        sell_now: 'Sell Now (এখনই বিক্রি)',
+        sell_part: 'Sell Part (আংশিক বিক্রি)',
+        store_review: 'Store & Review (হিমাগার)',
+        group_sell: 'Group Sell (যৌথ বিক্রি)'
+      };
+
+      data.all_scenarios.forEach(s => {
+        const isRec = s.scenario === rec.scenario;
+        const card = document.createElement('div');
+        card.className = `scenario-card ${isRec ? 'recommended' : ''}`;
+        card.innerHTML = `
+          <div class="scenario-header">
+            <span class="scenario-name">${titles[s.scenario] || s.scenario}</span>
+            <span class="scenario-rank">#${s.rank || '-'}</span>
+          </div>
+          <div class="scenario-amount">৳${Math.round(s.expected_proceeds_tk).toLocaleString()}</div>
+          <div class="scenario-desc">${s.explanation_en}</div>
+          <div>
+            ${s.feasible 
+              ? `<span class="scenario-pill pill-feasible">✅ Feasible Option</span>`
+              : `<span class="scenario-pill pill-infeasible">❌ ${s.infeasible_reason || 'Infeasible'}</span>`
+            }
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // Voice Simulation Tab
+    async function runVoiceSimulation() {
+      const btn = document.getElementById('voiceSimBtn');
+      btn.innerText = 'Calling Gemini AI & Google Cloud TTS...';
+
+      const transcript = document.getElementById('voiceTranscript').value;
+      const phone = document.getElementById('voicePhone').value;
+      const name = document.getElementById('voiceCallerName').value;
+
+      try {
+        const res = await fetch('/api/voice/webhook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone_number: phone,
+            caller_name: name,
+            transcript: transcript
+          })
+        });
+        const data = await res.json();
+        
+        // Render entity tags
+        const tags = document.getElementById('entityTagsContainer');
+        tags.innerHTML = '';
+        const ent = data.extracted_entities;
+        tags.innerHTML += `<span class="entity-tag">🌾 ${ent.quantity_maunds} maunds</span>`;
+        tags.innerHTML += `<span class="entity-tag">💰 ৳${ent.cash_needed_tk.toLocaleString()} needed</span>`;
+        tags.innerHTML += `<span class="entity-tag">⏱️ ${ent.deadline_days} days</span>`;
+        tags.innerHTML += `<span class="entity-tag">🏷️ ৳${ent.offer_price_per_kg}/kg offer</span>`;
+        tags.innerHTML += `<span class="entity-tag">${ent.has_cold_storage ? '❄️ Storage: Yes' : '❌ No Storage'}</span>`;
+
+        document.getElementById('spokenTextBn').innerText = data.response_speech_bn;
+        document.getElementById('smsTextBn').innerText = data.response_sms_bn;
+
+        // Trigger Google Cloud TTS speech synthesis
+        const ttsRes = await fetch('/api/voice/synthesize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: data.response_speech_bn,
+            filename: `voice_demo_${Date.now()}.mp3`,
+            gender: 'MALE'
+          })
+        });
+        const ttsData = await ttsRes.json();
+        if (ttsData.audio_url) {
+          const player = document.getElementById('audioPlayer');
+          player.src = ttsData.audio_url;
+          player.play();
+          document.getElementById('audioMeta').innerText = `Generated (${Math.round(ttsData.file_size_bytes/1024)} KB)`;
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Voice simulation error: ' + err);
+      } finally {
+        btn.innerHTML = '<span>🎙️</span> Process Spoken Transcript & Synthesize Audio';
+      }
+    }
+
+    // Load Market Tab
+    async function loadMarketData() {
+      try {
+        const res = await fetch('/api/prices/latest');
+        const prices = await res.json();
+        const tbody = document.getElementById('marketTableBody');
+        tbody.innerHTML = '';
+        prices.forEach(p => {
+          tbody.innerHTML += `
+            <tr>
+              <td>${p.date}</td>
+              <td style="color:#e2e8f0; font-weight:500;">${p.market}</td>
+              <td>${p.district}</td>
+              <td class="badge-price">৳${p.retail_avg ? p.retail_avg.toFixed(2) : '-'}</td>
+              <td>৳${p.wholesale_avg ? p.wholesale_avg.toFixed(2) : '-'}</td>
+              <td><span style="font-size:0.75rem; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px;">${p.source}</span></td>
+            </tr>
+          `;
+        });
+        loadDistrictForecast('Bogura');
+      } catch (e) { console.error(e); }
+    }
+
+    async function loadDistrictForecast(district) {
+      try {
+        const res = await fetch(`/api/prices/predict/${district}`);
+        const data = await res.json();
+        const fc = data.forecasts;
+        document.getElementById('fc7').innerText = `৳${fc['7_days'].predicted_price.toFixed(2)} / kg`;
+        document.getElementById('fc14').innerText = `৳${fc['14_days'].predicted_price.toFixed(2)} / kg`;
+        document.getElementById('fc30').innerText = `৳${fc['30_days'].predicted_price.toFixed(2)} / kg`;
+      } catch (e) { console.error(e); }
+    }
+
+    // Load Buyers & Storages
+    async function loadNetworkData() {
+      try {
+        const csRes = await fetch('/api/cold-storages');
+        const storages = await csRes.json();
+        const csList = document.getElementById('coldStorageList');
+        csList.innerHTML = '';
+        storages.forEach(s => {
+          csList.innerHTML += `
+            <div style="background:rgba(0,0,0,0.25); border:1px solid var(--card-border); padding:0.85rem 1rem; border-radius:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:600; color:#e2e8f0;">${s.name}</span>
+                <span style="color:#34d399; font-weight:700;">৳${s.actual_rate_per_kg.toFixed(2)} / kg</span>
+              </div>
+              <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.25rem;">
+                📍 ${s.upazila}, ${s.district} | Available: ${(s.available_tonnes).toLocaleString()} tonnes | 📞 ${s.phone}
+              </div>
+            </div>
+          `;
+        });
+
+        const bRes = await fetch('/api/buyers');
+        const buyers = await bRes.json();
+        const bList = document.getElementById('buyerList');
+        bList.innerHTML = '';
+        buyers.forEach(b => {
+          bList.innerHTML += `
+            <div style="background:rgba(0,0,0,0.25); border:1px solid var(--card-border); padding:0.85rem 1rem; border-radius:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:600; color:#e2e8f0;">${b.name}</span>
+                <span style="color:#38bdf8; font-weight:700;">৳${b.current_offer_per_kg.toFixed(2)} / kg</span>
+              </div>
+              <div style="font-size:0.78rem; color:var(--text-muted); margin-top:0.25rem;">
+                🏢 Type: ${b.type.toUpperCase()} | Min Order: ${b.min_quantity_kg.toLocaleString()} kg | Payment: ${b.payment_days} days | 📞 ${b.phone}
+              </div>
+            </div>
+          `;
+        });
+      } catch (e) { console.error(e); }
+    }
+
+    // Auto-initialize first simulation on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      runSimulation();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KrishiVault — A Smarter Decision for Every Harvest</title>
+    <meta name="description" content="KrishiVault pitch deck: AI-powered harvest decision service for Bangladeshi potato farmers.">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ===== RESET & BASE ===== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --green-darkest: #1b2f21;
+            --green-dark: #2a4a36;
+            --green-mid: #3a7050;
+            --green-light: #5e9e6e;
+            --green-pale: #c8dece;
+            --green-faint: #ecf3ee;
+            --cream: #f7f5ef;
+            --cream-dark: #ece8dc;
+            --gold: #b8943e;
+            --gold-light: #d4b96a;
+            --red-accent: #a8392b;
+            --text-dark: #1a2a1f;
+            --text-body: #3d4f42;
+            --text-muted: #7a8e80;
+            --white: #ffffff;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.07);
+            --shadow-lg: 0 12px 40px rgba(0,0,0,0.1);
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Outfit', sans-serif;
+            background: var(--green-darkest);
+            color: var(--text-dark);
+        }
+
+        /* subtle film-grain overlay on every slide for organic feel */
+        .slide::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.025;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        /* ===== PRESENTATION CONTAINER ===== */
+        .presentation {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* ===== INDIVIDUAL SLIDE ===== */
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.7s;
+            overflow: hidden;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .slide-inner {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            padding: 60px 80px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* ===== SUBTLE BACKGROUND ACCENTS ===== */
+        .blob {
+            position: absolute;
+            z-index: 1;
+            opacity: 0.04;
+            border-radius: 50%;
+            filter: blur(80px);
+        }
+
+        .blob-1 {
+            width: 600px;
+            height: 600px;
+            background: var(--green-mid);
+            top: -200px;
+            right: -200px;
+        }
+
+        .blob-2 {
+            width: 400px;
+            height: 400px;
+            background: var(--green-dark);
+            bottom: -150px;
+            left: -150px;
+        }
+
+        .blob-3 {
+            width: 300px;
+            height: 300px;
+            background: var(--gold);
+            top: 40%;
+            left: 50%;
+            opacity: 0.03;
+        }
+
+        /* ===== LEAF DECORATIONS — hidden for clean look ===== */
+        .leaf-decor {
+            display: none;
+        }
+
+        /* ===== TYPOGRAPHY ===== */
+        .slide-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 18px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease 0.2s;
+        }
+
+        .slide.active .slide-label {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .slide-title {
+            font-size: clamp(36px, 4.5vw, 62px);
+            font-weight: 800;
+            line-height: 1.1;
+            color: var(--green-darkest);
+            margin-bottom: 24px;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.7s ease 0.3s;
+        }
+
+        .slide.active .slide-title {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .slide-title .highlight {
+            color: var(--green-mid);
+            position: relative;
+        }
+
+        .slide-title .highlight-gold {
+            color: var(--gold);
+        }
+
+        .slide-title .highlight-red {
+            color: var(--red-accent);
+        }
+
+        .slide-text {
+            font-size: clamp(16px, 1.4vw, 20px);
+            font-weight: 400;
+            line-height: 1.7;
+            color: var(--text-body);
+            max-width: 560px;
+            opacity: 0;
+            transform: translateY(25px);
+            transition: all 0.7s ease 0.5s;
+        }
+
+        .slide.active .slide-text {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .bangla-quote {
+            font-family: 'Noto Sans Bengali', sans-serif;
+            font-size: 16px;
+            color: var(--green-dark);
+            background: transparent;
+            border-left: 2px solid var(--green-mid);
+            padding: 12px 0 12px 20px;
+            border-radius: 0;
+            margin-top: 24px;
+            font-style: normal;
+            line-height: 1.7;
+        }
+
+        /* ===== IMAGE CONTAINERS ===== */
+        .slide-image-container {
+            position: relative;
+            opacity: 0;
+            transform: translateX(40px);
+            transition: all 0.8s ease 0.4s;
+        }
+
+        .slide.active .slide-image-container {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .image-frame {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .image-frame.organic {
+            border-radius: 8px;
+            width: 440px;
+            height: 380px;
+        }
+
+        .image-frame.organic-tall {
+            border-radius: 8px;
+            width: 360px;
+            height: 460px;
+        }
+
+        .image-frame.rounded {
+            border-radius: 8px;
+            width: 500px;
+            height: 350px;
+        }
+
+        .image-frame.circle-cut {
+            border-radius: 8px;
+            width: 400px;
+            height: 400px;
+        }
+
+        .image-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .image-ring {
+            position: absolute;
+            border: 1px solid rgba(58, 112, 80, 0.15);
+            border-radius: inherit;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            bottom: -8px;
+            opacity: 1;
+        }
+
+        .image-ring-2 {
+            display: none;
+        }
+
+        /* ===== SLIDE BACKGROUNDS ===== */
+        .bg-cream { background: var(--cream); }
+        .bg-green-faint { background: var(--green-faint); }
+        .bg-green-dark { background: var(--green-darkest); }
+        .bg-cream-dark { background: var(--cream-dark); }
+
+        .bg-gradient-1 {
+            background: linear-gradient(135deg, var(--cream) 0%, var(--green-faint) 60%, var(--green-pale) 100%);
+        }
+
+        .bg-gradient-2 {
+            background: linear-gradient(160deg, var(--green-faint) 0%, var(--cream) 50%, var(--cream-dark) 100%);
+        }
+
+        .bg-gradient-dark {
+            background: linear-gradient(135deg, var(--green-darkest) 0%, #1e4a2d 50%, var(--green-dark) 100%);
+        }
+
+        /* ===== SLIDE-SPECIFIC LAYOUTS ===== */
+
+        /* --- SLIDE 1: Title / Hook --- */
+        .slide-1 .slide-inner {
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 60px;
+        }
+
+        .slide-1 .logo-container {
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.8s ease 0.1s;
+        }
+
+        .slide-1.active .logo-container {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .slide-1 .logo-container img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+        }
+
+        .slide-1 .brand-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--green-pale);
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.7s ease 0.3s;
+        }
+
+        .slide-1.active .brand-name {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .slide-1 .slide-title {
+            color: var(--white);
+            max-width: 900px;
+            font-size: clamp(40px, 5vw, 72px);
+        }
+
+        .slide-1 .slide-title .highlight-gold {
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .slide-1 .slide-text {
+            color: var(--green-pale);
+            max-width: 650px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .slide-1 .stat-badge {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 32px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease 0.5s;
+        }
+
+        .slide-1.active .stat-badge {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .stat-badge .stat-icon {
+            display: none;
+        }
+
+        .stat-badge .stat-text {
+            font-size: 15px;
+            font-weight: 400;
+            color: rgba(212, 185, 106, 0.85);
+            letter-spacing: 0.4px;
+            border-bottom: 1px solid rgba(212, 185, 106, 0.25);
+            padding-bottom: 4px;
+        }
+
+        .slide-1 .tagline {
+            font-size: 13px;
+            color: rgba(200, 222, 206, 0.5);
+            margin-top: 40px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0;
+            transition: all 0.6s ease 0.8s;
+        }
+
+        .slide-1.active .tagline {
+            opacity: 1;
+        }
+
+        /* --- SLIDE 2: The Problem / Farmer's Dilemma --- */
+        .slide-2 .slide-inner {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+
+        .slide-2 .content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dilemma-list {
+            list-style: none;
+            margin-top: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.7s ease 0.6s;
+        }
+
+        .slide.active .dilemma-list {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .dilemma-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            font-size: 15px;
+            color: var(--text-body);
+            padding: 14px 0;
+            background: transparent;
+            border-bottom: 1px solid rgba(61, 112, 80, 0.1);
+            line-height: 1.5;
+        }
+
+        .dilemma-list li:last-child {
+            border-bottom: none;
+        }
+
+        .dilemma-list li .icon {
+            font-size: 14px;
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--green-faint);
+            border-radius: 6px;
+            margin-top: 1px;
+        }
+
+        /* --- SLIDE 3: What is KrishiVault --- */
+        .slide-3 .slide-inner {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .feature-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 24px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.7s ease 0.7s;
+        }
+
+        .slide.active .feature-pills {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            background: transparent;
+            color: var(--green-dark);
+            border: 1px solid rgba(61, 112, 80, 0.2);
+            letter-spacing: 0.3px;
+        }
+
+        .pill .pill-icon {
+            font-size: 13px;
+        }
+
+        /* --- SLIDE 4: Decision Engine --- */
+        .slide-4 .slide-inner {
+            flex-direction: column;
+            justify-content: center;
+            gap: 40px;
+            padding: 60px 80px;
+        }
+
+        .slide-4 .top-section {
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.7s ease 0.2s;
+        }
+
+        .slide-4.active .top-section {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .slide-4 .slide-title {
+            margin-bottom: 8px;
+        }
+
+        .decision-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .decision-card {
+            background: var(--white);
+            border-radius: 6px;
+            padding: 32px 26px 28px;
+            text-align: left;
+            box-shadow: none;
+            border: 1px solid rgba(61, 112, 80, 0.12);
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+
+        .decision-card:hover {
+            border-color: rgba(61, 112, 80, 0.3);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .slide-4.active .decision-card:nth-child(1) { transition-delay: 0.3s; opacity: 1; transform: translateY(0); }
+        .slide-4.active .decision-card:nth-child(2) { transition-delay: 0.45s; opacity: 1; transform: translateY(0); }
+        .slide-4.active .decision-card:nth-child(3) { transition-delay: 0.6s; opacity: 1; transform: translateY(0); }
+        .slide-4.active .decision-card:nth-child(4) { transition-delay: 0.75s; opacity: 1; transform: translateY(0); }
+
+        .decision-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .decision-icon {
+            width: auto;
+            height: auto;
+            border-radius: 0;
+            display: block;
+            margin: 0 0 20px;
+            font-size: 32px;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            line-height: 1;
+        }
+
+        .decision-card:nth-child(1) .decision-icon { color: var(--green-mid); }
+        .decision-card:nth-child(2) .decision-icon { color: var(--gold); }
+        .decision-card:nth-child(3) .decision-icon { color: #5a6f8c; }
+        .decision-card:nth-child(4) .decision-icon { color: #c07a3a; }
+
+        .decision-card h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--green-darkest);
+            margin-bottom: 8px;
+            letter-spacing: -0.2px;
+        }
+
+        .decision-card p {
+            font-size: 13.5px;
+            color: var(--text-muted);
+            line-height: 1.65;
+        }
+
+        /* --- SLIDE 5: Group Selling + Price Calc --- */
+        .slide-5 .slide-inner {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+
+        .calc-box {
+            background: var(--white);
+            border-radius: 4px;
+            padding: 28px 30px;
+            box-shadow: none;
+            margin-top: 28px;
+            border: 1px solid rgba(61, 112, 80, 0.12);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.7s ease 0.7s;
+        }
+
+        .slide.active .calc-box {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .calc-box .calc-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+        }
+
+        .calc-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 9px 0;
+            border-bottom: 1px solid rgba(61, 112, 80, 0.06);
+            font-size: 14px;
+        }
+
+        .calc-row:last-child {
+            border-bottom: none;
+            font-weight: 700;
+            color: var(--green-darkest);
+            font-size: 15px;
+            padding-top: 16px;
+            margin-top: 4px;
+            border-top: 2px solid var(--green-darkest);
+        }
+
+        .calc-row .label {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .calc-row .value {
+            font-weight: 600;
+            color: var(--text-dark);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .calc-row .value.green {
+            color: var(--green-mid);
+        }
+
+        .calc-row .value.gold {
+            color: var(--gold);
+        }
+
+        /* --- SLIDE 6: Game Changer --- */
+        .slide-6 .slide-inner {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .feature-block {
+            display: flex;
+            gap: 18px;
+            margin-top: 18px;
+            padding: 22px 0;
+            background: transparent;
+            border-radius: 0;
+            border: none;
+            border-bottom: 1px solid rgba(61, 112, 80, 0.1);
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 0.6s ease;
+        }
+
+        .feature-block:last-child {
+            border-bottom: none;
+        }
+
+        .slide.active .feature-block:nth-child(1) { transition-delay: 0.4s; opacity: 1; transform: translateX(0); }
+        .slide.active .feature-block:nth-child(2) { transition-delay: 0.55s; opacity: 1; transform: translateX(0); }
+        .slide.active .feature-block:nth-child(3) { transition-delay: 0.7s; opacity: 1; transform: translateX(0); }
+
+        .feature-block .fb-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            background: var(--green-faint);
+            margin-top: 2px;
+        }
+
+        .feature-block .fb-content h4 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--green-darkest);
+            margin-bottom: 6px;
+            letter-spacing: -0.2px;
+        }
+
+        .feature-block .fb-content p {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        /* --- SLIDE 7: Close --- */
+        .slide-7 .slide-inner {
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .slide-7 .bg-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .slide-7 .bg-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: brightness(0.35);
+        }
+
+        .slide-7 .slide-inner {
+            z-index: 2;
+        }
+
+        .slide-7 .logo-container {
+            margin-bottom: 16px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.8s ease 0.2s;
+        }
+
+        .slide-7.active .logo-container {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .slide-7 .logo-container img {
+            width: 90px;
+            height: 90px;
+            object-fit: contain;
+        }
+
+        .slide-7 .slide-title {
+            color: var(--white);
+            max-width: 800px;
+            font-size: clamp(36px, 4.5vw, 58px);
+        }
+
+        .slide-7 .slide-text {
+            color: var(--green-pale);
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .slide-7 .closing-tagline {
+            font-size: clamp(18px, 2vw, 26px);
+            font-weight: 600;
+            color: var(--gold-light);
+            margin-top: 32px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.7s ease 0.7s;
+            letter-spacing: 1px;
+        }
+
+        .slide-7.active .closing-tagline {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .slide-7 .pilot-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: transparent;
+            border: none;
+            border-top: 1px solid rgba(200, 222, 206, 0.15);
+            border-radius: 0;
+            padding: 18px 0 0;
+            margin-top: 28px;
+            opacity: 0;
+            transition: all 0.6s ease 0.9s;
+        }
+
+        .slide-7.active .pilot-badge {
+            opacity: 1;
+        }
+
+        .pilot-badge span {
+            color: rgba(200, 222, 206, 0.5);
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        /* ===== NAVIGATION ===== */
+        .nav-controls {
+            position: fixed;
+            bottom: 28px;
+            right: 40px;
+            left: auto;
+            transform: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 100;
+            background: transparent;
+            backdrop-filter: none;
+            padding: 0;
+            border-radius: 0;
+            box-shadow: none;
+            border: none;
+        }
+
+        .nav-btn {
+            width: auto;
+            height: auto;
+            border-radius: 0;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.55);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease;
+            padding: 8px 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-btn:hover {
+            color: rgba(255,255,255,0.9);
+            background: transparent;
+            transform: none;
+        }
+
+        .nav-btn:active {
+            transform: none;
+            opacity: 0.7;
+        }
+
+        .slide-dots {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .dot {
+            width: 20px;
+            height: 2px;
+            border-radius: 1px;
+            background: rgba(255,255,255,0.15);
+            cursor: pointer;
+            transition: all 0.35s ease;
+        }
+
+        .dot.active {
+            background: rgba(255,255,255,0.7);
+            width: 32px;
+            border-radius: 1px;
+        }
+
+        .dot:hover {
+            background: rgba(255,255,255,0.4);
+        }
+
+        .slide-counter {
+            font-size: 12px;
+            color: rgba(255,255,255,0.35);
+            font-weight: 400;
+            min-width: 40px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ===== SLIDE TIMESTAMP BADGE ===== */
+        .timestamp-badge {
+            position: absolute;
+            top: 24px;
+            left: 32px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            z-index: 10;
+            opacity: 0;
+            transition: all 0.5s ease 0.8s;
+        }
+
+        .slide.active .timestamp-badge {
+            opacity: 0.4;
+        }
+
+        .timestamp-badge span {
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--green-dark);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .dark-timestamp .timestamp-badge {
+            background: transparent;
+        }
+
+        .dark-timestamp .timestamp-badge span {
+            color: rgba(200, 222, 206, 0.6);
+        }
+
+        /* ===== PROGRESS BAR ===== */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: var(--green-mid);
+            z-index: 200;
+            transition: width 0.6s ease;
+        }
+
+        /* ===== KEYBOARD HINT ===== */
+        .keyboard-hint {
+            position: fixed;
+            bottom: 28px;
+            left: 40px;
+            transform: none;
+            font-size: 11px;
+            color: rgba(255,255,255,0.2);
+            z-index: 100;
+            pointer-events: none;
+            transition: opacity 2s ease;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1100px) {
+            .slide-inner {
+                padding: 40px 50px;
+            }
+
+            .slide-2 .slide-inner,
+            .slide-3 .slide-inner,
+            .slide-5 .slide-inner,
+            .slide-6 .slide-inner {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .image-frame.organic,
+            .image-frame.organic-tall,
+            .image-frame.rounded,
+            .image-frame.circle-cut {
+                width: 300px;
+                height: 250px;
+                margin: 0 auto;
+            }
+
+            .decision-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .slide-inner {
+                padding: 30px 24px;
+            }
+
+            .decision-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-controls {
+                padding: 10px 20px;
+                bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="presentation" id="presentation">
+
+        <!-- ====== SLIDE 1: THE HOOK (0:00–0:20) ====== -->
+        <div class="slide slide-1 bg-gradient-dark active dark-timestamp" data-timestamp="0:00 – 0:20">
+            <div class="blob blob-1" style="background: rgba(106,175,123,0.12);"></div>
+            <div class="blob blob-2" style="background: rgba(200,164,78,0.08);"></div>
+
+            <div class="timestamp-badge">
+                <span>⏱ 0:00 – 0:20</span>
+                <span>•</span>
+                <span>THE HOOK</span>
+            </div>
+
+            <div class="slide-inner">
+                <div class="logo-container">
+                    <img src="krishivault_logo_1790707307144.jpg" alt="KrishiVault Logo">
+                </div>
+                <div class="brand-name">KrishiVault</div>
+
+                <div class="stat-badge">
+                    <span class="stat-icon">📉</span>
+                    <span class="stat-text">Tk 2,500 Crore lost every year — not to bad harvests, but to bad timing</span>
+                </div>
+
+                <h1 class="slide-title">
+                    We <span class="highlight-gold">Solved</span> It.
+                </h1>
+
+                <p class="slide-text">
+                    Right now, in Bogura, a farmer stands next to a fresh harvest of potatoes. Sell everything? Sell only what he needs? Store and wait? Nobody has told him the right answer — because <strong>it depends.</strong>
+                </p>
+
+                <div class="tagline">Reported by The Daily Star</div>
+            </div>
+        </div>
+
+        <!-- ====== SLIDE 2: THE PROBLEM — Farmer's Dilemma (0:20–0:30) ====== -->
+        <div class="slide slide-2 bg-gradient-1" data-timestamp="0:20 – 0:30">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+
+            <div class="leaf-decor leaf-top-right">
+                <svg width="80" height="80" viewBox="0 0 100 100"><path d="M10 90 C10 40 50 10 90 10 C90 10 70 30 60 50 C50 70 30 90 10 90Z"/></svg>
+            </div>
+            <div class="leaf-decor leaf-bottom-left">
+                <svg width="60" height="60" viewBox="0 0 100 100"><path d="M10 90 C10 40 50 10 90 10 C90 10 70 30 60 50 C50 70 30 90 10 90Z"/></svg>
+            </div>
+
+            <div class="timestamp-badge">
+                <span>⏱ 0:20 – 0:30</span>
+                <span>•</span>
+                <span>THE DILEMMA</span>
+            </div>
+
+            <div class="slide-inner">
+                <div class="content">
+                    <span class="slide-label">The Farmer's Dilemma</span>
+                    <h2 class="slide-title">
+                        Nobody told him the <span class="highlight-red">right answer</span>
+                    </h2>
+                    <p class="slide-text">
+                        Because the right answer depends on price, storage cost, spoilage risk, available buyers, weather, and most importantly — <strong>when he needs the money.</strong>
+                    </p>
+                    <ul class="dilemma-list">
+                        <li><span class="icon">💰</span> Price volatility & market timing</li>
+                        <li><span class="icon">🏪</span> Storage costs & cold chain access</li>
+                        <li><span class="icon">🥔</span> Spoilage risk & quality degradation</li>
+                        <li><span class="icon">🤝</span> Limited buyer access for smallholders</li>
+                        <li><span class="icon">📅</span> Urgent cash needs vs. optimal timing</li>
+                    </ul>
+                </div>
+
+                <div class="slide-image-container">
+                    <div class="image-frame organic">
+                        <img src="slide1_hook_farmer_1790707212560.jpg" alt="Bangladeshi farmer with potato harvest">
+                        <div class="image-ring"></div>
+                        <div class="image-ring image-ring-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== SLIDE 3: WHAT IS KRISHIVAULT (0:30–1:05) ====== -->
+        <div class="slide slide-3 bg-gradient-2" data-timestamp="0:30 – 1:05">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-3"></div>
+
+            <div class="leaf-decor leaf-top-right">
+                <svg width="70" height="70" viewBox="0 0 100 100"><path d="M10 90 C10 40 50 10 90 10 C90 10 70 30 60 50 C50 70 30 90 10 90Z"/></svg>
+            </div>
+
+            <div class="timestamp-badge">
+                <span>⏱ 0:30 – 1:05</span>
+                <span>•</span>
+                <span>THE SOLUTION</span>
+            </div>
+
+            <div class="slide-inner">
+                <div class="content">
+                    <span class="slide-label">The Solution</span>
+                    <h2 class="slide-title">
+                        <span class="highlight">KrishiVault</span> — AI-Powered Harvest Decisions
+                    </h2>
+                    <p class="slide-text">
+                        An AI-powered harvest decision service accessible through an <strong>ordinary phone call.</strong> No smartphone. No app. No internet.
+                    </p>
+                    <p class="slide-text" style="margin-top: 16px;">
+                        A farmer simply speaks in Bangla. KrishiVault asks about their harvest, location, available buyers, storage, and how much money they need — and by when.
+                    </p>
+
+                    <div class="bangla-quote" style="opacity: 0; transform: translateY(20px); transition: all 0.7s ease 0.6s;">
+                        "আমার ২০ মণ আলু আছে। তিন দিনের মধ্যে ৮ হাজার টাকা দরকার।"
+                    </div>
+
+                    <div class="feature-pills">
+                        <span class="pill"><span class="pill-icon">📞</span> Simple Phone Call</span>
+                        <span class="pill"><span class="pill-icon">🗣️</span> Bangla Conversation</span>
+                        <span class="pill"><span class="pill-icon">🤖</span> AI-Powered</span>
+                        <span class="pill"><span class="pill-icon">📱</span> No Smartphone Needed</span>
+                    </div>
+                </div>
+
+                <div class="slide-image-container">
+                    <div class="image-frame organic-tall">
+                        <img src="slide3_phone_farmer_1790707227402.jpg" alt="Farmer using phone">
+                        <div class="image-ring"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== SLIDE 4: THE DECISION ENGINE (1:05–1:30) ====== -->
+        <div class="slide slide-4 bg-cream" data-timestamp="1:05 – 1:30">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+
+            <div class="timestamp-badge">
+                <span>⏱ 1:05 – 1:30</span>
+                <span>•</span>
+                <span>THE DECISION ENGINE</span>
+            </div>
+
+            <div class="slide-inner">
+                <div class="top-section">
+                    <span class="slide-label" style="display: block;">How It Works</span>
+                    <h2 class="slide-title" style="font-size: clamp(32px, 3.5vw, 50px);">
+                        Four Choices. <span class="highlight">One Smart Decision.</span>
+                    </h2>
+                    <p class="slide-text" style="max-width: 700px; margin: 0 auto;">
+                        KrishiVault compares every option and calculates what each actually means for the farmer — in real taka, after real costs.
+                    </p>
+                </div>
+
+                <div class="decision-grid">
+                    <div class="decision-card">
+                        <div class="decision-icon">01</div>
+                        <h3>Sell Now</h3>
+                        <p>Identify available offers that meet the payment deadline and provide worthwhile proceeds after costs.</p>
+                    </div>
+                    <div class="decision-card">
+                        <div class="decision-icon">02</div>
+                        <h3>Sell Part Now</h3>
+                        <p>Calculate whether selling a portion covers urgent expenses while preserving options for the remaining crop.</p>
+                    </div>
+                    <div class="decision-card">
+                        <div class="decision-icon">03</div>
+                        <h3>Store & Review</h3>
+                        <p>Assess whether waiting justifies storage charges, deterioration, and price uncertainty. Calculate the break-even price.</p>
+                    </div>
+                    <div class="decision-card">
+                        <div class="decision-icon">04</div>
+                        <h3>Group Sell</h3>
+                        <p>Combine harvests with nearby farmers to meet buyer minimums — unlocking larger buyers and better prices.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== SLIDE 5: GROUP SELLING + PRICE CALC (1:05–1:30 continued) ====== -->
+        <div class="slide slide-5 bg-gradient-1" data-timestamp="1:05 – 1:30">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+
+            <div class="leaf-decor leaf-bottom-left">
+                <svg width="70" height="70" viewBox="0 0 100 100"><path d="M10 90 C10 40 50 10 90 10 C90 10 70 30 60 50 C50 70 30 90 10 90Z"/></svg>
+            </div>
+
+            <div class="timestamp-badge">
+                <span>⏱ 1:05 – 1:30</span>
+                <span>•</span>
+                <span>GROUP SELLING & PRICE INTELLIGENCE</span>
+            </div>
+
+            <div class="slide-inner">
+                <div class="content">
+                    <span class="slide-label">Price Intelligence</span>
+                    <h2 class="slide-title">
+                        Not just <span class="highlight">"prices might go up"</span> — but what it <em>actually means</em>
+                    </h2>
+                    <p class="slide-text">
+                        If selling today gives <strong>Tk 20/kg</strong>, KrishiVault calculates how high the future price must rise for storage to actually be worthwhile — after storage costs and expected losses.
+                    </p>
+
+                    <div class="calc-box">
+                        <div class="calc-title">Storage Break-Even Calculator</div>
+                        <div class="calc-row">
+                            <span class="label">Today's Price</span>
+                            <span class="value">Tk 20 / kg</span>
+                        </div>
+                        <div class="calc-row">
+                            <span class="label">Storage Cost (30 days)</span>
+                            <span class="value" style="color: var(--red-accent);">– Tk 1.50 / kg</span>
+                        </div>
+                        <div class="calc-row">
+                            <span class="label">Expected Spoilage</span>
+                            <span class="value" style="color: var(--red-accent);">– 5%</span>
+                        </div>
+                        <div class="calc-row">
+                            <span class="label">Break-Even Future Price</span>
+                            <span class="value green">Tk 23.10 / kg</span>
+                        </div>
+                        <div class="calc-row">
+                            <span class="label">Verdict</span>
+                            <span class="value gold">Store only if price rises 15.5%+</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-image-container">
+                    <div class="image-frame rounded">
+                        <img src="slide5_group_selling_1790707251107.jpg" alt="Group of farmers selling together">
+                        <div class="image-ring"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== SLIDE 6: THE GAME CHANGER (1:30–1:50) ====== -->
+        <div class="slide slide-6 bg-green-faint" data-timestamp="1:30 – 1:50">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-3"></div>
+
+            <div class="leaf-decor leaf-top-right">
+                <svg width="80" height="80" viewBox="0 0 100 100"><path d="M10 90 C10 40 50 10 90 10 C90 10 70 30 60 50 C50 70 30 90 10 90Z"/></svg>
+            </div>
+
+            <div class="timestamp-badge">
+                <span>⏱ 1:30 – 1:50</span>
+                <span>•</span>
+                <span>THE GAME CHANGER</span>
+            </div>
+
+            <div class="slide-inner">
+                <div class="content">
+                    <span class="slide-label">Beyond the Sale</span>
+                    <h2 class="slide-title">
+                        KrishiVault doesn't <span class="highlight">stop</span> at the sale.
+                    </h2>
+
+                    <div class="feature-block">
+                        <div class="fb-icon">🛒</div>
+                        <div class="fb-content">
+                            <h4>Group Buying for Inputs</h4>
+                            <p>Before the next planting season, KrishiVault pools orders for seeds, fertilizer, and pesticides with nearby farmers — unlocking wholesale pricing.</p>
+                        </div>
+                    </div>
+
+                    <div class="feature-block">
+                        <div class="fb-icon">🔔</div>
+                        <div class="fb-content">
+                            <h4>Dynamic Monitoring</h4>
+                            <p>"Your situation has changed. Let's review your plan." — KrishiVault alerts farmers when prices shift, weather creates risk, or a deadline approaches.</p>
+                        </div>
+                    </div>
+
+                    <div class="feature-block">
+                        <div class="fb-icon">🔄</div>
+                        <div class="fb-content">
+                            <h4>Full Season Coverage</h4>
+                            <p>The decision evolves with the situation — on both ends of the season. From harvest selling to input purchasing.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="slide-image-container">
+                    <div class="image-frame circle-cut">
+                        <img src="slide6_game_changer_1790707267937.jpg" alt="Season cycle illustration">
+                        <div class="image-ring"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== SLIDE 7: THE CLOSE (1:50–2:00) ====== -->
+        <div class="slide slide-7 dark-timestamp" data-timestamp="1:50 – 2:00">
+            <div class="bg-image">
+                <img src="slide7_close_bogura_1790707280172.jpg" alt="Bogura countryside">
+            </div>
+
+            <div class="timestamp-badge">
+                <span>⏱ 1:50 – 2:00</span>
+                <span>•</span>
+                <span>THE CLOSE</span>
+            </div>
+
+            <div class="slide-inner">
+                <div class="logo-container">
+                    <img src="krishivault_logo_1790707307144.jpg" alt="KrishiVault Logo" style="border-radius: 20px;">
+                </div>
+
+                <h2 class="slide-title">
+                    A Smarter Decision for <br>Every Harvest.
+                </h2>
+
+                <p class="slide-text">
+                    Starting with potato farmers in one upazila of Bogura — measuring whether KrishiVault can improve farmers' net proceeds and reduce post-harvest losses.
+                </p>
+
+                <p class="slide-text" style="margin-top: 16px; font-style: italic; transition-delay: 0.6s;">
+                    Because farmers don't need more information. They need help turning information into the <strong>right decision</strong> — for their harvest, and for what they grow next.
+                </p>
+
+                <div class="closing-tagline">
+                    KrishiVault. A smarter decision for every harvest.
+                </div>
+
+                <div class="pilot-badge">
+                    <span>🌱</span>
+                    <span>Pilot: Bogura, Bangladesh • Potato Farmers • Phase 1</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ====== NAVIGATION ====== -->
+    <div class="nav-controls">
+        <button class="nav-btn" id="prevBtn" aria-label="Previous slide">Prev</button>
+        <div class="slide-dots" id="slideDots"></div>
+        <button class="nav-btn" id="nextBtn" aria-label="Next slide">Next</button>
+        <div class="slide-counter" id="slideCounter">1 / 7</div>
+    </div>
+
+    <div class="keyboard-hint" id="keyboardHint">Use ← → arrow keys or click to navigate</div>
+
+    <script>
+        // ===== PRESENTATION ENGINE =====
+        const slides = document.querySelectorAll('.slide');
+        const dotsContainer = document.getElementById('slideDots');
+        const counter = document.getElementById('slideCounter');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const progressBar = document.getElementById('progressBar');
+        const keyboardHint = document.getElementById('keyboardHint');
+        let currentSlide = 0;
+        const totalSlides = slides.length;
+
+        // Create dots
+        for (let i = 0; i < totalSlides; i++) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            if (i === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => goToSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+
+        function goToSlide(index) {
+            if (index < 0 || index >= totalSlides) return;
+
+            slides[currentSlide].classList.remove('active');
+            document.querySelectorAll('.dot')[currentSlide].classList.remove('active');
+
+            currentSlide = index;
+
+            slides[currentSlide].classList.add('active');
+            document.querySelectorAll('.dot')[currentSlide].classList.add('active');
+            counter.textContent = `${currentSlide + 1} / ${totalSlides}`;
+
+            // Update progress bar
+            const progress = ((currentSlide + 1) / totalSlides) * 100;
+            progressBar.style.width = progress + '%';
+
+            // Animate bangla quote on slide 3
+            if (currentSlide === 2) {
+                setTimeout(() => {
+                    const banglaQuote = slides[2].querySelector('.bangla-quote');
+                    if (banglaQuote) {
+                        banglaQuote.style.opacity = '1';
+                        banglaQuote.style.transform = 'translateY(0)';
+                    }
+                }, 600);
+            }
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) goToSlide(currentSlide + 1);
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) goToSlide(currentSlide - 1);
+        }
+
+        // Button clicks
+        nextBtn.addEventListener('click', nextSlide);
+        prevBtn.addEventListener('click', prevSlide);
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                prevSlide();
+            }
+        });
+
+        // Touch navigation
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, false);
+
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            const diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) nextSlide();
+                else prevSlide();
+            }
+        }, false);
+
+        // Hide keyboard hint after first interaction
+        document.addEventListener('keydown', () => {
+            keyboardHint.style.opacity = '0';
+        }, { once: true });
+
+        document.addEventListener('click', () => {
+            keyboardHint.style.opacity = '0';
+        }, { once: true });
+
+        // Initialize progress bar
+        progressBar.style.width = ((1) / totalSlides) * 100 + '%';
+    </script>
+</body>
+</html>
