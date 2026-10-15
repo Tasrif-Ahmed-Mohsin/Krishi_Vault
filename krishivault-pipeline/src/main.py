@@ -31,7 +31,7 @@ from src.engine.facts import MAUND_KG, SACK_KG, SOURCES, StorageTerms
 from src.engine.storage_plan import FarmerLot, StoragePlanner
 from src.models import backtest as price_backtest, price_outlook, production_forecast
 from src.notify import sms as sms_client, voiceblast as voiceblast_client
-from src.notify.voiceblast import get_voiceblast_client
+from src.notify.voiceblast import get_voiceblast_client, get_broadcast_api_client
 from src.voice import ussd
 from src.voice.conversation import Conversation, advice_sms, curing_sms, receipt_sms
 
@@ -596,31 +596,60 @@ class VoiceDialRequest(BaseModel):
 def call_status():
     sms_cfg = sms_client.sms_config()
     vb = get_voiceblast_client()
+    bc = get_broadcast_api_client()
+
+    balance = None
+    if bc.live:
+        try:
+            balance = bc.get_balance()
+        except Exception:
+            pass
+    if not balance and vb.live:
+        try:
+            balance = vb.get_balance()
+        except Exception:
+            pass
+
+    is_live = bc.live or vb.live
+    caller_id = bc.caller_id or vb.caller_id
+
     return {
         "gemini": {"on": gemini_client.available, "model": gemini_client.model_used},
         "google_voice": tts_service.status(),
         "sms": {"configured": sms_cfg["configured"], "live": sms_cfg["live"]},
         "voiceblast": {
-            "live": vb.live,
-            "caller_id": vb.caller_id,
-            "balance": vb.get_balance() if vb.live else "dry_run",
+            "live": is_live,
+            "caller_id": caller_id,
+            "balance": balance or ("Active" if is_live else "dry_run"),
             "default_audio_id": vb.default_audio_id,
         },
-        "calls": "live" if vb.live else "preview",
+        "calls": "live" if is_live else "preview",
     }
 
 
 @app.post("/api/call/dial")
 def call_dial(req: VoiceDialRequest):
-    """Trigger a real outbound voice phone call to a Bangladeshi mobile via VoiceBlast."""
+    """Trigger a real outbound voice phone call to a Bangladeshi mobile via VoiceBlast/Broadcast API."""
     vb = get_voiceblast_client()
-    audio_id = req.audio_file_id
+    bc = get_broadcast_api_client()
 
-    # If dynamic text is provided and TTS is ready, synthesize & upload customized G.711 speech!
-    if not audio_id and req.text and tts_service.ready:
+    clean_phone = voiceblast_client.bd_mobile(req.phone)
+    if not clean_phone:
+        raise HTTPException(status_code=400, detail="Phone number must be a valid Bangladeshi mobile (01XXXXXXXXX)")
+
+    # Prepare speech audio file if dynamic text is requested or for broadcast API
+    tmp_dir = BASE / "data" / "audio_out"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    tmp_file = tmp_dir / f"advice_{clean_phone[-6:]}.wav"
+
+    text_to_speak = (req.text or "").strip()
+    if not text_to_speak:
+        text_to_speak = "কৃষিভল্ট আলু সংরক্ষণ ও বাজারজাতকরণ সেবায় আপনাকে স্বাগতম। আপনার এলাকার আলুর বাজার ও হিমাগার তথ্য জানতে সাথেই থাকুন।"
+
+    if tts_service.ready:
         try:
             from google.cloud import texttospeech
-            s_input = texttospeech.SynthesisInput(text=req.text[:4800])
+            s_input = texttospeech.SynthesisInput(text=text_to_speak[:4800])
             voice = texttospeech.VoiceSelectionParams(
                 language_code="bn-BD", ssml_gender=texttospeech.SsmlVoiceGender.FEMALE
             )
@@ -631,20 +660,28 @@ def call_dial(req: VoiceDialRequest):
                 input=s_input, voice=voice, audio_config=audio_cfg, timeout=15
             )
             g711_wav = voiceblast_client.make_g711_wav(speech_resp.audio_content[44:])
-            clean_phone = voiceblast_client.bd_mobile(req.phone) or "anon"
-            tmp_dir = BASE / "data" / "audio_out"
-            tmp_dir.mkdir(parents=True, exist_ok=True)
-            tmp_file = tmp_dir / f"advice_{clean_phone[-6:]}.wav"
             with open(tmp_file, "wb") as f:
                 f.write(g711_wav)
-            uploaded_id = vb.upload_audio(tmp_file, filename=tmp_file.name)
-            if uploaded_id:
-                audio_id = uploaded_id
         except Exception as exc:
             from loguru import logger
             logger.warning(f"Could not synthesize dynamic voice advisory: {exc}")
 
-    res = vb.send_call(req.phone, audio_file_id=audio_id, caller_id=req.caller_id)
+    # Primary for cloud deployments: Broadcast REST API (SysTech official, globally reachable)
+    if bc.live and tmp_file.exists():
+        res = bc.send_broadcast(clean_phone, audio_file_path=tmp_file, caller_id=req.caller_id)
+        if res.get("success"):
+            return res
+        from loguru import logger
+        logger.warning(f"Broadcast API failed, trying VoiceBlast session: {res.get('error')}")
+
+    # Secondary: VoiceBlast session portal (if accessible)
+    audio_id = req.audio_file_id
+    if not audio_id and tmp_file.exists() and vb.live:
+        uploaded_id = vb.upload_audio(tmp_file, filename=tmp_file.name)
+        if uploaded_id:
+            audio_id = uploaded_id
+
+    res = vb.send_call(clean_phone, audio_file_id=audio_id, caller_id=req.caller_id)
     if not res.get("success"):
         raise HTTPException(status_code=400, detail=res.get("error", "Call dispatch failed"))
     return res
