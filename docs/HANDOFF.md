@@ -140,7 +140,7 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 6. **Real partners:** one cold storage (group rate, receipt confirmation), one bank or microfinance lender (loan terms for stored potato), one buyer and one exporter. Replace the demo entries in `data/demo/demo_partners.json`.
 7. **Export quotes:** real destination prices, freight and duties (Export Promotion Bureau, exporters, shipping lines).
 8. **Gemini and the Google voice** with real keys in the call preview; test speech with a Bogura speaker. Gemini: **done, 14 October** (it needed a 10-second wait and new model names). Google voice: add `GOOGLE_TTS_JSON_B64` to the cloud environment, then check `/api/voice/speak`.
-9. **Update the pitch deck** (`krishivault-pitch-deck.html`) and the farmer interview guide to the new plan; both still describe the old four pillars.
+9. **Update the pitch deck** (`krishivault-pitch-deck.html`) and the farmer interview guide to the new plan. **Deck done, 15 October**: 9 slides for 2 minutes (the question, the storage trap, the call, how it decides, the fair replays and backtest, the seven parts, who pays, prototype and pilot, close), speaker notes on N, pictures in `slide-images/`.
 10. **Onion** as the second crop (home storage 2 to 3 months, different season).
 
 ## 11. Prepared Q&A
