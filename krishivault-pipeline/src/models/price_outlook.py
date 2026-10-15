@@ -189,16 +189,33 @@ def season_for_decision(year: int, month: int) -> int:
     return year - 2 if month == 1 else year - 1
 
 
+def seasons_unfinished(decision_year: int) -> tuple:
+    """Seasons with prices that had not finished by a decision in `decision_year` (a season ends in December)."""
+    p = monthly_prices()
+    return tuple(sorted(int(s) for s in p.season.dropna().unique() if s + 1 >= decision_year))
+
+
 def rise_strength(season_start: int, area_ha: Optional[float] = None, gap_override_pct: Optional[float] = None,
                   weather_adjust_pct: float = 0.0, decision_year: Optional[int] = None,
                   decision_month: Optional[int] = None, use_season_prices: bool = True,
                   cal: Optional[Calibration] = None) -> dict:
-    """k for a season: from the crop gap, corrected by the season's own prices so far."""
-    cal = cal or calibrate()
-    gap, gap_sd = crop_gap(season_start, area_ha, weather_adjust_pct, gap_override_pct)
+    """
+    k for a season: from the crop gap, corrected by the season's own prices so far.
+
+    Only what was known on the decision date is used, so a replay of a past season is fair: the crop-size
+    link is learned from the seasons that had finished by then, and a crop whose final BBS figure came out
+    later is estimated from its planted area and the earlier yield trend.
+    """
+    if cal is None:
+        cal = calibrate(seasons_unfinished(decision_year)) if decision_year else calibrate()
+    as_known = bool(decision_year) and decision_year <= season_start + 1
+    gap, gap_sd = crop_gap(season_start, area_ha, weather_adjust_pct, gap_override_pct, as_known_at_harvest=as_known)
     prior = cal.k0 + cal.slope * gap
     prior_sd = math.sqrt((cal.slope * gap_sd) ** 2 + cal.k_spread ** 2)
     result = {"gap_pct": round(gap * 100, 1), "gap_sd_pct": round(gap_sd * 100, 1),
+              "learned_from": [s["season"] for s in cal.seasons],
+              "crop_link": "fitted" if len(cal.seasons) >= 2 else "assumed",
+              "sigma_month": cal.sigma_month,
               "k_from_crop": round(_clamp_k(prior), 2), "k_from_crop_sd": round(prior_sd, 2),
               "season_months_used": 0, "k_from_prices": None}
     k, sd = prior, prior_sd
@@ -234,13 +251,33 @@ def simulate(decision_month: int, horizon: int, k: float, k_sd: float,
     return np.exp(ks[:, None] * shape[None, :] + shocks)
 
 
+def real_path(decision_year: int, decision_month: int, horizon: int) -> Optional[list]:
+    """
+    For a past decision date: what really happened to the national retail price afterwards, as a ratio to its
+    level at the decision (the last month with prices from 4+ markets at or before it, back to February).
+    None when no later month is known yet. Used to show a replay against the real prices.
+    """
+    p = monthly_prices()
+    p = p[p["count"] >= MIN_REPORTS]
+    known = {(int(r.year), int(r.month)): float(r["median"]) for _, r in p.iterrows()}
+    base = next((known[(decision_year, m)] for m in range(decision_month, 1, -1) if (decision_year, m) in known), None)
+    if base is None:
+        return None
+    out = []
+    for h in range(horizon + 1):
+        year = decision_year + (decision_month - 1 + h) // 12
+        price = known.get((year, month_after(decision_month, h)))
+        out.append(round(price / base, 4) if price is not None else None)
+    return out if any(r is not None for r in out[1:]) else None
+
+
 def outlook(price_today: float, decision_month: int, decision_year: int, horizon: int = 9,
             season_start: Optional[int] = None, area_ha: Optional[float] = None,
             gap_override_pct: Optional[float] = None, weather_adjust_pct: float = 0.0) -> dict:
     """The month-by-month outlook in ৳/kg from today's price, with the 80% range."""
     season = season_start if season_start is not None else season_for_decision(decision_year, decision_month)
     rs = rise_strength(season, area_ha, gap_override_pct, weather_adjust_pct, decision_year, decision_month)
-    paths = simulate(decision_month, horizon, rs["k"], rs["k_sd"]) * price_today
+    paths = simulate(decision_month, horizon, rs["k"], rs["k_sd"], sigma=rs["sigma_month"]) * price_today
     months = []
     for h in range(horizon + 1):
         col = paths[:, h]
@@ -251,8 +288,12 @@ def outlook(price_today: float, decision_month: int, decision_year: int, horizon
             "low": round(float(np.percentile(col, 10)), 2), "high": round(float(np.percentile(col, 90)), 2),
             "chance_above_today": round(float((col > price_today).mean()), 2),
         })
+    real = real_path(decision_year, decision_month, horizon)
+    if real:
+        for m, ratio in zip(months, real):
+            m["real"] = round(price_today * ratio, 2) if ratio is not None else None
     return {"price_today": price_today, "decision_month": decision_month, "decision_year": decision_year,
-            "season": f"{season}-{str(season + 1)[-2:]}", "rise": rs, "months": months}
+            "season": f"{season}-{str(season + 1)[-2:]}", "rise": rs, "months": months, "replay": bool(real)}
 
 
 def model_card() -> dict:

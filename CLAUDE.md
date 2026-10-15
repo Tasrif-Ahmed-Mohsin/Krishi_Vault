@@ -42,8 +42,8 @@ This file is the short version.
   - `src/scrapers/dam_scraper.py`: **broken**, the DAM site moved to `https://market.dam.gov.bd/`.
   - `tests/`: pytest.
 - `reference/mati_kohon_code/`: Mati Kohon code that was ported. **Do not import it.**
-- `docs/`: the plan documents, `readiness_check.html`, the farmer interview guide (still the old plan).
-- `krishivault-pitch-deck.html`, `slide-images/`: the pitch deck (**still the old four-pillar plan**; update before use).
+- `docs/`: the plan documents, `readiness_check.html`, the field check guide for farmers and cold storages (`farmer_interview_guide.html` and its PDF; to-do 3).
+- `krishivault-pitch-deck.html`, `slide-images/`: the pitch deck, 9 slides for 2 minutes (new plan, 15 October; arrow keys, N for speaker notes, P to print). Every figure on it comes from the engine or the data; update it when they change.
 
 ## Running it
 

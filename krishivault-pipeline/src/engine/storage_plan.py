@@ -38,7 +38,7 @@ import numpy as np
 from src.engine.facts import (
     StorageTerms, MONTHS_EN, MONTHS_BN, LAST_SALE_MONTH, MAUND_KG, month_after,
 )
-from src.models.price_outlook import rise_strength, simulate, season_for_decision
+from src.models.price_outlook import real_path, rise_strength, simulate, season_for_decision
 from src.voice.bangla_numbers import to_bn_digits
 
 DAYS_PER_MONTH = 30
@@ -112,7 +112,8 @@ class StoragePlanner:
         rs = rise_strength(season, lot.area_ha, lot.gap_override_pct, lot.weather_adjust_pct,
                            lot.decision_year, lot.decision_month)
         rs["season"] = f"{season}-{str(season + 1)[-2:]}"
-        ratios = simulate(lot.decision_month, horizon, rs["k"], rs["k_sd"], self.simulations, self.seed)
+        ratios = simulate(lot.decision_month, horizon, rs["k"], rs["k_sd"], self.simulations, self.seed,
+                          sigma=rs["sigma_month"])
         return ratios * lot.price_today, rs
 
     # ----------------------------------------------------------- money per path
@@ -209,6 +210,7 @@ class StoragePlanner:
             options["store"] = self._option_store(lot, best, now_value) if best["feasible"] else None
             options["sell_part"] = self._option_part(lot, prices, best, now_value)
         rec = self._recommend(lot, options, now_value, H, rise["k"])
+        replay = self._replay(lot, options, rec, now_value, H)
 
         for r in rows:
             r.pop("_net", None)
@@ -231,7 +233,51 @@ class StoragePlanner:
             "recommendation": rec,
             "cost_floor": self._cost_floor(lot),
             "notes": self._notes(lot, rows, best, H),
+            "replay": replay,
         }
+
+    # ----------------------------------------------------------- replays: what really happened
+    def _replay(self, lot: FarmerLot, options: dict, rec: dict, now_value: float, H: int) -> Optional[dict]:
+        """
+        For a past decision date: each option, and the advice, valued at the prices that really followed (the
+        WFP national retail change applied to today's price), with the same costs as the advice. Stored sacks
+        are sold in the planned month, or the next month with a real price. None when nothing later is known.
+        """
+        real = real_path(lot.decision_year, lot.decision_month, H) if H else None
+        if not real:
+            return None
+        prices = np.array([[lot.price_today * (r if r is not None else 1.0) for r in real]])
+        prices[0, 0] = lot.price_today
+
+        def outcome(option: Optional[dict]) -> Optional[dict]:
+            if option is None:
+                return None
+            if option["key"] == "sell_now":
+                return {"money": _round_tk(now_value), "vs_sell_now": 0, "sold_in": MONTHS_EN[lot.decision_month]}
+            later = [h for h in range(option["months"], H + 1) if real[h] is not None]
+            if not later:
+                return None
+            h = later[0]
+            sell, store = option["sell_sacks_now"], option["store_sacks"]
+            kg_store = lot.quantity_kg * store / lot.sacks
+            net_now = float(self._cold_net(lot, lot.quantity_kg - kg_store, sell, prices, 0)[0][0]) if sell else 0.0
+            net_store = float(self._cold_net(lot, kg_store, store, prices, h)[0][0])
+            interest, _ = self._interest(lot, h, store, kg_store * lot.price_today, net_now)
+            money = net_now + net_store - (interest or 0.0)
+            return {"money": _round_tk(money), "vs_sell_now": _round_tk(money - now_value),
+                    "sold_in": MONTHS_EN[month_after(lot.decision_month, h)]}
+
+        valued = {key: outcome(o) for key, o in options.items()}
+        # Storing every sack, sold in each month that has a real price
+        by_month = []
+        for h in range(1, H + 1):
+            if real[h] is not None:
+                money = float(self._cold_net(lot, lot.quantity_kg, lot.sacks, prices, h)[0][0])
+                by_month.append({"h": h, "month_en": MONTHS_EN[month_after(lot.decision_month, h)],
+                                 "vs_sell_now": _round_tk(money - now_value)})
+        return {"basis": "the national retail price change that really followed (WFP), applied to today's price",
+                "options": valued, "advice": {"key": rec["key"], **(valued.get(rec["key"]) or {})},
+                "store_all_by_month": by_month}
 
     # ----------------------------------------------------------- the three options
     def _option_now(self, lot: FarmerLot, now_value: float) -> dict:

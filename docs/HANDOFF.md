@@ -69,7 +69,7 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 
 **Rule:** the farmer's advice is never for sale. A partner's fee never changes what KrishiVault advises; offers are ranked by money in the farmer's hand. KrishiVault is the data and connection platform; it does not lend its own money.
 
-**Why it holds up:** one season's gain is large next to the fees. 36 sacks stored to December in a normal-crop year (the 2024 replay) earn about ৳29,000 more than selling at harvest; in a big-crop year (the 2025 replay) the engine's "sell now" avoids a loss of about ৳14,000.
+**Why it holds up:** one season's gain is large next to the fees. In the fair replays, scored on the prices that really followed: in a normal-crop year (March 2024, 36 sacks at ৳18) the advice "sell 9 sacks now, store 27 until December" brought about ৳22,000 more than selling everything at the harvest (storing all 36 would have brought about ৳30,000 more, but the engine could not be sure of that then); in a big-crop year (March 2025, at ৳14) the advice "sell now" avoided a loss: storing all 36 sacks would really have lost ৳15,000 to ৳23,000, whichever month they were sold.
 
 ## 6. AI and technology, and why
 
@@ -104,7 +104,7 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 | SMS receipt | Ported to Python; dry run | "SMS me" on `/call` and "Send this advice by SMS" on the dashboard |
 | Phone calls | Not in the prototype | No phone line; the Awaj port stays in `src/notify/awaj.py` for later |
 
-**The season selector** replays real seasons: **March 2025** (big crop: the engine says sell now), **March 2024** (normal crop: store until December), plus **March 2027** (the next harvest, forecast) and **October 2026** (potatoes already in store).
+**The season selector** replays real seasons: **March 2025** (big crop: the engine says sell now), **March 2024** (normal crop: sell a safety share, store the rest until December), plus **March 2027** (the next harvest, forecast) and **October 2026** (potatoes already in store).
 
 **The demo moment:** a teammate calls as a farmer ("হামার ৮০ মণ আলু উঠছে, ফড়িয়া ১৬ টেকা দিবার চায়, ২৫ হাজার টেকা নাগবে ৪ দিনের মইধ্যে"), hears "sell 19 sacks now, store 17 until December" with the money and the risk, presses 2 for a cold-storage request, gets the SMS; the cold storage confirms the sacks on its screen and the bank sees a loan application with its risk.
 
@@ -113,13 +113,13 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 **Real now:**
 - BBS potato production for 64 districts, 2012-13 to 2024-25, and the production forecast built on it.
 - WFP retail potato prices, February 2024 to July 2026 (19 usable months), and the price outlook fitted on them.
-- The storage engine, market comparison, loan valuation, group storage, export cost build-up and profit calculator: all built and tested (`tests/`, 114 tests).
+- The storage engine, market comparison, loan valuation, group storage, export cost build-up and profit calculator: all built and tested (`tests/`, 121 tests).
 - The call preview with the Bangla number reader and the number lock; the SMS client (dry run).
 
 **Not yet, or demo:**
 - **The price outlook rests on two full seasons.** It is a careful statistical scenario, not a trained AI forecast. Say "statistical outlook with ranges".
-- **The backtest covers only two seasons** (12 months with prices from 4+ markets; `python -m src.models.backtest`, the Forecasts page). Predicting each season with a model that had not seen it, the outlook missed by 9% on average against 52% for "usual seasonal shape only", and got store-or-sell right in both seasons (the usual shape: 1 of 2). That is far too little to judge it, and with one season left to learn from, the crop-size link is an assumption: the calls stay right if a 10% bigger crop cuts the rise by 0.8 or more, and both go wrong at 0.5. Say "tested on two past seasons", not "proven".
-- **The dashboard's replays use some hindsight:** "Replay March 2025" and "Replay March 2024" use today's model, which learned from those same seasons' prices. The backtest is the fair version.
+- **The backtest covers only two seasons** (12 months with prices from 4+ markets; `python -m src.models.backtest`, the Forecasts page). Predicting each season with a model that had not seen it, and estimating each crop from its planted area as at the harvest, the outlook missed by 11% on average against 52% for "usual seasonal shape only", the real price fell inside its 8-in-10 range in 92% of months, and it got store-or-sell right in both seasons (the usual shape: 1 of 2). That is far too little to judge it, and with one season left to learn from, the crop-size link is an assumption: the calls stay right if a 10% bigger crop cuts the rise by 0.8 or more; at 0.5 one goes wrong. Say "tested on two past seasons", not "proven".
+- **The replays are fair (15 October):** "Replay March 2025" and "Replay March 2024" use only what was known on that date. The price link is learned from seasons that had finished by then (none for March 2024, so the starting assumptions; 2023-24 for March 2025), and the crop is estimated from its planted area and the earlier yield trend. The dashboard then shows what really happened: the real price change, and what the advice and the other options really earned.
 - **WFP has gaps:** no month from March to August 2024 has prices from 4 or more markets.
 - **Weather is not in the production forecast** yet.
 - **Farm-gate prices:** the outlook moves the farmer's own price by the retail change; real farm-gate history is needed.
@@ -127,20 +127,20 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 - **All partners are demo:** cold storages, banks, buyers, exporters, groups. Export prices, freight and duties are demo figures.
 - **Gemini was tried with the real key on 14 October** (cloud session): it fills in what the parser cannot place ("ফড়িয়া ১৬ টেকা দিবার চায়" → ৳16 a kg) and rewords the answer; the number check kept every number in the test calls. The number check compares numbers and banned words, not meaning, so listen to a reworded answer before a demo.
 - **The Google voice has not been tried with its key yet**: the key (`GOOGLE_TTS_JSON_B64`) was not in the cloud environment. Speech recognition has not been tried with a Bogura speaker.
-- **No live SMS from KrishiVault's own code yet** (REVE worked from Mati Kohon on 8 October). From cloud sessions the REVE gateway (`smpp.revesms.com:7790`) closes the connection, tried twice on 14 October: the request leaves the cloud machine and REVE hangs up, so it is likely an address allow-list on REVE's side. Send the first live SMS from a laptop, or ask REVE whether they allow only listed addresses. The SMS keys were also not in the cloud environment. The dry run works: the demo receipt is 168 Bangla characters, 3 SMS parts.
+- **No live SMS from KrishiVault's own code yet** (REVE worked from Mati Kohon on 8 October). From cloud sessions the REVE gateway (`smpp.revesms.com:7790`) closes the connection, tried twice on 14 October: the request leaves the cloud machine and REVE hangs up, so it is likely an address allow-list on REVE's side. Send the first live SMS from a laptop, or ask REVE whether they allow only listed addresses. The SMS keys were also not in the cloud environment. The dry run works: the demo receipt is 168 Bangla characters, 3 SMS parts. One send can go to up to 5 numbers (comma-separated); REVE's format for several numbers in one request is not confirmed, so make the first live send to one number. On 15 October the SMS variables were still not in the cloud session.
 - **No phone line.**
 
 ## 10. Prototype to-do, in order
 
 1. **Rebuild around the new plan.** **Done, 14 October**: engine, forecasts, dashboard, call preview, docs.
 2. **First live SMS**, only with the user's go-ahead: keys in the environment (`docs/CLOUD_SETUP.md`), `SMS_LIVE=1` for that one send, to a team member's phone. **Blocked from the cloud** (14 October): REVE closes the connection; do it from a laptop.
-3. **Field check in Bogura** (5 farmers, 2 cold storages): sack size and rent this season (some charge by kg), the cold-storage advance and its interest, weight loss, carrying and selling costs, when farmers sell and why. Replace the assumptions in `src/engine/facts.py`.
+3. **Field check in Bogura** (5 farmers, 2 cold storages; use `docs/farmer_interview_guide.html`, printed): sack size and rent this season (some charge by kg), the cold-storage advance and its interest, weight loss, carrying and selling costs, when farmers sell and why. Replace the assumptions in `src/engine/facts.py`.
 4. **Price history:** get DAM (or FAO GIEWS) monthly potato prices for 2010-2026, wholesale and retail, into `data/raw/price_history.csv` (`date, admin2, market, price`); the outlook refits itself. Then backtest it against "usual seasonal shape only". **Backtest built, 14 October** (`python -m src.models.backtest`; it re-runs on any new history; use `--only-past` once there are 5 or more seasons). **The download is blocked from the cloud:** the environment's network list does not allow `market.dam.gov.bd`, `fpma.fao.org` or `data.humdata.org`. Add them (cloud environment settings → Network access), or download on a laptop.
 5. **Weather in the production forecast:** NASA POWER season weather per district for 2012-2025 (Mati Kohon has the fetcher).
 6. **Real partners:** one cold storage (group rate, receipt confirmation), one bank or microfinance lender (loan terms for stored potato), one buyer and one exporter. Replace the demo entries in `data/demo/demo_partners.json`.
 7. **Export quotes:** real destination prices, freight and duties (Export Promotion Bureau, exporters, shipping lines).
 8. **Gemini and the Google voice** with real keys in the call preview; test speech with a Bogura speaker. Gemini: **done, 14 October** (it needed a 10-second wait and new model names). Google voice: add `GOOGLE_TTS_JSON_B64` to the cloud environment, then check `/api/voice/speak`.
-9. **Update the pitch deck** (`krishivault-pitch-deck.html`) and the farmer interview guide to the new plan; both still describe the old four pillars.
+9. **Update the pitch deck** (`krishivault-pitch-deck.html`) and the farmer interview guide to the new plan. **Both done, 15 October.** The guide (`docs/farmer_interview_guide.html`, PDF beside it) is now the field check for to-do 3: farmer and cold-storage questions, each tied to the engine number it replaces, answer forms, a tally sheet and an "update the engine" table. The deck: 9 slides for 2 minutes (the question, the storage trap, the call, how it decides, the fair replays and backtest, the seven parts, who pays, prototype and pilot, close), speaker notes on N, pictures in `slide-images/`.
 10. **Onion** as the second crop (home storage 2 to 3 months, different season).
 
 ## 11. Prepared Q&A

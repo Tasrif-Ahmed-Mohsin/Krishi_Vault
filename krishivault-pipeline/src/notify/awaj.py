@@ -32,7 +32,7 @@ def base_url() -> str:
 
 def awaj_config() -> dict:
     token = os.getenv("AWAJ_API_TOKEN", "")
-    sender = os.getenv("AWAJ_SENDER", "")
+    sender = os.getenv("AWAJ_SENDER") or os.getenv("AWAJ_SENDER_NUMBER", "")  # either name works
     return {
         "base_url": base_url(),
         "token_set": bool(token),

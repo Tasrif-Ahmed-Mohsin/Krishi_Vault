@@ -116,14 +116,23 @@ def _series(district: Optional[str]) -> pd.DataFrame:
 
 
 def production_forecast(district: Optional[str] = None, season_start: Optional[int] = None,
-                        area_ha: Optional[float] = None, weather_adjust_pct: float = 0.0) -> dict:
+                        area_ha: Optional[float] = None, weather_adjust_pct: float = 0.0,
+                        as_known_at_harvest: bool = False) -> dict:
     """
     History and a forecast for one season.
     district: None for all Bangladesh. season_start: 2026 means the 2026-27 crop
     (harvested February-March 2027); default is the season after the last BBS year.
     area_ha: the planted area if known. weather_adjust_pct: a hand-entered yield change.
+    as_known_at_harvest: for a past season, ignore its final BBS figure (published later) and every later
+    season, and estimate the crop as it could be at the harvest: planted area (DAE reports it in January;
+    the BBS area stands in for it) x the yield trend of the earlier seasons. Used by the fair replays.
     """
     g = _series(district)
+    target_in = int(season_start) if season_start else None
+    if as_known_at_harvest and target_in is not None and target_in in g.index:
+        if area_ha is None:
+            area_ha = float(g.loc[target_in, "area_ha"])
+        g = g[g.index < target_in]
     years = g.index.values.astype(float)
     prod_fit = _fit(years, g.production_t.values)
     yield_fit = _fit(years, g.yield_t_ha.values)
@@ -150,7 +159,8 @@ def production_forecast(district: Optional[str] = None, season_start: Optional[i
         yield_mid = math.exp(yield_fit.predict_log(target)) * adjust
         mid = area_ha * yield_mid
         sd_log = yield_fit.prediction_sd(target)
-        basis = "planted area entered x the yield trend"
+        basis = ("as known at the harvest: planted area x the yield trend of earlier seasons" if as_known_at_harvest
+                 else "planted area entered x the yield trend")
     else:
         mid = trend_t * adjust
         sd_log = prod_fit.prediction_sd(target)
@@ -179,14 +189,14 @@ def production_forecast(district: Optional[str] = None, season_start: Optional[i
 
 
 def crop_gap(season_start: int, area_ha: Optional[float] = None, weather_adjust_pct: float = 0.0,
-             gap_override_pct: Optional[float] = None) -> tuple[float, float]:
+             gap_override_pct: Optional[float] = None, as_known_at_harvest: bool = False) -> tuple[float, float]:
     """
     The national crop gap for a season as (mean, spread), both as fractions.
     A known BBS season has no spread. gap_override_pct lets a user try "what if the crop is 10% big".
     """
     if gap_override_pct is not None:
         return gap_override_pct / 100.0, 0.0
-    f = production_forecast(None, season_start, area_ha, weather_adjust_pct)
+    f = production_forecast(None, season_start, area_ha, weather_adjust_pct, as_known_at_harvest)
     return f["gap_pct"] / 100.0, f["gap_sd_pct"] / 100.0
 
 

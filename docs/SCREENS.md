@@ -19,8 +19,8 @@ For helpers, partners, judges and the team. Pick a **season** at the top; every 
 |---|---|
 | Next harvest: March 2027 | A forecast: the crop size is not known, so the price range is wide |
 | Today: October 2026 | Potatoes already in cold storage since March; two months left |
-| Replay March 2025 | The big crop (6% above trend): real prices stayed flat afterwards |
-| Replay March 2024 | A normal crop: real prices nearly doubled by November |
+| Replay March 2025 | The big crop (6% above trend): real prices stayed flat afterwards. A fair replay: only what was known in March 2025, then what really happened |
+| Replay March 2024 | A normal crop: real prices nearly doubled by November. A fair replay: only what was known in March 2024, then what really happened |
 
 "Crop size" lets you try "what if the crop is 10% bigger".
 

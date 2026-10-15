@@ -19,9 +19,11 @@ import requests
 
 from loguru import logger
 
+from src.events import mask_phone
 from src.notify.awaj import bd_mobile
 
 TIMEOUT_S = 20
+MAX_RECIPIENTS = 5   # one send goes to a few team or family phones at most; each number is billed
 
 
 def base_url() -> str:
@@ -68,29 +70,34 @@ def send_sms(phone: str, text: str) -> dict:
     request = {"callerID": cfg["sender"] or "<SMS_SENDER_ID>", "toUser": to_user, "messageContent": text,
                "parts": sms_parts(text)}
     masked = f"GET {cfg['gateway']}/sendtext?apikey=***&secretkey=***&callerID=…&toUser=…&messageContent=…"
+    who = mask_phone(",".join(mobiles))  # logs show numbers masked, as the partner screens do
     if not to_user:
-        logger.warning(f"SMS rejected: no valid Bangladeshi mobile number found in '{phone}'")
+        logger.warning("SMS not sent: no Bangladeshi mobile number given")
         return {"dry_run": not cfg["live"], "error": "phone must be a Bangladeshi mobile number (01XXXXXXXXX)", "request": request}
+    if len(mobiles) > MAX_RECIPIENTS:
+        logger.warning(f"SMS not sent: {len(mobiles)} numbers, more than {MAX_RECIPIENTS}")
+        return {"dry_run": not cfg["live"], "error": f"at most {MAX_RECIPIENTS} numbers in one send", "request": request}
     if not cfg["live"]:
-        logger.info(f"SMS dry run for {to_user}")
+        logger.info(f"SMS dry run for {who}")
         return {"dry_run": True, "endpoint": masked, "request": request}
     params = {
         "apikey": os.getenv("SMS_API_KEY"), "secretkey": os.getenv("SMS_SECRET_KEY"),
         "callerID": cfg["sender"], "toUser": to_user, "messageContent": text,
     }
-    logger.info(f"Sending live SMS to {to_user} via {cfg['gateway']} (parts={request['parts']})")
+    logger.info(f"Sending live SMS to {who} via {cfg['gateway']} (parts={request['parts']})")
     try:
         res = requests.get(f"{cfg['gateway']}/sendtext", params=params, timeout=TIMEOUT_S)
     except requests.RequestException as exc:
-        logger.error(f"Could not reach SMS gateway: {exc}")
+        # The exception text holds the full URL with the keys in it: log and return only its type
+        logger.error(f"Could not reach the SMS gateway ({type(exc).__name__})")
         return {"dry_run": False, "endpoint": masked, "error": f"could not reach the SMS gateway ({type(exc).__name__})"}
     try:
         response = res.json()
     except ValueError:  # the gateway may answer in plain text
         response = res.text
-    logger.info(f"SMS gateway response for {to_user}: status={res.status_code}, body={response}")
+    logger.info(f"SMS gateway response for {who}: status={res.status_code}, body={response}")
 
-    is_rejected = False
+    is_rejected = res.status_code >= 400
     if isinstance(response, dict):
         status_val = str(response.get("Status", "")).strip()
         if (status_val and status_val != "0") or response.get("Text") == "REJECTD":

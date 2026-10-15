@@ -65,5 +65,6 @@ Start a cloud session on `Tasrif-Ahmed-Mohsin/Krishi_Vault` with the `KrishiVaul
 
 - **"Module not found":** run `pip install -r krishivault-pipeline/requirements-cloud.txt`.
 - **A request to Gemini, Google or REVE is blocked:** add the domain to the environment's network list, or switch to Full. On 14 October the REVE gateway (`smpp.revesms.com:7790`) closed the connection from a cloud session without answering; if a live SMS fails there, send the first one from a laptop.
+- **The SMS or voice keys are not picked up:** the names must be exactly `SMS_API_KEY`, `SMS_SECRET_KEY`, `SMS_SENDER_ID`, `SMS_LIVE`, `GOOGLE_TTS_JSON_B64`, `GOOGLE_APPLICATION_CREDENTIALS` (the Awaj sender may be `AWAJ_SENDER` or `AWAJ_SENDER_NUMBER`). Variables reach only sessions started after the change. On `/call`, the strip under the phone says "SMS: keys set, dry run" once the three SMS keys are in.
 - **The Bangla voice fails:** check `GOOGLE_TTS_JSON_B64` is one line with nothing missing, and `GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-tts.json` (the path, not the key file's name). On `/call`, hold the mouse over the "Google voice: off" chip to see why.
 - **Gemini says "no answer":** the server log names the reason. Google needs a wait of at least 10 seconds and retires model names; set `GEMINI_MODEL` to a current one if all four defaults fail.

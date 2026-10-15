@@ -72,12 +72,14 @@ def test_numbers_said_come_from_the_engine():
     call = Call(month=3, year=2024)
     call.press("1"); call.press("80#"); call.press("18#"); call.press("0#")
     r = call.press("1")
-    assert r["result"]["key"] == "store"
-    store = next(o for o in r["result"]["options"] if o["key"] == "store")
+    key = r["result"]["key"]
+    assert key in ("store", "sell_part")
+    chosen = next(o for o in r["result"]["options"] if o["key"] == key)
     said = extract_numbers(r["say"])
-    assert "250" in said          # the flat rent
-    for key in ("money_mean", "gain_vs_now", "money_low"):
-        assert to_en_digits(fmt_taka(store[key])).replace(",", "") in said
+    if key == "store":
+        assert "250" in said      # the flat rent
+    for field in ("money_mean", "gain_vs_now", "money_low"):
+        assert to_en_digits(fmt_taka(chosen[field])).replace(",", "") in said
 
 
 def test_already_in_cold_storage_question_outside_harvest():

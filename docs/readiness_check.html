@@ -151,7 +151,7 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     <div class="tile demo"><span class="n">4</span><span class="l">Example data only</span></div>
     <div class="tile plan"><span class="n">3</span><span class="l">Plan only</span></div>
   </div>
-  <p class="verdict">The engine and the data behind it are real: 13 seasons of BBS production for every district, two and a half years of WFP market prices, and a tested storage engine that replays the 2024 and 2025 seasons correctly. The gaps are a longer price history, field-checked costs, and real partners (cold storage, bank, buyer, exporter). We present those as the plan, not as finished work.</p>
+  <p class="verdict">The engine and the data behind it are real: 13 seasons of BBS production for every district, two and a half years of WFP market prices, and a tested storage engine. Backtested on the 2024 and 2025 seasons with a model that had not seen them, it called store-or-sell right in both (two seasons only: a first check, not proof). The gaps are a longer price history, field-checked costs, and real partners (cold storage, bank, buyer, exporter). We present those as the plan, not as finished work.</p>
 </section>
 
 <section>
@@ -176,8 +176,8 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     </div>
     <div class="item work">
       <div class="top"><span class="claim">Price outlook 1 to 9 months after the harvest</span><span class="chip work">Small work</span></div>
-      <div class="row"><b>We have</b><span>A statistical outlook: the usual seasonal shape, made steeper or flatter by the crop size, corrected by the season's own prices, with 2,000 simulated paths. Fitted on only two full seasons of WFP prices; no backtest yet.</span></div>
-      <div class="row"><b>Say</b><span class="say">"A statistical outlook with ranges, built on official production and market data." Not "our AI predicts the price." Load the DAM history and backtest before saying more.</span></div>
+      <div class="row"><b>We have</b><span>A statistical outlook: the usual seasonal shape, made steeper or flatter by the crop size, corrected by the season's own prices, with 2,000 simulated paths. Fitted on only two full seasons of WFP prices. Backtest (Forecasts page): on the two seasons, each predicted without seeing it, it missed by 11% on average against 52% for the usual seasonal shape, and called store-or-sell right in both. Only 12 months of prices, and the crop-size link had to be assumed for the test. The dashboard's season replays are fair too: only what was known on that date.</span></div>
+      <div class="row"><b>Say</b><span class="say">"A statistical outlook with ranges, built on official production and market data." Not "our AI predicts the price." "Tested on two past seasons" is fair; "proven" is not. Load the DAM history and re-run the backtest before saying more.</span></div>
     </div>
     <div class="item work">
       <div class="top"><span class="claim">Weather in the production forecast</span><span class="chip work">Small work</span></div>
@@ -191,7 +191,7 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     <div class="item ok">
       <div class="top"><span class="claim">The store-or-sell engine: sell now, store until a month, or sell part</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>Exact sums for every month to December: 84 kg sacks, flat ৳250 rent, losses, handling, selling costs, loans for a cash need; the chance that storing beats selling now; the price at which storing pays. Covered by tests.</span></div>
-      <div class="row"><b>Say</b><span class="say">"Replay 2025, the big crop: the engine says sell now. Replay 2024: store until December, about ৳29,000 more on 36 sacks." Both use the prices that really followed.</span></div>
+      <div class="row"><b>Say</b><span class="say">"Replay 2025, the big crop, using only what was known then: the engine says sell now; storing 36 sacks would really have lost ৳15,000 to ৳23,000, whichever month they were sold. Replay 2024: sell 9 sacks, store 27 until December; that really brought about ৳22,000 more than selling at the harvest." Two seasons only.</span></div>
     </div>
     <div class="item work">
       <div class="top"><span class="claim">Costs and losses checked in the field</span><span class="chip work">Small work</span></div>
@@ -214,13 +214,13 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     </div>
     <div class="item work">
       <div class="top"><span class="claim">SMS receipt</span><span class="chip work">Small work</span></div>
-      <div class="row"><b>We have</b><span>The REVE SMS client in KrishiVault's code, dry run by default. REVE sends worked from Mati Kohon on 8 October; no live send from KrishiVault yet.</span></div>
+      <div class="row"><b>We have</b><span>The REVE SMS client in KrishiVault's code, dry run by default. REVE sends worked from Mati Kohon on 8 October; no live send from KrishiVault yet. The REVE gateway hangs up on cloud sessions: send the first one from a laptop. A receipt is 3 SMS parts.</span></div>
       <div class="row"><b>Say</b><span class="say">Claim "the farmer gets an SMS" only after one live send to a team phone.</span></div>
     </div>
     <div class="item work">
       <div class="top"><span class="claim">Gemini understanding and the Google Bangla voice</span><span class="chip work">Small work</span></div>
-      <div class="row"><b>We have</b><span>Both switch on with their keys; not yet tried with real keys in the call preview, nor with a Bogura speaker.</span></div>
-      <div class="row"><b>Say</b><span class="say">Try them first. Without keys the call still works with the parser and the phone's own voice.</span></div>
+      <div class="row"><b>We have</b><span>Gemini tried with the real key (14 October): it fills in what the parser cannot place and rewords the answer; the number check kept every number in the test calls. It checks numbers, not meaning, so listen before a demo. The Google voice is not tried yet (its key is not in the cloud environment). Not tried with a Bogura speaker.</span></div>
+      <div class="row"><b>Say</b><span class="say">"Gemini helps understand dialect, and it can never change a number." Try the Google voice before claiming it. Without keys the call still works with the parser and the phone's own voice.</span></div>
     </div>
     <div class="item plan">
       <div class="top"><span class="claim">A real phone line</span><span class="chip plan">Plan only</span></div>
@@ -280,13 +280,13 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   <h2>Before the presentation</h2>
   <p class="intro">In order of importance. Each one turns a weak claim into one we can show.</p>
   <ol class="todo">
-    <li>Send one live SMS to a team phone (with the keys set and the team's go-ahead).</li>
-    <li>Visit two Bogura cold storages and five farmers: this season's rent and sack size, the advance and its interest, losses, carrying and selling costs, when farmers sell.</li>
-    <li>Get the DAM or FAO monthly price history and backtest the price outlook.</li>
-    <li>Try Gemini and the Google voice in the call preview, with a Bogura speaker.</li>
+    <li>Send one live SMS to a team phone from a laptop (with the keys set and the team's go-ahead); the REVE gateway hangs up on cloud machines.</li>
+    <li>Visit two Bogura cold storages and five farmers with the field check guide (<code>farmer_interview_guide.html</code>): this season's rent and sack size, the advance and its interest, losses, carrying and selling costs, when farmers sell.</li>
+    <li>Get the DAM or FAO monthly price history and re-run the backtest (built; it re-runs on any longer history).</li>
+    <li>Try the Google voice in the call preview (Gemini is done), and speech with a Bogura speaker.</li>
     <li>Talk to one bank or microfinance lender about loans against stored potatoes.</li>
     <li>Get two or three real export quotes.</li>
-    <li>Update the pitch deck and the farmer interview guide to the new plan.</li>
+    <li>Rehearse the new pitch deck (9 slides, 2 minutes) against a timer.</li>
   </ol>
 </section>
 
