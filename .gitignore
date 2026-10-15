@@ -1,14 +1,31 @@
 # Secrets: never commit. Values go in the cloud environment's variables or network secrets (docs/CLOUD_SETUP.md).
 .env
 .env.*
+*.env
+**/.env
+**/.env.*
 !.env.example
+!**/.env.example
 env materials.txt
 *materials*.txt
+call env*.txt
+*env*.txt
 calltest-*.json
 *service-account*.json
+*service_account*.json
+*serviceaccount*.json
 *credentials*.json
+*credential*.json
+*secret*.json
+client_secret*.json
+*.secret
+*.secrets
 *.pem
 *.key
+*.pfx
+*.p12
+id_rsa*
+id_ed25519*
 
 # Python
 __pycache__/
@@ -18,10 +35,24 @@ __pycache__/
 venv/
 *.egg-info/
 
-# Generated output
+# Generated output & audio & logs
 krishivault-pipeline/data/audio_out/
 krishivault-pipeline/data/runtime/
 krishivault-pipeline/models_saved/
+krishivault-pipeline/data/raw/scraper_logs/
+*.wav
+*.mp3
+*.log
+
+# Media & large videos (exceeds GitHub 100MB limit)
+*.mov
+*.MOV
+*.mp4
+*.MP4
+*.avi
+*.mkv
+*.webm
+
 
 # OS and editors
 .DS_Store

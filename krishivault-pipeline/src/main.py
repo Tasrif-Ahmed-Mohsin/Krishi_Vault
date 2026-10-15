@@ -30,9 +30,11 @@ from src.engine import (alerts, business_model, export_intel, farmer_signals, fi
 from src.engine.facts import MAUND_KG, SACK_KG, SOURCES, StorageTerms
 from src.engine.storage_plan import FarmerLot, StoragePlanner
 from src.models import backtest as price_backtest, price_outlook, production_forecast
-from src.notify import sms as sms_client
+from src.notify import sms as sms_client, voiceblast as voiceblast_client
+from src.notify.voiceblast import get_voiceblast_client
 from src.voice import ussd
 from src.voice.conversation import Conversation, advice_sms, curing_sms, receipt_sms
+
 from src.voice.gemini import GeminiClient
 from src.voice.tts_generator import BengaliVoiceSynthesizer
 
@@ -583,15 +585,77 @@ class SpeakRequest(BaseModel):
     gender: Optional[str] = "MALE"
 
 
+class VoiceDialRequest(BaseModel):
+    phone: str = Field(..., max_length=20)
+    audio_file_id: Optional[int] = None
+    caller_id: Optional[str] = None
+    text: Optional[str] = None
+
+
 @app.get("/api/call/status")
 def call_status():
     sms_cfg = sms_client.sms_config()
+    vb = get_voiceblast_client()
     return {
         "gemini": {"on": gemini_client.available, "model": gemini_client.model_used},
         "google_voice": tts_service.status(),
         "sms": {"configured": sms_cfg["configured"], "live": sms_cfg["live"]},
-        "calls": "preview",
+        "voiceblast": {
+            "live": vb.live,
+            "caller_id": vb.caller_id,
+            "balance": vb.get_balance() if vb.live else "dry_run",
+            "default_audio_id": vb.default_audio_id,
+        },
+        "calls": "live" if vb.live else "preview",
     }
+
+
+@app.post("/api/call/dial")
+def call_dial(req: VoiceDialRequest):
+    """Trigger a real outbound voice phone call to a Bangladeshi mobile via VoiceBlast."""
+    vb = get_voiceblast_client()
+    audio_id = req.audio_file_id
+
+    # If dynamic text is provided and TTS is ready, synthesize & upload customized G.711 speech!
+    if not audio_id and req.text and tts_service.ready:
+        try:
+            from google.cloud import texttospeech
+            s_input = texttospeech.SynthesisInput(text=req.text[:4800])
+            voice = texttospeech.VoiceSelectionParams(
+                language_code="bn-BD", ssml_gender=texttospeech.SsmlVoiceGender.FEMALE
+            )
+            audio_cfg = texttospeech.AudioConfig(
+                audio_encoding=texttospeech.AudioEncoding.LINEAR16, sample_rate_hertz=8000
+            )
+            speech_resp = tts_service.client.synthesize_speech(
+                input=s_input, voice=voice, audio_config=audio_cfg, timeout=15
+            )
+            g711_wav = voiceblast_client.make_g711_wav(speech_resp.audio_content[44:])
+            clean_phone = voiceblast_client.bd_mobile(req.phone) or "anon"
+            tmp_dir = BASE / "data" / "audio_out"
+            tmp_dir.mkdir(parents=True, exist_ok=True)
+            tmp_file = tmp_dir / f"advice_{clean_phone[-6:]}.wav"
+            with open(tmp_file, "wb") as f:
+                f.write(g711_wav)
+            uploaded_id = vb.upload_audio(tmp_file, filename=tmp_file.name)
+            if uploaded_id:
+                audio_id = uploaded_id
+        except Exception as exc:
+            from loguru import logger
+            logger.warning(f"Could not synthesize dynamic voice advisory: {exc}")
+
+    res = vb.send_call(req.phone, audio_file_id=audio_id, caller_id=req.caller_id)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Call dispatch failed"))
+    return res
+
+
+
+@app.get("/api/call/history")
+def call_history():
+    """Fetch recent outbound phone call logs from VoiceBlast."""
+    vb = get_voiceblast_client()
+    return {"history": vb.get_history(limit=10), "balance": vb.get_balance()}
 
 
 @app.post("/api/call/turn")
@@ -624,6 +688,7 @@ def call_sms(req: CallSmsRequest):
     if not text:
         raise HTTPException(status_code=400, detail="There is no answer yet in this call to send.")
     return {"text": text, **sms_client.send_sms(req.phone, text)}
+
 
 
 # ============================================================ USSD (the plan's Grameenphone USSD menu)

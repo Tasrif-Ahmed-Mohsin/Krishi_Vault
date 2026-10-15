@@ -296,15 +296,17 @@
     </section>
 
     <section class="panel">
-      <h2>এসএমএস রসিদ <span class="en">SMS receipt</span></h2>
+      <h2>ফোন কল ও এসএমএস <span class="en">Real Phone Call & SMS Dispatch</span></h2>
       <div class="panel-body">
         <div class="sms-preview" id="smsPreview"><span class="empty">পরামর্শের পর এসএমএস রসিদ এখানে দেখা যাবে।</span></div>
         <div class="notify-row">
-          <label class="sr-only" for="phone">Farmer's mobile number (one, or up to 5 separated by commas)</label>
-          <input id="phone" inputmode="tel" placeholder="01XXXXXXXXX (or comma-separated)" autocomplete="off">
-          <button class="btn" id="smsBtn" onclick="notify()" disabled>✉ SMS me</button>
+          <label class="sr-only" for="phone">Farmer's mobile number</label>
+          <input id="phone" inputmode="tel" placeholder="01XXXXXXXXX" autocomplete="off">
+          <button class="btn primary" id="dialBtn" onclick="dialVoiceCall()" title="Send real voice call to this phone" style="background:#2a4a36;color:#fff;border-color:#1b2f21">📞 Call Phone</button>
+          <button class="btn" id="smsBtn" onclick="notify()" disabled>✉ SMS</button>
         </div>
         <div class="small en" id="notifyMode" style="margin-top:6px"></div>
+        <div id="callHistoryBox" style="margin-top:8px;font-size:12px;color:var(--text-body)"></div>
         <pre class="result" id="notifyResult" hidden></pre>
       </div>
     </section>
@@ -432,7 +434,12 @@ async function loadStatus() {
     chips.push(chip(status.gemini.on ? "on" : "off", status.gemini.on ? "Gemini: on (checked)" : "Gemini: off (parser only)"));
     chips.push(chip(status.google_voice.ready ? "on" : "warn", status.google_voice.ready ? "Google Bangla voice: on" : "Google voice: off, phone voice used", status.google_voice.last_error));
     chips.push(chip(status.sms.live ? "bad" : "on", status.sms.live ? "SMS: LIVE (real, billed)" : (status.sms.configured ? "SMS: keys set, dry run" : "SMS: dry run")));
-    chips.push(chip("warn", "Phone calls: preview only"));
+    if (status.voiceblast && status.voiceblast.live) {
+      chips.push(chip("bad", `Voice: LIVE (${status.voiceblast.caller_id} · Bal: ${status.voiceblast.balance || 'OK'})`));
+    } else {
+      chips.push(chip("warn", "Phone calls: preview only"));
+    }
+    loadCallHistory();
     $("notifyMode").textContent = status.sms.live
       ? "Live sending is switched on in the server's settings: the SMS is real and billed."
       : "Dry run: nothing is sent. The box below shows the exact request that would go to REVE.";
@@ -808,6 +815,54 @@ async function notify() {
     showNotify("Error: " + err.message);
   }
 }
+async function dialVoiceCall() {
+  const phone = $("phone").value.trim();
+  store.set("phone", phone);
+  const parts = phone.split(/[,;\s/]+/).filter(Boolean);
+  const valid = parts.filter(p => /^(\+?88)?01[3-9]\d{8}$/.test(p.replace(/[\s-]/g, "")));
+  if (!valid.length) {
+    showNotify("Please enter a valid Bangladeshi mobile number to call: 01XXXXXXXXX");
+    return;
+  }
+  const btn = $("dialBtn");
+  const origText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = "📞 Dialing...";
+  const adviceText = (typeof lastSay !== 'undefined' && lastSay) ? lastSay : "";
+  try {
+    const res = await fetch("/api/call/dial", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: valid[0], text: adviceText })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || data.error || res.statusText);
+    const audioNote = data.audio_file_id ? ` (Audio ID: ${data.audio_file_id})` : "";
+    showNotify(`✅ OUTBOUND VOICE CALL DISPATCHED!\n\nTarget Mobile: ${data.phone}\nCaller DID: ${data.caller_id}${audioNote}\nStatus: ${data.message || 'Call queued'}\n\nPhone should ring shortly. Listen for the customized advice!`);
+
+    setTimeout(loadCallHistory, 3000);
+    setTimeout(loadCallHistory, 8000);
+  } catch (err) {
+    showNotify("❌ Call Error: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origText;
+  }
+}
+
+async function loadCallHistory() {
+  try {
+    const res = await fetch("/api/call/history");
+    const data = await res.json();
+    if (data.history && data.history.length) {
+      const rows = data.history.slice(0, 3).map(h => 
+        `<div><strong>${esc(h.phone)}</strong>: <span style="color:${h.status.includes('Answered') ? '#1c5cab' : '#b4481c'}">${esc(h.status)}</span> <small class="en">(${esc(h.time)})</small></div>`
+      ).join("");
+      $("callHistoryBox").innerHTML = `<div style="border-top:1px solid #d9d3c2;padding-top:6px;margin-top:6px"><span style="font-weight:600">Recent Outbound Calls:</span>${rows}</div>`;
+    }
+  } catch { /* ignore */ }
+}
+
 function showNotify(text) { const p = $("notifyResult"); p.hidden = false; p.textContent = text; }
 
 setup();
