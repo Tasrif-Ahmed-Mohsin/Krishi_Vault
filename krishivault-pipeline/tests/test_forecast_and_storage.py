@@ -149,6 +149,41 @@ def test_replays_are_scored_on_the_real_prices():
     assert quick_plan(84 * 36, 16, decision_month=3, decision_year=2027)["replay"] is None
 
 
+def test_storage_loss_is_the_plans_865_percent_a_season():
+    t = StorageTerms()
+    assert round(t.season_loss(), 4) == 0.0865          # the plan's shrinkage buffer
+    assert t.kept_share(9) == pytest.approx(1 - 0.0865)
+    assert t.kept_share(1) > t.kept_share(5) > t.kept_share(9)
+
+
+def test_replay_shows_net_profit_after_growing_cost():
+    normal = quick_plan(84 * 36, 18, decision_month=3, decision_year=2024, production_cost_per_kg=12.67)
+    p = normal["replay"]["net_profit"]
+    assert p["growing_cost"] == round(84 * 36 * 12.67, -1)
+    assert p["with_advice"] > p["sold_at_harvest"] > 0 and p["times"] >= 2      # the plan's "2x to 3x", in a normal year
+    big = quick_plan(84 * 36, 14, decision_month=3, decision_year=2025, production_cost_per_kg=12.67)
+    assert big["replay"]["net_profit"]["with_advice"] == big["replay"]["net_profit"]["sold_at_harvest"]
+    # without the farmer's own cost, the pre-loaded local benchmark is used (৳14 a kg, DAE Bogura 2024-25)
+    bench = quick_plan(84 * 36, 18, decision_month=3, decision_year=2024)["replay"]["net_profit"]
+    assert bench["growing_cost_per_kg"] == 14.0 and "DAE" in bench["source"]
+
+
+def test_harvest_advice_follows_the_plans_split_rule():
+    # never the whole crop on one month at the harvest: at least 30% sold, the plan's staggered exit compared
+    r = quick_plan(84 * 36, 18, decision_month=3, decision_year=2024)
+    assert r["recommendation"]["key"] == "sell_part"
+    assert r["options"]["sell_part"]["sell_sacks_now"] >= 0.3 * 36
+    stag = r["options"]["staggered"]
+    assert stag["sell_sacks_now"] + stag["mid_sacks"] + stag["late_sacks"] == 36
+    assert r["net_profit"]["sell_all_now"] < r["net_profit"]["with_advice"]
+
+
+def test_glut_year_caps_bank_lending_at_half():
+    big = quick_plan(84 * 36, 14, decision_month=3, decision_year=2025)
+    assert big["glut"]["warning"] and big["glut"]["bank_ltv_used"] == 0.5
+    assert not quick_plan(84 * 36, 18, decision_month=3, decision_year=2024)["glut"]["warning"]
+
+
 def test_flat_rent_makes_early_sale_a_loss():
     r = quick_plan(3000, 18, decision_month=3, decision_year=2024)
     first = r["by_month"][1]

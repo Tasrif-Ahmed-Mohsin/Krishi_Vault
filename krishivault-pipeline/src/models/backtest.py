@@ -69,7 +69,7 @@ def seasons_to_test() -> list[int]:
 
 def _sack_values(terms: StorageTerms, farm_start: float, ratios: np.ndarray, h: int) -> np.ndarray:
     """Money from one sack stored in cold storage and sold h months later, for each price ratio."""
-    kept = terms.sack_kg * (1 - terms.monthly_weight_loss) ** h * (1 - terms.exit_sorting_loss)
+    kept = terms.sack_kg * terms.kept_share(h)
     costs = terms.rent_per_sack + terms.handling_per_sack() + terms.sell_from_store_per_sack
     return kept * farm_start * ratios - costs
 

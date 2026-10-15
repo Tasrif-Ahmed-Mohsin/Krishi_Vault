@@ -9,21 +9,23 @@
       "upazila": "Shibganj",
       "capacity_sacks": 120000,
       "booked_sacks": 84500,
-      "rent_per_sack": 250,
+      "rent_per_sack": 300,
       "season_months": 9,
       "advance_per_sack": 250,
       "advance_rate_year": 0.14,
       "group_offers": [
         {
           "min_sacks": 300,
-          "rent_per_sack": 240
+          "rent_per_sack": 285
         },
         {
           "min_sacks": 500,
-          "rent_per_sack": 230
+          "rent_per_sack": 270
         }
       ],
-      "offer_status": "demo offer, not yet agreed"
+      "offer_status": "demo offer, not yet agreed",
+      "generator": true,
+      "separate_seed_table_chambers": true
     },
     {
       "id": "cs-b",
@@ -33,21 +35,23 @@
       "upazila": "Bogura Sadar",
       "capacity_sacks": 200000,
       "booked_sacks": 151000,
-      "rent_per_sack": 260,
+      "rent_per_sack": 300,
       "season_months": 9,
       "advance_per_sack": 200,
       "advance_rate_year": 0.13,
       "group_offers": [
         {
           "min_sacks": 200,
-          "rent_per_sack": 250
+          "rent_per_sack": 290
         },
         {
           "min_sacks": 400,
-          "rent_per_sack": 240
+          "rent_per_sack": 280
         }
       ],
-      "offer_status": "demo offer, not yet agreed"
+      "offer_status": "demo offer, not yet agreed",
+      "generator": true,
+      "separate_seed_table_chambers": true
     },
     {
       "id": "cs-c",
@@ -57,17 +61,19 @@
       "upazila": "Pirganj",
       "capacity_sacks": 60000,
       "booked_sacks": 41000,
-      "rent_per_sack": 300,
+      "rent_per_sack": 320,
       "season_months": 9,
       "advance_per_sack": 300,
       "advance_rate_year": 0.15,
       "group_offers": [
         {
           "min_sacks": 250,
-          "rent_per_sack": 285
+          "rent_per_sack": 305
         }
       ],
-      "offer_status": "demo offer, not yet agreed"
+      "offer_status": "demo offer, not yet agreed",
+      "generator": false,
+      "separate_seed_table_chambers": false
     }
   ],
   "buyers": [
@@ -360,5 +366,6 @@
     "reject_pct": 8,
     "container_t": 26,
     "_note": "Demo figures; replace with quotes from exporters, the port and shipping lines"
-  }
+  },
+  "_partner_rule": "Plan: only cold storages with a backup generator and separate seed and table chambers become partners (they can issue KrishiVault receipts)."
 }

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KrishiVault: Store or Sell</title>
-<meta name="description" content="KrishiVault pitch deck (plan of 14 October 2026): potato after the harvest, store or sell, and until when.">
+<meta name="description" content="KrishiVault pitch deck (plan document of 15 October 2026): potato after the harvest, store or sell, and until when.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
@@ -134,7 +134,6 @@ svg text { font-family: 'Outfit', sans-serif; }
 .part-card p { font-size: 19px; line-height: 1.45; color: var(--text-body); margin-top: 8px; }
 .part-card.hero { background: var(--green-darkest); border-color: var(--green-darkest); box-shadow: var(--bevel-dark); }
 .part-card.hero h3 { color: #fff; } .part-card.hero p { color: #d6e2d9; } .part-card.hero .k { color: #d4b96a; }
-.part-card.pic { padding: 0; background: url('slide5_group_selling_1790707251107.jpg') center / cover; }
 
 /* ---------- 7 who pays ---------- */
 table { width: 100%; border-collapse: collapse; margin-top: 24px; background: #fff; box-shadow: var(--bevel); border: 1px solid var(--line); }
@@ -151,6 +150,34 @@ tr.farmer td:last-child { font-weight: 800; color: var(--green-mid); }
 .ticks li:last-child { border-bottom: 0; }
 .ticks li::before { content: ''; position: absolute; left: 4px; top: 20px; width: 12px; height: 12px; background: var(--green-mid); box-shadow: inset 0 1px 0 rgba(255,255,255,.35); }
 .ticks.next li::before { background: var(--gold); }
+
+/* ---------- 6 the loop ---------- */
+.loop { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 26px; box-shadow: var(--bevel); border: 1px solid var(--line); background: #fff; }
+.step { padding: 20px 22px; border-right: 1px solid var(--cream-dark); position: relative; }
+.step:last-child { border-right: 0; }
+.step .k { font-size: 15px; font-weight: 800; letter-spacing: .08em; color: var(--gold); text-transform: uppercase; }
+.step h3 { font-size: 24px; line-height: 1.2; color: var(--green-darkest); margin-top: 6px; }
+.step p { font-size: 18px; line-height: 1.42; color: var(--text-body); margin-top: 6px; }
+.step + .step::before { content: '→'; position: absolute; left: -15px; top: 18px; width: 28px; height: 28px; display: grid; place-items: center; background: var(--green-mid); color: #fff; font-size: 17px; font-weight: 800; box-shadow: var(--bevel-dark); }
+table.vs { margin-top: 18px; }
+table.vs th { padding: 10px 16px; font-size: 14px; }
+table.vs td { font-size: 18px; padding: 10px 16px; }
+table.vs td.kv { background: var(--green-faint); font-weight: 700; color: var(--green-darkest); }
+
+/* ---------- 8 money ---------- */
+table.fees td { font-size: 19px; padding: 11px 18px; }
+table.fees th { padding: 11px 18px; }
+.proj { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 18px; }
+.proj .stat b { font-size: 30px; }
+.proj .stat.start { background: var(--green-darkest); border-color: var(--green-darkest); box-shadow: var(--bevel-dark); }
+.proj .stat.start b { color: #fff; } .proj .stat.start span { color: #d6e2d9; }
+
+/* ---------- 9 phases ---------- */
+.phases { list-style: none; margin-top: 8px; }
+.phases li { font-size: 19px; line-height: 1.4; color: var(--text-body); padding: 9px 0 9px 0; border-bottom: 1px solid var(--cream-dark); }
+.phases li:last-child { border-bottom: 0; }
+.phases li b { color: var(--green-darkest); }
+.phases li .when { display: inline-block; min-width: 0; font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); margin-right: 8px; }
 
 /* ---------- speaker notes and controls ---------- */
 .notes { display: none; position: absolute; left: 0; right: 0; bottom: 0; padding: 16px 80px; background: rgba(15,29,20,.94); color: #e8efe9; font-size: 20px; line-height: 1.5; z-index: 20; }
@@ -183,7 +210,7 @@ body.show-notes .slide.active .notes { display: block; }
 <section class="slide active" aria-label="Slide 1: the question">
   <div class="photo" style="background-image:url('slide1_hook_farmer_1790707212560.jpg'); background-position: 70% center"></div>
   <div class="on-photo">
-    <div class="kicker"><span class="time">0:00 – 0:15</span> Bogura, March: harvest day</div>
+    <div class="kicker"><span class="time">0:00 – 0:10</span> Bogura, March: harvest day</div>
     <div class="bn-title bn">আলু রাখবেন না বেচবেন?</div>
     <h1 style="font-size:60px;margin-top:6px">Store or sell, and until when?</h1>
     <p class="lede">A farmer stands next to 36 sacks of potato. Sell today at the trader's price, or pay a cold storage and wait? Guess wrong and a season's profit is gone.</p>
@@ -195,14 +222,14 @@ body.show-notes .slide.active .notes { display: block; }
 <!-- 2 ============================================================ the trap -->
 <section class="slide" aria-label="Slide 2: the storage trap">
   <div class="pad">
-    <div class="kicker"><span class="time">0:15 – 0:35</span> The problem</div>
+    <div class="kicker"><span class="time">0:10 – 0:25</span> The problem</div>
     <h2>The storage trap <span class="bn">হিমাগারের ফাঁদ</span></h2>
     <div class="trap">
       <div class="facts">
-        <div class="fact"><div class="n">1</div><div><h3>৳250 a sack, for 1 month or for 9</h3><p>Cold-storage rent is flat for the season (84 kg sack). Selling after a month or two pays the full rent before prices rise: a loss.</p></div></div>
+        <div class="fact"><div class="n">1</div><div><h3>৳300 a sack, for 1 month or for 9</h3><p>Cold-storage rent is flat for the season (84 kg sack). Selling after a month or two pays the full rent before prices rise: a loss.</p></div></div>
         <div class="fact"><div class="n">2</div><div><h3>Crop size sets the price</h3><p>After a normal crop, prices nearly doubled by November. After a crop 6% above the trend, they stayed flat all year.</p></div></div>
-        <div class="fact"><div class="n">3</div><div><h3>Fear sells early, traders sell late</h3><p>Afraid of a fall, farmers sell within 1 to 3 months. Traders, with the cash and the information, store and take the rise. Farmers mostly store only seed.</p></div></div>
-        <div class="band" style="margin-top:auto">In a big-crop year the cold storage gains and the farmer loses, <strong>because the farmer cannot do the sum.</strong></div>
+        <div class="fact"><div class="n">3</div><div><h3>Cash at harvest, so traders take the rise</h3><p>With input debts to pay, farmers sold <strong>64%</strong> of the harvest at once and stored only <strong>13.6%</strong> for sale; traders bought <strong>97.6%</strong> of the potatoes in cold storage (field study, Bogura and Munshiganj, 2016).</p></div></div>
+        <div class="band" style="margin-top:auto">The farmer cannot wait and cannot do the sum. <strong>The rise after the harvest goes to whoever has the cash and the information.</strong></div>
       </div>
       <div class="card chart-card">
         <div class="title">Potato price after the harvest, ৳ a kg</div>
@@ -212,14 +239,14 @@ body.show-notes .slide.active .notes { display: block; }
       </div>
     </div>
   </div>
-  <div class="source">Sources: BBS potato production 2012-13 to 2024-25 (crop against its trend); WFP retail prices via HDX; team field notes on cold-storage terms.</div>
-  <div class="notes">Three things trap the farmer. The rent is the same for one month or nine. Crop size decides prices: 2024 doubled, 2025 stayed flat. And fear: farmers sell early, traders store and win. In a big-crop year the cold storage gains and the farmer loses.</div>
+  <div class="source">Sources: BBS production 2012-13 to 2024-25; WFP retail prices (HDX); team field notes; potato value-chain study, Kahaloo and Munshiganj, 2016 fieldwork.</div>
+  <div class="notes">Bangladesh grew 11.6 million tonnes of potato last season, and farmers still lose the value. Three things trap them. The rent is the same for one month or nine. Crop size decides prices: 2024 doubled, 2025 stayed flat. And cash: with debts due at harvest, farmers sold almost two thirds at once, while traders bought nearly all the stored potatoes and took the rise.</div>
 </section>
 
 <!-- 3 ============================================================ the call -->
 <section class="slide" aria-label="Slide 3: one phone call">
   <div class="pad">
-    <div class="kicker"><span class="time">0:35 – 0:55</span> The solution</div>
+    <div class="kicker"><span class="time">0:25 – 0:40</span> The solution</div>
     <h2>One phone call, in Bangla <span class="bn">একটি ফোন কল</span></h2>
     <div class="call">
       <div class="pic" role="img" aria-label="A farmer on a button phone beside his potato sacks"></div>
@@ -231,31 +258,31 @@ body.show-notes .slide.active .notes { display: block; }
           <div class="bn">“এখন ১৯ বস্তা বেচুন, বাকি ১৭ বস্তা হিমাগারে রেখে ডিসেম্বরে বেচুন।”</div>
           <div class="en">Sell 19 sacks now; store the other 17 until December.</div></div>
         <div class="stats">
-          <div class="stat"><b class="num">৳56,500</b><span>on average, ৳9,100 more than selling everything today</span></div>
-          <div class="stat"><b class="num">৳38,200</b><span>in a bad case (1 in 10): the risk is said out loud</span></div>
+          <div class="stat"><b class="num">৳54,700</b><span>on average, ৳7,300 more than selling everything today</span></div>
+          <div class="stat"><b class="num">৳36,800</b><span>in a bad case (1 in 10): the risk is said out loud</span></div>
           <div class="stat"><b class="num">৳25,000</b><span>in hand today from the 19 sacks: the cash need is met</span></div>
         </div>
         <div class="sms"><div><div class="who">The SMS receipt (the real text the engine sends)</div>
-          <div class="bn">কৃষিভল্ট: ৩৬ বস্তা আলু। পরামর্শ: এখন ১৯ বস্তা বেচুন, ১৭ বস্তা ডিসেম্বর পর্যন্ত রাখুন। গড়ে প্রায় ৫৬,৫০০ টাকা (খারাপ হলে ৩৮,২০০)। এখন সব বেচলে ৪৭,৪০০ টাকা। নিশ্চিত নয়।</div></div>
+          <div class="bn">কৃষিভল্ট: ৩৬ বস্তা আলু। পরামর্শ: এখন ১৯ বস্তা বেচুন, ১৭ বস্তা ডিসেম্বর পর্যন্ত রাখুন। গড়ে প্রায় ৫৪,৭০০ টাকা (খারাপ হলে ৩৬,৮০০)। এখন সব বেচলে ৪৭,৪০০ টাকা। নিশ্চিত নয়।</div></div>
           <div class="parts-n">signed by the server:<br>the page cannot change it</div></div>
-        <p class="small">A button phone is enough: speak, or press keys. Then one action: press 2 and the cold storage gets a space request. The farmer pays nothing.</p>
+        <p class="small"><strong>Net profit</strong> after a ৳14 a kg growing cost: about ৳12,900 on average, against ৳5,600 if everything is sold today, and the call says a bad case can lose ৳5,000. A button phone is enough: speak, press keys, or answer a USSD menu with two numbers. Press 2 and the cold storage gets a space request.</p>
       </div>
     </div>
   </div>
-  <div class="notes">No app, no smartphone. The farmer speaks in dialect; KrishiVault reads the numbers back, then answers in taka with the risk. Press 2 for the cold storage; an SMS keeps the record. All of this works today in our call preview.</div>
+  <div class="notes">No app, no smartphone. The farmer speaks in dialect; KrishiVault reads the numbers back, then answers in taka with the risk and the net profit after the growing cost. Press 2 for the cold storage; an SMS keeps the record. On USSD it takes just two numbers. All of this works today in our previews.</div>
 </section>
 
 <!-- 4 ============================================================ the engine -->
 <section class="slide" aria-label="Slide 4: how it decides">
   <div class="pad">
-    <div class="kicker"><span class="time">0:55 – 1:10</span> How it decides</div>
+    <div class="kicker"><span class="time">0:40 – 0:52</span> How it decides</div>
     <h2>Three answers, in taka, with the risk</h2>
     <div class="three" style="margin-top:34px">
       <div class="card sell"><div class="label">When storing will not pay</div><h3>Sell now</h3><div class="bn">এখন বেচুন</div><p>A big crop, a weak price outlook, or a cash need no loan can cover.</p></div>
-      <div class="card"><div class="label">When storing pays in most cases</div><h3>Store, sell in month X</h3><div class="bn">রেখে ডিসেম্বরে বেচুন</div><p>Storing beats selling now in 8 of 10 price paths, and the bad case is small.</p></div>
-      <div class="card part"><div class="label">When it is uncertain</div><h3>Sell part, store the rest</h3><div class="bn">কিছু বেচুন, বাকিটা রাখুন</div><p>Enough sacks for the cash need now, plus a safety share; the rest waits for the rise.</p></div>
+      <div class="card part"><div class="label">At the harvest, when storing pays</div><h3>Sell 30-40%, store the rest</h3><div class="bn">কিছু বেচুন, বাকিটা রাখুন</div><p>Never the whole crop on one month. More is sold if cash is needed; the rest waits for the best month.</p></div>
+      <div class="card"><div class="label">Already in cold storage</div><h3>Hold until month X</h3><div class="bn">রেখে ডিসেম্বরে বেচুন</div><p>The rent is paid; hold while storing beats selling in 8 of 10 price paths, and the bad case is small.</p></div>
     </div>
-    <div class="how"><p class="sum">For every month to December, across <strong>2,000 simulated price paths</strong>: the kilos left after weight loss × that month's price, minus <strong>rent, sacks, carrying, selling and loan interest</strong>. The answer comes with the chance that storing pays, the bad case (1 in 10), and the price storing needs to pay.</p>
+    <div class="how"><p class="sum">For every month to December, across <strong>2,000 simulated price paths</strong>: the kilos left after weight loss (8.65% a season) × that month's price, minus <strong>rent, sacks, carrying, selling and loan interest</strong>. The answer comes with the chance that storing pays, the bad case (1 in 10), the price storing needs to pay, and the <strong>net profit</strong>; the plan's staggered exit (30/40/30) is shown beside it.</p>
       <img src="slide4_decision_engine_1790707240729.jpg" alt="Drawing: from the harvest to a sale now, a part sale, cold storage, or a group of farmers"></div>
     <div class="ai">
       <div><b>Statistics where the future is uncertain</b>A price outlook driven by crop size (BBS, 13 seasons, 64 districts) and real prices (WFP). Always a range, never a promise.</div>
@@ -263,111 +290,141 @@ body.show-notes .slide.active .notes { display: block; }
       <div><b>Language AI only to understand</b>Gemini helps with dialect and wording; a number lock rejects any sentence that changes a number.</div>
     </div>
   </div>
-  <div class="notes">AI where uncertainty and language live, fixed rules where money lives. The outlook is a statistical scenario with a range. The money is exact arithmetic. Gemini can never change a number the farmer hears.</div>
+  <div class="notes">Three answers. Sell now when storing will not pay. At the harvest, when storing pays, sell thirty to forty percent and store the rest: we never bet the whole crop on one month. Potatoes already in store: hold until the best month. AI where uncertainty and language live, fixed rules where money lives. Gemini can never change a number the farmer hears.</div>
 </section>
 
 <!-- 5 ============================================================ tested on the past -->
 <section class="slide" aria-label="Slide 5: tested on real seasons">
   <div class="pad">
-    <div class="kicker"><span class="time">1:10 – 1:25</span> Does it work?</div>
+    <div class="kicker"><span class="time">0:52 – 1:05</span> Does it work?</div>
     <h2>Replayed on real seasons, without hindsight</h2>
     <p class="lede" style="font-size:21px">The engine sees only what was known on the day: earlier seasons' prices, and the crop estimated from its planted area. Then we compare with what really happened.</p>
     <div class="replays">
       <div class="card replay"><div class="label">March 2025 · a big crop (+7% at the harvest)</div>
         <div class="said"><small>KrishiVault said</small>Sell now</div>
         <div class="then">What really happened: prices stayed flat. Storing all 36 sacks would have</div>
-        <div class="money loss num">lost ৳15,000 to ৳23,000</div>
-        <div class="small">whichever month they were sold, after rent and losses</div></div>
+        <div class="money loss num">lost ৳17,100 to ৳25,300</div>
+        <div class="small">whichever month they were sold, after rent and losses: a small profit turned into a loss</div></div>
       <div class="card replay"><div class="label">March 2024 · a normal crop</div>
-        <div class="said"><small>KrishiVault said</small>Sell 9 sacks now, store 27 until December</div>
+        <div class="said"><small>KrishiVault said</small>Sell 11 sacks now, store 25 until December</div>
         <div class="then">What really happened: prices nearly doubled. Following the advice brought</div>
-        <div class="money gain num">৳22,280 more</div>
-        <div class="small">than selling all 36 sacks at the harvest</div></div>
+        <div class="money gain num">৳17,710 more</div>
+        <div class="small">than selling all 36 sacks at the harvest: <strong>net profit 2.5 times</strong> (৳29,450 against ৳11,740)</div></div>
     </div>
     <div class="scores">
       <div class="stat"><b class="num">11% vs 52%</b><span>average price miss: our outlook against “prices always rise the usual way”</span></div>
       <div class="stat"><b class="num">92%</b><span>of months, the real price fell inside our 8-in-10 range</span></div>
       <div class="stat"><b class="num">2 of 2</b><span>store-or-sell calls right on seasons the model had not seen</span></div>
     </div>
-    <div class="honest" style="margin-top:20px"><strong>Two seasons only: a first test, not proof.</strong> Next: 15 years of DAM market prices, then the same test again. Money for 36 sacks at a farm price of ৳14 (2025) and ৳18 (2024) a kg, moved by the real national price change.</div>
+    <div class="honest" style="margin-top:20px"><strong>Two seasons only: a first test, not proof.</strong> Next: 15 years of DAM market prices, then the same test again. Money for 36 sacks at a farm price of ৳14 (2025) and ৳18 (2024) a kg, moved by the real national price change; net profit after a growing cost of ৳14 a kg (DAE Bogura, 2024-25).</div>
   </div>
-  <div class="notes">We do not ask you to trust a forecast. We replayed two real seasons using only what was known at the time. The big-crop year: sell now, and storing would have lost up to twenty-three thousand taka. The normal year: sell some, store most, twenty-two thousand more. Two seasons is a first test, and we say so.</div>
+  <div class="notes">We do not ask you to trust a forecast. We replayed two real seasons using only what was known at the time. The big-crop year: sell now, and storing would have lost up to twenty-three thousand taka. The normal year: sell some, store most, eighteen thousand more: net profit two and a half times. Two seasons is a first test, and we say so.</div>
 </section>
 
-<!-- 6 ============================================================ seven parts -->
-<section class="slide" aria-label="Slide 6: every answer ends with an action">
+<!-- 6 ============================================================ the loop -->
+<section class="slide" aria-label="Slide 6: cash plus cold storage, in one loop">
   <div class="pad">
-    <div class="kicker"><span class="time">1:25 – 1:38</span> Beyond the advice</div>
+    <div class="kicker"><span class="time">1:05 – 1:20</span> Why it is different</div>
+    <h2>The sums, and the cash to wait <span class="bn">হিসাব আর অপেক্ষার টাকা</span></h2>
+    <div class="loop">
+      <div class="step"><div class="k">1 · Harvest call</div><h3>Sacks and cash needed</h3><p>Two numbers by voice, keypad or USSD. The engine splits: sell this many now, store the rest until a month.</p></div>
+      <div class="step"><div class="k">2 · Cold storage</div><h3>A digital receipt</h3><p>The cold storage weighs and grades the sacks; the farmer gets the receipt by SMS.</p></div>
+      <div class="step"><div class="k">3 · Bank</div><h3>A loan instead of a forced sale</h3><p>The receipt backs the loan; the sacks are held for the bank, valued after 8.65% weight loss. The bank decides and pays.</p></div>
+      <div class="step"><div class="k">4 · Sale</div><h3>Everyone paid, in order</h3><p>An SMS when the price window opens: how many sacks, to whom. Then the cold storage, the bank, and the rest to the farmer.</p></div>
+    </div>
+    <table class="vs">
+      <thead><tr><th></th><th>Cash at harvest</th><th>Price 1-9 months ahead</th><th>Store-or-sell sums</th><th>Cold-storage link</th></tr></thead>
+      <tbody>
+        <tr><td>Traders</td><td>Yes, at the harvest-low price</td><td>Kept to themselves</td><td>No</td><td>Hold 97.6% of the stock</td></tr>
+        <tr><td>Price apps</td><td>No: an alert pays no debt</td><td>Today's prices</td><td>No</td><td>No</td></tr>
+        <tr><td>Banks alone</td><td>No: want land as security</td><td>No</td><td>No</td><td>Cannot check rural stock</td></tr>
+        <tr><td class="kv">KrishiVault</td><td class="kv">Through a bank, against the sacks</td><td class="kv">A range, from the crop size</td><td class="kv">In taka, with the risk</td><td class="kv">Receipts, held for the bank</td></tr>
+      </tbody>
+    </table>
+    <p class="small" style="margin-top:12px">Works end to end in our prototype with demo partners; no money moves yet. KrishiVault never lends and never holds the money: the bank pays.</p>
+  </div>
+  <div class="notes">A price alert does not pay today's debt, so the farmer still cannot wait. KrishiVault joins three things in one loop: the sums, the cold storage, and crop-backed cash through a bank. The harvest call gives the split; the cold storage issues a digital receipt; the bank lends against it and the sacks are held for the bank; at the sale the cold storage and the bank are paid first and the farmer keeps the rest.</div>
+</section>
+
+<!-- 7 ============================================================ seven parts -->
+<section class="slide" aria-label="Slide 7: know, calculate, decide, act">
+  <div class="pad">
+    <div class="kicker"><span class="time">1:20 – 1:30</span> Know, calculate, decide, act</div>
     <h2>Every answer ends with an action</h2>
     <div class="parts">
       <div class="part-card"><div class="k">1</div><h3>Production and price prediction</h3><p>The season's crop and the price 1 to 9 months ahead, with ranges, for 64 districts.</p></div>
       <div class="part-card hero"><div class="k">2 · THE CORE</div><h3>Store-or-sell engine</h3><p>Sell now, store until a month, or sell part: after every cost, with the risk.</p></div>
       <div class="part-card"><div class="k">3</div><h3>Market access</h3><p>Buyers and offers ranked by the money that reaches the farmer's hand.</p></div>
-      <div class="part-card"><div class="k">4</div><h3>Loans against stored sacks</h3><p>The cold storage confirms the sacks; KrishiVault values them; the bank decides. We never lend.</p></div>
-      <div class="part-card"><div class="k">5</div><h3>Group storage</h3><p>Neighbours combine sacks for a shared truck, and a discount once the cold storage agrees.</p></div>
+      <div class="part-card"><div class="k">4</div><h3>Loans against stored sacks</h3><p>A digital receipt from the cold storage; KrishiVault values the sacks; the bank decides and is repaid from the sale. We never lend.</p></div>
+      <div class="part-card"><div class="k">5</div><h3>Group storage and selling</h3><p>Neighbours share a truck, a discount once the cold storage agrees, and buyers one farmer cannot reach.</p></div>
       <div class="part-card"><div class="k">6</div><h3>Export intelligence</h3><p>Where to buy (big crop, low price) and which markets pay after every cost.</p></div>
       <div class="part-card"><div class="k">7</div><h3>Profit calculator</h3><p>Costs and profit per kg, sack, maund and harvest, against selling everything at harvest.</p></div>
-      <div class="part-card pic" role="img" aria-label="Farmers with baskets of potatoes and a truck"></div>
+      <div class="part-card hero"><div class="k">+ GOVERNMENT</div><h3>Glut warning and farmer figures</h3><p>Crop size against its trend; by district, with consent and no names: who needed cash within 7 days of harvest.</p></div>
     </div>
   </div>
-  <div class="notes">Advice alone is not enough. After the answer the farmer can book cold-storage space, join a group, apply for a loan against the stored sacks, or send the lot to buyers. Partners see the request on their own screen.</div>
+  <div class="notes">Know, calculate, decide, act. After the answer the farmer can book cold-storage space, join a group, apply for a loan against the stored sacks, or send the lot to buyers. Partners see the request on their own screen. And government gets something new: a glut warning, and farmer figures by district, only with the farmer's consent.</div>
 </section>
 
-<!-- 7 ============================================================ who pays -->
-<section class="slide" aria-label="Slide 7: who pays">
+<!-- 8 ============================================================ who pays -->
+<section class="slide" aria-label="Slide 8: who pays">
   <div class="pad">
-    <div class="kicker"><span class="time">1:38 – 1:48</span> Business model</div>
-    <h2>The farmer pays nothing</h2>
-    <table>
-      <thead><tr><th>Who</th><th>What they gain</th><th>What they pay (to test in the pilot)</th></tr></thead>
+    <div class="kicker"><span class="time">1:30 – 1:43</span> Business model</div>
+    <h2>No fee for farmers. Partners pay when they gain.</h2>
+    <table class="fees">
+      <thead><tr><th>Who pays</th><th>What they gain</th><th>Fee</th></tr></thead>
       <tbody>
-        <tr class="farmer"><td>Farmers</td><td>More money for the same harvest: no forced early sales, better buyers, cheaper storage, loans instead of selling at the bottom</td><td>Nothing</td></tr>
-        <tr><td>Banks and microfinance</td><td>Crop-backed loans with sacks confirmed by the cold storage, a careful value and a measured risk</td><td>A fee per verified, paid-out loan</td></tr>
-        <tr><td>Cold storages</td><td>Group bookings that fill space early; loan customers from verified receipts</td><td>A fee per group booking</td></tr>
-        <tr><td>Buyers and processors</td><td>Sorted lots of known size and timing</td><td>A small fee per lot bought</td></tr>
-        <tr><td>Exporters</td><td>Sourcing districts and market margins after every cost</td><td>A subscription</td></tr>
-        <tr><td>Government (DAM, DAE)</td><td>Crop and price outlook, stored stock, early warning of gluts</td><td>A dashboard contract</td></tr>
+        <tr class="farmer"><td>Farmers</td><td>More money for the same harvest; loans instead of selling at the bottom</td><td>No fee</td></tr>
+        <tr><td>Cold storages</td><td>Grouped farmers that fill space; fees collected at the sale</td><td>4% of the storage fee: ৳12 a sack</td></tr>
+        <tr><td>Banks and microfinance</td><td>Security they can check, held for them, valued with a buffer</td><td>1.5% of the loan: ৳4.50 a sack</td></tr>
+        <tr><td>Buyers and processors</td><td>Sorted, graded lots straight from cold storage</td><td>1% sourcing fee: about ৳12 a sack</td></tr>
+        <tr><td>Grameenphone</td><td>Value-added voice and SMS traffic from farmers</td><td>Call revenue shared 50/50</td></tr>
+        <tr><td>Government and media</td><td>Glut warnings, cold-storage fill, farmer figures</td><td>Subscriptions</td></tr>
       </tbody>
     </table>
-    <div class="band" style="margin-top:20px"><strong>No paid placement.</strong> A partner's fee never changes the advice: offers are always ranked by the money left in the farmer's hand.</div>
+    <div class="proj">
+      <div class="stat start"><b class="num">৳20 lakh</b><span>to start: one pre-seed round or grant, 12 months</span></div>
+      <div class="stat"><b class="num">৳17.2 lakh</b><span>Year 1 revenue: 2,000 farmers, 80,000 sacks; a small loss (−7.3%)</span></div>
+      <div class="stat"><b class="num">৳1.26 crore</b><span>Year 2: 15,000 farmers; break-even about month 14-16</span></div>
+      <div class="stat"><b class="num">৳4.92 crore</b><span>Year 3: 60,000 farmers, 100 cold storages; 70.5% profit margin</span></div>
+    </div>
+    <div class="band" style="margin-top:16px"><strong>No paid placement.</strong> A fee never changes the advice: offers are ranked by the money left in the farmer's hand. <span style="opacity:.8">A projection from our plan's assumptions; the pilot tests the fees.</span></div>
   </div>
-  <div class="notes">Partners pay only when they gain, and the farmer pays nothing. The one rule we never break: the advice is not for sale.</div>
+  <div class="notes">Farmers pay no fee. Cold storages, banks, buyers, and government pay when they gain, and Grameenphone shares the call revenue. Twenty lakh taka runs the first year; the projection breaks even in year two. It is a projection, and the pilot tests whether partners pay these fees. The one rule we never break: the advice is not for sale.</div>
 </section>
 
-<!-- 8 ============================================================ today and next -->
-<section class="slide" aria-label="Slide 8: working today, and the pilot">
+<!-- 9 ============================================================ today and next -->
+<section class="slide" aria-label="Slide 9: working today, and the pilot">
   <div class="pad">
-    <div class="kicker"><span class="time">1:48 – 1:56</span> Feasibility and scale</div>
+    <div class="kicker"><span class="time">1:43 – 1:55</span> Feasibility and scale</div>
     <h2>Working today. Piloting at the next harvest.</h2>
     <div class="two">
       <div class="card"><div class="label">Working prototype <span class="chip real">real data</span></div>
         <ul class="ticks">
-          <li>The call in the browser: Bangla speech or keypad, numbers read back, the same engine</li>
-          <li>A dashboard for helpers, cold storages, banks, buyers and exporters (9 screens)</li>
-          <li>SMS receipts through a Bangladeshi gateway</li>
+          <li>The call and a USSD menu in the browser: Bangla speech, keypad or two numbers; the same engine</li>
+          <li>Screens for field agents (price alerts), cold storages (receipts), banks (hold, payout, split), buyers and government</li>
+          <li>SMS through a Bangladeshi gateway: advice, receipts, curing reminders</li>
           <li>Real data: BBS production for 64 districts and 13 seasons; WFP market prices</li>
-          <li>127 automated tests on the sums</li>
+          <li>157 automated tests on the sums</li>
         </ul>
-        <p class="small" style="margin-top:8px"><span class="chip demo">demo</span> Cold storages, banks, buyers and export prices on screen are made up, and labelled so.</p></div>
-      <div class="card"><div class="label">Pilot: harvest of March 2027</div>
-        <ul class="ticks next">
-          <li>150 to 300 potato farmers in Shibganj and Sariakandi, Bogura</li>
-          <li>One cold storage, one bank or microfinance lender, one buyer, one exporter</li>
-          <li>Measured: price received against the haat and neighbours; loans taken instead of forced sales</li>
-          <li>Then the six biggest districts, which grow 61% of the crop: Rangpur, Dinajpur, Bogura, Joypurhat, Munshiganj, Rajshahi</li>
-          <li>Onion next: the same engine, a different season</li>
+        <p class="small" style="margin-top:8px"><span class="chip demo">demo</span> Cold storages, banks, buyers, receipts and export prices on screen are made up, and labelled so.</p></div>
+      <div class="card"><div class="label">The rollout, from the harvest of March 2027</div>
+        <ul class="phases">
+          <li><span class="when">Months 1-4</span><b>Kahaloo, Bogura:</b> 50-100 farmers, 1-2 cold storages, one bank or microfinance lender; the first 100 tonnes of crop-backed loans</li>
+          <li><span class="when">Months 5-12</span><b>Bogura and Munshiganj:</b> 1,000+ farmers, 10 cold storages, group storage, buyers</li>
+          <li><span class="when">Year 2 on</span><b>Rangpur, Dinajpur, Cumilla, Thakurgaon:</b> onion and maize; buyers and export</li>
+          <li>Measured: price received against the haat and neighbours; loans taken instead of forced sales; forecast error</li>
         </ul></div>
     </div>
-    <div class="band" style="margin-top:22px"><strong>What we ask for:</strong> one pilot partner of each kind in Bogura: a cold storage, a bank or microfinance lender, a buyer and an exporter.</div>
+    <div class="band" style="margin-top:22px"><strong>What we ask for:</strong> ৳20-25 lakh for the first year, and one cold storage and one bank or microfinance lender in Kahaloo to start.</div>
   </div>
-  <div class="notes">This runs today on real national data. What is still demo is clearly labelled: the partners. Next March we pilot in two Bogura upazilas with one partner of each kind, and measure the money that actually reaches farmers.</div>
+  <div class="notes">This runs today on real national data, and the whole loop works with demo partners, clearly labelled. At the next harvest we start in Kahaloo with up to a hundred farmers, one or two cold storages and one lender, then Bogura and Munshiganj, then the north. We measure the money that actually reaches farmers.</div>
 </section>
 
-<!-- 9 ============================================================ close -->
-<section class="slide" aria-label="Slide 9: close">
+<!-- 10 ============================================================ close -->
+<section class="slide" aria-label="Slide 10: close">
   <div class="photo" style="background-image:url('slide7_close_bogura_1790707280172.jpg')"></div>
   <div class="on-photo">
-    <div class="kicker"><span class="time">1:56 – 2:00</span> KrishiVault</div>
+    <div class="kicker"><span class="time">1:55 – 2:00</span> KrishiVault</div>
     <div class="bn-title bn" style="font-size:54px">আলু রাখবেন না বেচবেন, কবে বেচবেন: হিসাব করে বলে কৃষিভল্ট।</div>
     <h1 style="font-size:46px;margin-top:14px">Store or sell, and until when: KrishiVault does the sums.</h1>
     <p class="lede" style="max-width:820px">So the rise after the harvest reaches the farmer who grew it.</p>
@@ -382,7 +439,7 @@ body.show-notes .slide.active .notes { display: block; }
 <nav class="controls" aria-label="Slide controls">
   <button id="prev" type="button" aria-label="Previous slide">← Prev</button>
   <div class="dots" id="dots"></div>
-  <span id="counter" aria-live="polite">1 / 9</span>
+  <span id="counter" aria-live="polite">1 / 10</span>
   <button id="next" type="button" aria-label="Next slide">Next →</button>
   <span class="hint">← → keys · N notes · F full screen · P print</span>
 </nav>
