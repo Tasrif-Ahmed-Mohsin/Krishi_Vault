@@ -46,7 +46,7 @@ This file is the short version.
   - `src/scrapers/dam_scraper.py`: **broken**, the DAM site moved to `https://market.dam.gov.bd/`.
   - `tests/`: pytest.
 - `reference/mati_kohon_code/`: Mati Kohon code that was ported. **Do not import it.**
-- `docs/`: the plan documents, `ai_architecture.html` (AI and voice, now and after the pilot), `readiness_check.html`, the field check guide for farmers and cold storages (`farmer_interview_guide.html` and its PDF; to-do 3).
+- `docs/`: the plan documents, `ai_architecture.html` (AI and voice, now and after the pilot), `readiness_check.html`, `presentation_plan.md` (the 7-minute pitch and Q&A plan, a copy of the team's pitch-plan doc), the field check guide for farmers and cold storages (`farmer_interview_guide.html` and its PDF; to-do 3).
 - `krishivault-pitch-deck.html`, `slide-images/`: the pitch deck, 10 slides for 2 minutes (synced with the plan document, 15 October; arrow keys, N for speaker notes, P to print). Every figure on it comes from the engine or the data; update it when they change.
 
 ## Running it
