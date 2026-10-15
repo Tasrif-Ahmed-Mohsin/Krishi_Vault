@@ -20,8 +20,17 @@ How it decides, in plain words:
 - It recommends one of three options, with the chance that storing beats
   selling now and the worst likely outcome (1 path in 10 is worse):
     1. Sell now           (storing is unlikely to pay after costs)
-    2. Store longer       (storing very likely pays, even in a bad case)
-    3. Sell part, store the rest (storing probably pays, but not surely)
+    2. Sell part, store the rest (storing pays): at the harvest the plan's rule
+       holds, "sell 30-40% at harvest, store 60-70%, never gamble the whole crop
+       on one month"; more is sold if the cash need asks for it
+    3. Store longer       (potatoes already in cold storage, when storing very
+       likely pays even in a bad case)
+  It also works out the plan's staggered exit (30% now, 40% mid-season, 30% at
+  the best month) and shows it beside the advice.
+- Net profit: with the farmer's own growing cost, or the pre-loaded local
+  benchmark (৳14 a kg in Bogura, DAE 2024-25) when the farmer keeps no records.
+- In a glut year (a big crop, a flat outlook) a bank lends at most 50% of the
+  careful value (the plan's cap).
 
 Every taka figure the farmer hears comes from here; the wording layer may not
 change them (see `src/voice/number_lock.py`).
@@ -30,13 +39,14 @@ change them (see `src/voice/number_lock.py`).
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Optional
 
 import numpy as np
 
 from src.engine.facts import (
-    StorageTerms, MONTHS_EN, MONTHS_BN, LAST_SALE_MONTH, MAUND_KG, month_after,
+    GLUT_LTV_CAP, SAFETY_SHARE_SURE, SAFETY_SHARE_UNSURE, StorageTerms, MONTHS_EN, MONTHS_BN, LAST_SALE_MONTH,
+    MAUND_KG, cost_benchmark, month_after,
 )
 from src.models.price_outlook import real_path, rise_strength, simulate, season_for_decision
 from src.voice.bangla_numbers import to_bn_digits
@@ -57,6 +67,7 @@ class FarmerLot:
     loan_source: str = "cheapest"          # "cheapest", "cold_storage", "bank", "none"
     bank_ltv: float = 0.6                  # a bank lends up to this share of the stored crop's value
     production_cost_per_kg: Optional[float] = None
+    district: str = "Bogura"
     allow_home: bool = True
     terms: StorageTerms = field(default_factory=StorageTerms)
     # price outlook options
@@ -153,6 +164,9 @@ class StoragePlanner:
         t = lot.terms
         H = months_left(lot)
         prices, rise = self.price_paths(lot, max(H, 0))
+        glut = is_glut(rise)
+        if glut and lot.bank_ltv > GLUT_LTV_CAP:      # the plan's cap in a glut year
+            lot = replace(lot, bank_ltv=GLUT_LTV_CAP)
         kg, sacks = lot.quantity_kg, lot.sacks
         now_net, _ = self._cold_net(lot, kg, sacks, prices, 0)
         now_value = float(now_net.mean())
@@ -209,8 +223,11 @@ class StoragePlanner:
         if best:
             options["store"] = self._option_store(lot, best, now_value) if best["feasible"] else None
             options["sell_part"] = self._option_part(lot, prices, best, now_value)
+            options["staggered"] = self._option_staggered(lot, prices, best, now_value)
         rec = self._recommend(lot, options, now_value, H, rise["k"])
         replay = self._replay(lot, options, rec, now_value, H)
+        cost, cost_source = ((lot.production_cost_per_kg, "the farmer's own cost") if lot.production_cost_per_kg
+                             else cost_benchmark(lot.district))
 
         for r in rows:
             r.pop("_net", None)
@@ -232,9 +249,26 @@ class StoragePlanner:
             "options": options,
             "recommendation": rec,
             "cost_floor": self._cost_floor(lot),
-            "notes": self._notes(lot, rows, best, H),
+            "net_profit": self._net_profit(lot, options, rec, now_value, cost, cost_source),
+            "glut": {"warning": glut, "bank_ltv_used": lot.bank_ltv},
+            "notes": self._notes(lot, rows, best, H) + ([f"A glut year: banks lend at most {GLUT_LTV_CAP:.0%} of the "
+                                                          f"careful value (the plan's cap)."] if glut else []),
             "replay": replay,
         }
+
+    # ----------------------------------------------------------- net profit (the plan's "net-profit visibility")
+    def _net_profit(self, lot: FarmerLot, options: dict, rec: dict, now_value: float, cost: float,
+                    source: str) -> dict:
+        growing = lot.quantity_kg * cost
+        chosen = options.get(rec["key"]) or options["sell_now"]
+        now_profit = now_value - growing
+        mean = chosen["money_mean"] - growing
+        return {"growing_cost_per_kg": cost, "source": source, "growing_cost": _round_tk(growing),
+                "sell_all_now": _round_tk(now_profit), "with_advice": _round_tk(mean),
+                "with_advice_low": _round_tk(chosen["money_low"] - growing),
+                "with_advice_high": _round_tk(chosen["money_high"] - growing),
+                "times": round(mean / now_profit, 1) if now_profit > 0 and rec["key"] != "sell_now" else None,
+                "below_cost_now": now_profit < 0}
 
     # ----------------------------------------------------------- replays: what really happened
     def _replay(self, lot: FarmerLot, options: dict, rec: dict, now_value: float, H: int) -> Optional[dict]:
@@ -258,6 +292,15 @@ class StoragePlanner:
             if not later:
                 return None
             h = later[0]
+            if option["key"] == "staggered":     # three sales: now, mid-season, the best month
+                mid = [x for x in range(max(1, option["months"] // 2), H + 1) if real[x] is not None]
+                if not mid:
+                    return None
+                per = lot.quantity_kg / lot.sacks
+                money = sum(float(self._cold_net(lot, n * per, n, prices, hh)[0][0]) for n, hh in
+                            ((option["sell_sacks_now"], 0), (option["mid_sacks"], mid[0]), (option["late_sacks"], h)) if n)
+                return {"money": _round_tk(money), "vs_sell_now": _round_tk(money - now_value),
+                        "sold_in": MONTHS_EN[month_after(lot.decision_month, h)]}
             sell, store = option["sell_sacks_now"], option["store_sacks"]
             kg_store = lot.quantity_kg * store / lot.sacks
             net_now = float(self._cold_net(lot, lot.quantity_kg - kg_store, sell, prices, 0)[0][0]) if sell else 0.0
@@ -269,13 +312,15 @@ class StoragePlanner:
 
         valued = {key: outcome(o) for key, o in options.items()}
         # Net profit, when the farmer's growing cost is known: money in hand minus the cost of growing the crop
+        cost = lot.production_cost_per_kg or cost_benchmark(lot.district)[0]
         profit = None
-        if lot.production_cost_per_kg:
-            growing = lot.quantity_kg * lot.production_cost_per_kg
+        if cost:
+            growing = lot.quantity_kg * cost
             at_harvest = now_value - growing
             advice_gain = (valued.get(rec["key"]) or {}).get("vs_sell_now")
             with_advice = at_harvest + advice_gain if advice_gain is not None else None
-            profit = {"growing_cost": _round_tk(growing), "growing_cost_per_kg": lot.production_cost_per_kg,
+            profit = {"growing_cost": _round_tk(growing), "growing_cost_per_kg": cost,
+                      "source": "the farmer's own cost" if lot.production_cost_per_kg else cost_benchmark(lot.district)[1],
                       "sold_at_harvest": _round_tk(at_harvest),
                       "with_advice": _round_tk(with_advice) if with_advice is not None else None,
                       "times": (round(with_advice / at_harvest, 1)
@@ -314,7 +359,7 @@ class StoragePlanner:
         sack_value_now = lot.terms.sack_kg * lot.price_today - lot.terms.sell_now_per_sack
         need_now = lot.cash_needed_tk > 0 and lot.cash_days < best_h * DAYS_PER_MONTH
         cash_sacks = math.ceil(lot.cash_needed_tk / sack_value_now) if (need_now and sack_value_now > 0) else 0
-        safety_share = 0.25 if chance >= 0.8 else 0.4 if chance >= 0.65 else 0.5
+        safety_share = SAFETY_SHARE_SURE if chance >= 0.8 else SAFETY_SHARE_UNSURE
         sell = max(cash_sacks, math.ceil(lot.sacks * safety_share))
         return min(max(sell, 1), max(lot.sacks - 1, 1))
 
@@ -343,6 +388,40 @@ class StoragePlanner:
                 "chance_beats_now": round(float((total > now_value).mean()), 2),
                 "worst_case_vs_now": _round_tk(float(np.percentile(total, 10)) - now_value),
                 "loan": loan}
+
+    def _option_staggered(self, lot: FarmerLot, prices: np.ndarray, best: dict, now_value: float) -> Optional[dict]:
+        """The plan's staggered exit: 30% at the harvest, 40% mid-season, 30% at the best month."""
+        if lot.stored != "no" or best["h"] < 2 or lot.sacks < 4:
+            return None
+        n = lot.sacks
+        now_s, late_s = math.ceil(n * 0.3), math.ceil(n * 0.3)
+        mid_s = n - now_s - late_s
+        mid_h = max(1, best["h"] // 2)
+        kg_per_sack = lot.quantity_kg / n
+        total = np.zeros(prices.shape[0])
+        for sacks, h in ((now_s, 0), (mid_s, mid_h), (late_s, best["h"])):
+            net, _ = self._cold_net(lot, sacks * kg_per_sack, sacks, prices, h)
+            total = total + net
+        cash_now = float(self._cold_net(lot, now_s * kg_per_sack, now_s, prices, 0)[0].mean())
+        interest, loan = self._interest(lot, mid_h, mid_s + late_s, (mid_s + late_s) * kg_per_sack * lot.price_today,
+                                        cash_now)
+        if interest is None:
+            return None
+        total = total - interest
+        mid_m, late_m = month_after(lot.decision_month, mid_h), month_after(lot.decision_month, best["h"])
+        return {"key": "staggered",
+                "title_en": f"Staggered: sell {now_s} sacks now, {mid_s} in {MONTHS_EN[mid_m]}, {late_s} in {MONTHS_EN[late_m]}",
+                "title_bn": (f"ধাপে ধাপে: এখন {to_bn_digits(str(now_s))} বস্তা, {MONTHS_BN[mid_m]} মাসে "
+                             f"{to_bn_digits(str(mid_s))} বস্তা, {MONTHS_BN[late_m]} মাসে {to_bn_digits(str(late_s))} বস্তা"),
+                "sell_sacks_now": now_s, "store_sacks": mid_s + late_s, "mid_sacks": mid_s, "late_sacks": late_s,
+                "mid_month_en": MONTHS_EN[mid_m], "sell_month_en": MONTHS_EN[late_m], "sell_month_bn": MONTHS_BN[late_m],
+                "months": best["h"], "cash_now": _round_tk(cash_now),
+                "money_mean": _round_tk(float(total.mean())), "money_low": _round_tk(float(np.percentile(total, 10))),
+                "money_high": _round_tk(float(np.percentile(total, 90))),
+                "gain_vs_now": _round_tk(float(total.mean()) - now_value),
+                "chance_beats_now": round(float((total > now_value).mean()), 2),
+                "worst_case_vs_now": _round_tk(float(np.percentile(total, 10)) - now_value), "loan": loan,
+                "plan_rule": "The plan's staggered exit: 30% at harvest, 40% mid-season, 30% late"}
 
     def _recommend(self, lot: FarmerLot, options: dict, now_value: float, H: int, k: float) -> dict:
         store, part = options.get("store"), options.get("sell_part")
@@ -375,6 +454,15 @@ class StoragePlanner:
             if k <= 0.3:
                 reasons.append("A big crop is keeping prices from rising this season.")
             return {"key": "sell_now", **_titles(options["sell_now"]), "reasons": reasons}
+        if chance >= 0.8 and worst >= -0.05 * now_value and lot.stored == "no" and part:
+            # The plan's rule: never the whole crop on one month at the harvest; sell a safety share now
+            reasons.append(
+                f"Storing beats selling now in {round(chance * 100)} of 100 price paths (about ৳{gain:,} more if "
+                f"every sack were stored), but the whole crop is never bet on one month.")
+            reasons.append(f"Sell {part['sell_sacks_now']} sacks now (৳{part['cash_now']:,} in hand) and store "
+                           f"{part['store_sacks']} until {part['sell_month_en']}: about ৳{part['gain_vs_now']:,} "
+                           f"more than selling everything now.")
+            return {"key": "sell_part", **_titles(part), "reasons": reasons + _staggered_note(options, part)}
         if chance >= 0.8 and worst >= -0.05 * now_value:
             reasons.append(
                 f"Storing until {store['sell_month_en']} adds about ৳{gain:,} on average, "
@@ -389,6 +477,9 @@ class StoragePlanner:
                                f"({_loan_name(loan['source'])}, about ৳{_round_tk(loan['interest']):,} interest).")
             return {"key": "store", **_titles(store), "reasons": reasons}
         rec = part or store
+        stag = options.get("staggered")
+        if part and stag and stag["money_mean"] > part["money_mean"] and stag["money_low"] > part["money_low"]:
+            rec = stag     # the plan's staggered exit, when it beats the split on average and in a bad case
         reasons.append(
             f"Storing probably pays (about ৳{gain:,} more, {round(chance * 100)}% chance), "
             f"but in a bad case (1 in 10) storing everything would lose ৳{abs(min(worst, 0)):,}.")
@@ -399,7 +490,7 @@ class StoragePlanner:
                 loan = part["loan"]
                 reasons.append(f"The rest of the cash you need comes from a loan of ৳{_round_tk(loan['amount']):,} "
                                f"against the stored sacks ({_loan_name(loan['source'])}).")
-        return {"key": rec["key"], **_titles(rec), "reasons": reasons}
+        return {"key": rec["key"], **_titles(rec), "reasons": reasons + _staggered_note(options, rec)}
 
     # ----------------------------------------------------------- extras
     def _cost_floor(self, lot: FarmerLot) -> Optional[dict]:
@@ -427,6 +518,22 @@ class StoragePlanner:
             notes.append(f"Only {H} month(s) left before the cold storages empty in December: "
                          f"the full rent buys little time.")
         return notes
+
+
+def is_glut(rise: dict) -> bool:
+    """A big crop or a flat outlook: the plan's glut warning (also used by the government screen)."""
+    return rise.get("gap_pct", 0) >= 3 or rise.get("k", 1) <= 0.3
+
+
+def _staggered_note(options: dict, chosen: dict) -> list[str]:
+    stag = options.get("staggered")
+    if not stag or chosen.get("key") == "staggered":
+        return []
+    if stag["money_mean"] < chosen["money_mean"]:
+        return [f"The staggered exit ({stag['title_en'].split(': ', 1)[1]}) gives about "
+                f"৳{chosen['money_mean'] - stag['money_mean']:,} less on average: a mid-season sale pays a full "
+                f"season's rent before the price has risen."]
+    return []
 
 
 def _loan_name(source: str) -> str:

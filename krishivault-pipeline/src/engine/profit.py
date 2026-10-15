@@ -41,7 +41,7 @@ EXAMPLE_BIGHA = {
     "harvest_kg": 3000,
     "growing": {"seed": 11000, "fertilizer": 6500, "pesticide": 2500, "labour": 6500, "irrigation": 1800,
                 "ploughing": 1500, "land_rent": 5000, "harvest": 2500, "other": 700},
-    "after": {"sacks": 960, "transport": 1320, "storage_rent": 6000, "loading": 360, "interest": 0, "selling": 120},
+    "after": {"sacks": 960, "transport": 1320, "storage_rent": 7000, "loading": 360, "interest": 0, "selling": 120},
     "sales": [{"month": "March", "kg": 1000, "price_per_kg": 14},
               {"month": "November", "kg": 1950, "price_per_kg": 24}],
 }

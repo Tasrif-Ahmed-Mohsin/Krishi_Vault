@@ -176,3 +176,20 @@ def test_government_screen_counts_only_with_consent(client):
     assert g["farmers"][0]["shown"] and g["farmers"][0]["need_cash_within_7_days"] == 1.0
     assert g["glut"]["level"] in ("high", "normal", "low")
     assert client.get("/api/government?month=13").status_code == 400
+
+
+def test_booking_a_full_cold_storage_points_elsewhere(client):
+    r = client.post("/api/storage/book", json={"sacks": 40000, "cold_storage_id": "cs-a", "farmer_name": "Demo"}).json()
+    assert r["no_space"] and r["try_instead"]
+    g = client.get("/api/government?month=3&year=2027").json()
+    assert g["space_requests"]["Bogura"]["no_space"] == 1
+
+
+def test_alerts_and_group_sale_routes(client):
+    client.post("/api/receipts", json={"cold_storage_id": "cs-b", "farmer_name": "Demo", "phone": "01711998877",
+                                       "sacks": 20, "month": 3, "year": 2026})
+    a = client.post("/api/alerts/price-window", json={"month": 10, "year": 2026, "price_today": 22, "send": True}).json()
+    assert a[0]["sms_result"]["dry_run"] is True
+    assert client.get("/api/groups/g-shibganj/sale?price_today=16").json()["total_gain"] > 0
+    assert client.post("/api/groups/g-shibganj/lot?price_today=16").json()["ref"]
+    assert client.get("/api/groups/nope/sale").status_code == 404

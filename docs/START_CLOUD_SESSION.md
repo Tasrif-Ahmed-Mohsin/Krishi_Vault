@@ -6,7 +6,7 @@ Set up the cloud environment once (`docs/CLOUD_SETUP.md`), then start a cloud se
 
 You are building KrishiVault for an idea competition. First read `CLAUDE.md`, then `docs/HANDOFF.md` (the plan, the prototype scope, what is real and what is not, the to-do list), `docs/PLAN_DETAILS.md`, `docs/DATA_SOURCES.md` and `docs/SCREENS.md`.
 
-KrishiVault focuses on potato after the harvest: "store or sell, and until when?" Its seven parts: production and price prediction with ranges; the storage and selling-time engine (sell now, store longer, or sell part and store the rest, after the flat ৳250-a-sack rent, losses, transport and interest); market access (buyers ranked by money in the farmer's hand); crop-backed bank loans (KrishiVault verifies and connects, the bank lends); export market intelligence; group storage; and a profit calculator.
+KrishiVault focuses on potato after the harvest: "store or sell, and until when?" Its seven parts: production and price prediction with ranges; the storage and selling-time engine (sell now, sell part and store the rest, or store longer, after the flat ৳300-a-sack rent, the 8.65% weight loss, transport and interest, with the net profit after a ৳14 a kg growing cost); market access (buyers ranked by money in the farmer's hand); crop-backed bank loans (KrishiVault verifies and connects, the bank lends); export market intelligence; group storage; and a profit calculator.
 
 Farmers use button phones (voice call, keypad, SMS); in the prototype the call is previewed in the browser (`/call`) and SMS can be sent. Helpers, cold storages, banks, buyers and exporters use the dashboard (`/`). The farmer pays nothing; partners pay only when they gain. All partners in the prototype are demo data.
 

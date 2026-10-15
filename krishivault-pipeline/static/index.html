@@ -166,7 +166,7 @@
     <div class="brand">KrishiVault <span class="bn">কৃষিভল্ট</span></div>
     <div class="top-sub">Store or sell, and until when: potato after harvest, Bogura. Forecasts, the storage engine, buyers, bank loans, group storage and export.</div>
     <span class="demo-flag" title="Partners, banks, buyers and export prices on these screens are made up">DEMO PARTNERS</span>
-    <a class="top-link" href="/call">Call preview ☎</a>
+    <a class="top-link" href="/call">Call preview ☎</a><a class="top-link" href="/ussd">USSD preview</a>
   </div>
 </header>
 
@@ -221,7 +221,7 @@
   </div>
   <div class="panel" style="margin-top:14px"><h2>Why farmers lose money in cold storage <span class="bn">কেন কৃষকের ক্ষতি হয়</span></h2>
     <div class="panel-body story">
-      <p><b>Rent is flat.</b> A cold storage charges about ৳250 for an 84 kg sack for the season, up to 9 months. One month or nine, the rent is the same.</p>
+      <p><b>Rent is flat.</b> A cold storage charges about ৳300 for an 84 kg sack for the season, up to 9 months (the plan document; some charge ৳250). One month or nine, the rent is the same.</p>
       <p><b>Farmers sell too early.</b> Afraid that prices will fall further, many sell within 1 to 3 months. They have paid the full rent, but the price has not risen yet. The cold storage empties early and fills again: it gains, the farmer loses.</p>
       <p><b>Big crops make it worse.</b> When the country grows more potato than usual (2016-17, 2024-25), prices stay low all year. Storing then loses money; in a normal or small crop year, prices can nearly double by November.</p>
       <p><b>Traders hold the advantage.</b> Traders buy in bulk at the haat, store, and release potatoes across the country when prices rise. They have the cash and the information; farmers usually store only seed potato.</p>
@@ -244,11 +244,11 @@
           <div><label class="f" for="pCash">Cash needed (৳)</label><input id="pCash" type="number" min="0" step="500" value="0"></div>
           <div><label class="f" for="pDays">Within (days)</label><input id="pDays" type="number" min="0" step="1" value="0"></div>
           <div><label class="f" for="pLoan">Loan if storing</label><select id="pLoan"><option value="cheapest">Cheapest that fits</option><option value="cold_storage">Cold-storage advance</option><option value="bank">Bank loan</option><option value="none">No loan</option></select></div>
-          <div><label class="f" for="pCost">Own cost (৳/kg, optional)</label><input id="pCost" type="number" min="0" step="0.5" placeholder="e.g. 15.6"></div>
+          <div><label class="f" for="pCost">Own growing cost (৳/kg, optional)</label><input id="pCost" type="number" min="0" step="0.5" placeholder="local benchmark ৳14"></div>
           <div class="wide"><label class="small"><input id="pCount" type="checkbox"> The farmer agrees to be counted, without name or number, in the district figures (Government screen)</label></div>
           <details class="more wide"><summary>Costs and assumptions (change to the farmer's own)</summary>
             <div class="form" style="margin-top:8px" id="termsBox"></div>
-            <p class="small">Field notes: 84 kg sack, ৳250 rent for up to 9 months (some ৳300), cold-storage advance ৳200-300 a sack. Weight loss: the plan's 8.65% over a full season (0.78% a month plus 2% rotten at exit). Sack, carrying and selling costs, home-store loss and loan rates are working assumptions to check in the pilot.</p>
+            <p class="small">Plan document: 84 kg sack, ৳300 rent for up to 9 months (some charge ৳250), cold-storage advance ৳200-300 a sack. Weight loss: the plan's 8.65% over a full season (0.78% a month plus 2% rotten at exit). Sack, carrying and selling costs, home-store loss and loan rates are working assumptions to check in the pilot.</p>
           </details>
           <div class="wide row"><button class="btn primary" type="submit">Work it out</button><a class="btn" href="/call" style="text-decoration:none;text-align:center">Same question by phone ☎</a></div>
         </form>
@@ -364,7 +364,7 @@
 
 <!-- ============================================================ GROUP -->
 <section class="page" id="page-group">
-  <h1 class="page-title">Group storage <span class="bn">একসাথে হিমাগারে রাখা</span></h1>
+  <h1 class="page-title">Group storage and group selling <span class="bn">একসাথে রাখা, একসাথে বেচা</span></h1>
   <p class="lead">Neighbours combine their sacks into one order. Sharing a truck saves money straight away. A cold storage may offer a lower rent for a big order; that saving counts <b>only after the cold storage agrees</b> on its screen, never before.</p>
   <div id="groupPools" class="grid two"></div>
   <div class="grid side" style="margin-top:14px">
@@ -377,6 +377,11 @@
       </div><p class="small" id="gOut"></p></div></div>
     <div class="panel"><h2>Cost for this farmer <span class="bn">খরচের তুলনা</span></h2><div class="panel-body" id="groupCmp">…</div></div>
   </div>
+  <div class="panel" style="margin-top:14px"><h2>Sell together <span class="bn">দলে মিলে বেচা</span></h2><div class="panel-body">
+    <p class="small">The plan's fourth decision, "group sell": the group's sacks as one sorted lot reach buyers one farmer cannot (a chips factory from 5,000 kg, an exporter from 10,000 kg). Shared out to the buyers that leave the most money per kg, against each member selling to the haat trader. Buyers are <span class="tag demo">DEMO</span>.</p>
+    <div id="groupSale">…</div>
+    <div class="row" style="margin-top:8px"><button class="btn" id="gLot" type="button">Send the group lot to the buyers' screen</button><span class="small" id="gLotOut"></span></div>
+  </div></div>
 </section>
 
 <!-- ============================================================ EXPORT -->
@@ -435,7 +440,7 @@
     <button class="btn" data-role="cold_storage" aria-pressed="true">Cold storage</button>
     <button class="btn" data-role="bank" aria-pressed="false">Bank</button>
     <button class="btn" data-role="buyer" aria-pressed="false">Buyer</button>
-    <button class="btn" data-role="helper" aria-pressed="false">KrishiVault helper</button>
+    <button class="btn" data-role="helper" aria-pressed="false">Field agent (helper)</button>
     <button class="btn" data-role="government" aria-pressed="false">Government (DAM, DAE)</button>
   </div>
   <div class="grid two">
@@ -458,7 +463,7 @@
   </div></div>
 </section>
 </main>
-<footer>KrishiVault prototype. Real data: BBS potato production 2012-13 to 2024-25; WFP potato prices February 2024 to July 2026. Field notes: 84 kg sack, ৳250 flat rent for up to 9 months, cold-storage advances ৳200-300 a sack. Everything marked DEMO is made up. SMS is a dry run unless the server is set to live; phone calls are a preview only.</footer>
+<footer>KrishiVault prototype. Real data: BBS potato production 2012-13 to 2024-25; WFP potato prices February 2024 to July 2026. The plan document: 84 kg sack, ৳300 flat rent for up to 9 months, 8.65% weight loss a season, growing cost about ৳14 a kg (DAE Bogura 2024-25); cold-storage advances ৳200-300 a sack. Everything marked DEMO is made up. SMS is a dry run unless the server is set to live; phone calls are a preview only.</footer>
 
 <script>
 'use strict';
@@ -724,7 +729,7 @@ function replayNote(plan) {
     (rp.store_all_by_month.length > 1 ? (() => { const v = rp.store_all_by_month.map(m => m.vs_sell_now), lo = Math.min(...v), hi = Math.max(...v);
       return ` Storing all ${sacks} sacks, sold in any month with a real price (${rp.store_all_by_month.map(m => m.month_en.slice(0, 3)).join(', ')}): ${hi < 0 ? 'a loss of ' + tk(-hi) + ' to ' + tk(-lo) : lo > 0 ? 'a gain of ' + tk(lo) + ' to ' + tk(hi) : tkSigned(lo) + ' to ' + tkSigned(hi)}.`; })() : '') +
     (rp.net_profit && rp.net_profit.with_advice != null ? ` <b>Net profit</b> after a growing cost of ৳${num(rp.net_profit.growing_cost_per_kg, 2)}/kg: ${tk(rp.net_profit.sold_at_harvest)} if everything was sold at the harvest, ${tk(rp.net_profit.with_advice)} with the advice${rp.net_profit.times ? ` (<b>${num(rp.net_profit.times, 1)} times</b>)` : ''}.` : '') +
-    ` <span class="small">Valued at ${esc(rp.basis)}, with the same costs.${rp.net_profit ? ' The growing cost is the profit calculator\'s example bigha, an assumption.' : ''}</span></p>`;
+    ` <span class="small">Valued at ${esc(rp.basis)}, with the same costs.${rp.net_profit ? ' Growing cost: ' + esc(rp.net_profit.source) + '.' : ''}</span></p>`;
 }
 function learnedNote(rise, replay) {
   const s = rise.learned_from;
@@ -744,14 +749,12 @@ function planBody(extra = {}) {
 }
 
 /* ---------------- overview */
-let exampleCost = null;   // growing cost per kg of the profit calculator's example bigha (an assumption)
 async function loadOverview() {
   const s = season();
-  if (exampleCost == null) exampleCost = await api('/api/profit/example').then(r => r.result.growing_cost_per_kg).catch(() => null);
   const [prodNat, prodBog, plan] = await Promise.all([
     api(`/api/forecast/production?season_start=${s.year - 1}&as_known_at_harvest=true`),
     api(`/api/forecast/production?district=Bogura&season_start=${s.year - 1}&as_known_at_harvest=true`),
-    api('/api/storage/plan', planBody({quantity: 36, unit: 'sack', production_cost_per_kg: exampleCost})),
+    api('/api/storage/plan', planBody({quantity: 36, unit: 'sack'})),
   ]);
   const rec = plan.recommendation, best = plan.best_month, store = plan.options.store;
   const last = plan.by_month[plan.by_month.length - 1];
@@ -782,7 +785,7 @@ async function loadOverview() {
 
 /* ---------------- store or sell */
 const TERMS = [
-  ['rent_per_sack', 'Rent a sack, whole season (৳)', 250, 10], ['sack_kg', 'Sack size (kg)', 84, 1],
+  ['rent_per_sack', 'Rent a sack, whole season (৳)', 300, 10], ['sack_kg', 'Sack size (kg)', 84, 1],
   ['sack_cost', 'Empty sack (৳)', 40, 1], ['carry_in_per_sack', 'Carry to cold storage (৳/sack)', 25, 1],
   ['load_unload_per_sack', 'Loading, unloading (৳/sack)', 15, 1], ['sell_from_store_per_sack', 'Selling from store (৳/sack)', 30, 1],
   ['sell_now_per_sack', 'Selling at the field (৳/sack)', 10, 1], ['monthly_weight_loss', 'Weight loss a month (%)', 0.78, 0.01, 100],
@@ -820,7 +823,8 @@ async function runPlan() {
     <div class="rec ${rec.key}"><h3>${esc(rec.title_en)}</h3><div class="bn">${esc(rec.title_bn)}</div>
       <ul>${rec.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>
       <div class="small" style="margin-top:6px">${num(inp.quantity_kg)} kg = ${inp.sacks} sacks of ${inp.terms.sack_kg} kg = ${num(inp.maunds, 1)} maunds · price today ৳${num(inp.price_today, 1)}/kg · season ${esc(plan.outlook.season)}, ${plan.months_left} month(s) of storage left${plan.counted ? ' · <b>counted for the district figures</b> (no name or number)' : ''}</div>${replayNote(plan)}</div>
-    <div class="options">${optCard(opts.sell_now)}${optCard(opts.store)}${optCard(opts.sell_part)}</div>
+    <div class="options">${optCard(opts.sell_now)}${optCard(opts.store)}${optCard(opts.sell_part)}${optCard(opts.staggered)}</div>
+    ${profitPanel(plan)}
     ${plan.months_left ? `<div class="panel"><h2>Gain over selling today, by month of sale <span class="bn">মাসভিত্তিক লাভ/ক্ষতি</span></h2><div class="panel-body"><div class="chart" id="planChart"></div>
       <div class="legend"><span><i style="background:var(--gain)"></i>More than selling today</span><span><i style="background:var(--loss)"></i>Less</span><span>│ 8 in 10 paths</span></div>
       <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>When</th><th class="n">Price ৳/kg (low – middle – high)</th><th class="n">Money in hand</th><th class="n">vs now</th><th class="n">Beats now</th><th class="n">Pays above</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -859,12 +863,28 @@ async function runPlan() {
   if (bookBtn) bookBtn.onclick = async () => {
     try { const sacks = rec.key === 'sell_part' ? opts.sell_part.store_sacks : inp.sacks;
       const r = await api('/api/storage/book', {sacks, farmer_name: $('#actName').value || 'Demo farmer', phone: $('#actPhone').value.trim() || null, advice: rec.title_en});
+      if (r.no_space) { $('#actOut').innerHTML = `This cold storage has no room for ${sacks} sacks${r.try_instead && r.try_instead.length ? '; space at ' + r.try_instead.map(c => esc(c.name)).join(', ') : ''}. Counted for the government screen.`; return; }
       $('#actOut').innerHTML = `Request sent to the cold storage's screen, no. <b>${esc(r.ref)}</b> (demo). When the sacks arrive, the cold storage weighs them and issues the digital receipt (Partner screens → Cold storage); the receipt number backs a bank loan.`;
       $('#aReceipt').value = 'DEMO-' + r.ref; $('#lSacks').value = sacks;
     } catch (e) { $('#actOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; }
   };
 }
 const best = plan => plan.best_month ? plan.best_month.h : -1;
+function profitPanel(plan) {
+  // Net profit after the growing cost: the farmer's own, or the pre-loaded local benchmark (the plan's "Calculate")
+  const p = plan.net_profit;
+  if (!p) return '';
+  const rec = plan.recommendation;
+  return `<div class="panel"><h2>Net profit after the growing cost <span class="bn">খরচ বাদে লাভ</span></h2><div class="panel-body">
+    <div class="tiles">
+      <div class="tile"><div class="label">Growing cost</div><div class="value">৳${num(p.growing_cost_per_kg, 2)}/kg</div><div class="sub">${esc(p.source)}; ${tk(p.growing_cost)} in all</div></div>
+      <div class="tile"><div class="label">Sell everything now</div><div class="value ${p.sell_all_now < 0 ? 'down' : ''}">${tk(p.sell_all_now)}</div><div class="sub">${p.below_cost_now ? 'today\'s price is below the cost' : 'profit after every cost'}</div></div>
+      <div class="tile"><div class="label">With the advice</div><div class="value">${tk(p.with_advice)}</div><div class="sub">8 in 10: ${tk(p.with_advice_low)} to ${tk(p.with_advice_high)}${p.times ? ' · about ' + num(p.times, 1) + ' times selling now' : ''}</div></div>
+    </div>
+    <p class="small">The plan: farmers keep no written records, so KrishiVault pre-loads a local cost benchmark. The plan's own figure (৳3.50-3.66 a kg) is from 2016; today's is about ৳14 a kg. Enter the farmer's own cost to replace it.</p>
+    ${plan.glut && plan.glut.warning ? `<p class="note honest">Glut warning: a big crop or a flat outlook. Banks lend at most ${pct(plan.glut.bank_ltv_used)} of the careful value this season (the plan's cap).</p>` : ''}
+  </div></div>`;
+}
 
 /* ---------------- forecasts */
 let districtsLoaded = false;
@@ -985,7 +1005,7 @@ async function runLoan() {
 }
 function showPack(r) {
   $('#aBank').value = r.bank.id;
-  $('#loanPack').innerHTML = `<p><b>${esc(r.bank.name)}</b> <span class="tag demo">DEMO</span> lends up to ${num(r.bank.ltv * 100)}% of a careful value.</p>
+  $('#loanPack').innerHTML = `<p><b>${esc(r.bank.name)}</b> <span class="tag demo">DEMO</span> lends up to ${num(r.bank.ltv * 100)}% of a careful value${r.glut_cap ? `; <b>${num(r.ltv_used * 100)}% this season</b> (glut warning: the plan's cap)` : ''}.</p>
     <div class="table-wrap"><table><tbody>
       <tr><td>Crop</td><td class="n">${r.crop.sacks} sacks, ${num(r.crop.kg)} kg; ${num(r.crop.kg_at_end)} kg after a full season's weight loss (${num(r.crop.shrinkage_buffer * 100, 2)}%, the buffer)</td></tr>
       <tr><td>Value today</td><td class="n">${tk(r.crop.value_today)} at ৳${num(r.crop.price_today, 1)}/kg</td></tr>
@@ -1030,6 +1050,19 @@ async function runGroupCompare() {
       <tr><td>If the cold storage agrees the offer</td><td class="n">৳${c.group_if_agreed.rent}</td><td class="n">৳${c.group_now.transport}</td><td class="n">${tk(c.group_if_agreed.total)}</td><td class="n up">${tk(c.group_if_agreed.saving)}</td></tr></tbody></table></div>
       <p class="note">${esc(c.note)} With these ${c.sacks} sacks the group has ${num(c.pool.total_sacks)}.</p>`;
   } catch (e) { $('#groupCmp').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+  runGroupSale();
+}
+async function runGroupSale() {
+  try {
+    const g = await api(`/api/groups/${encodeURIComponent($('#gPool').value)}/sale?price_today=${season().price}`);
+    $('#groupSale').innerHTML = `<div class="tiles">
+        <div class="tile"><div class="label">The group lot</div><div class="value">${num(g.pool.total_sacks)} sacks</div><div class="sub">${num(g.lot_kg)} kg, ${g.pool.member_count} farmers</div></div>
+        <div class="tile"><div class="label">Money per kg</div><div class="value">৳${num(g.lot_per_kg, 2)}</div><div class="sub">at the haat alone: ৳${num(g.haat_per_kg, 2)}</div></div>
+        <div class="tile"><div class="label">More for the group</div><div class="value up">${tk(g.total_gain)}</div><div class="sub">${tk(g.gain_per_sack)} a sack</div></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Buyer</th><th class="n">Takes</th><th class="n">From (kg)</th><th class="n">Money per kg</th></tr></thead><tbody>
+      ${g.shares.map(x => `<tr><td>${esc(x.buyer)} ${x.demo ? demoTag(true) : ''}</td><td class="n">${num(x.kg)} kg</td><td class="n">${num(x.min_kg)}</td><td class="n">৳${num(x.net_per_kg, 2)}</td></tr>`).join('')}</tbody></table></div>
+      <p class="note">${esc(g.note)} ${esc(g.rule)}</p>`;
+  } catch (e) { $('#groupSale').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
 }
 
 /* ---------------- export */
@@ -1118,8 +1151,9 @@ async function loadGovernment() {
       <div class="sub">Crop ${gl.crop_gap_pct > 0 ? '+' : ''}${gl.crop_gap_pct}% against the trend (±${gl.crop_gap_range_pct}%); rise strength ${num(gl.rise_strength, 2)}</div></div>
     <p>${esc(gl.say)}</p><p class="small">${esc(gl.basis)}.</p>
     <h3 style="font-size:.92rem;margin:14px 0 6px">Cold-storage fill ${demoTag(true)}</h3>
-    <div class="table-wrap"><table><thead><tr><th>Cold storage</th><th class="n">Full</th><th class="n">Requested / received on KrishiVault</th><th class="n">Rent</th></tr></thead><tbody>
-    ${g.storage.map(c => `<tr><td>${esc(c.cold_storage)} <span class="small">${esc(c.upazila)}, ${esc(c.district)}</span></td><td class="n">${pct(c.fill)}</td><td class="n">${num(c.requested_on_krishivault)} / ${num(c.receipts_on_krishivault)} sacks</td><td class="n">৳${c.rent_per_sack}</td></tr>`).join('')}</tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>Cold storage</th><th class="n">Full</th><th class="n">Requested / received on KrishiVault</th><th class="n">Rent</th><th>Partner check</th></tr></thead><tbody>
+    ${g.storage.map(c => `<tr><td>${esc(c.cold_storage)} <span class="small">${esc(c.upazila)}, ${esc(c.district)}</span></td><td class="n">${pct(c.fill)}</td><td class="n">${num(c.requested_on_krishivault)} / ${num(c.receipts_on_krishivault)} sacks</td><td class="n">৳${c.rent_per_sack}</td><td class="small">${c.generator && c.separate_seed_table_chambers ? 'generator, seed and table chambers' : 'not yet: ' + [c.generator ? '' : 'no generator', c.separate_seed_table_chambers ? '' : 'one chamber'].filter(Boolean).join(', ')}</td></tr>`).join('')}</tbody></table></div>
+    ${Object.keys(g.space_requests).length ? `<p class="small">Space requests that found no room: ${Object.entries(g.space_requests).map(([d, v]) => `${esc(d)} ${v.no_space} of ${v.requests} (${pct(v.share)})`).join('; ')}.</p>` : ''}
     <p class="small">Average rent ৳${g.average_rent_per_sack} a sack (demo cold storages). In a pilot: fill rates reported by partner cold storages.</p>`;
 }
 async function loadPartners() {
@@ -1137,7 +1171,7 @@ async function loadPartners() {
     const list = role === 'bank' ? apps : apps.filter(a => a.status.startsWith('waiting'));
     side.innerHTML = list.length ? list.map(a => `<div class="event"><div class="head"><span><b>${esc(a.farmer)}</b> · ${a.sacks} sacks · receipt ${esc(a.receipt_no)}</span><span>${esc(a.cold_storage.name)}</span></div>
       <div>${esc(a.estimate.bank.name)}: ${tk(a.estimate.loan)} for ${a.estimate.months} months · risk ${esc(a.estimate.risk)} (${pct(a.estimate.chance_crop_worth_less_than_repayment)})</div>
-      <div class="small">Status: <b>${esc(a.status)}</b></div>
+      <div class="small">Status: <b>${esc(a.status)}</b>${a.paid_out ? ` · paid out ${tk(a.paid_out.amount)} by ${esc(a.paid_out.by)} to ${esc(a.paid_out.to)} (demo)` : ''}</div>
       <div class="row" style="margin-top:6px">${role === 'cold_storage' ? `<input type="number" min="0" value="${a.sacks}" id="cf_${esc(a.id)}" style="flex:0 1 110px"><button class="btn small" data-confirm="${esc(a.id)}" type="button">Confirm sacks in store</button>`
         : a.status.startsWith('receipt confirmed') ? `<button class="btn small primary" data-dec="${esc(a.id)}" data-ok="1" type="button">Approve (demo)</button><button class="btn small" data-dec="${esc(a.id)}" data-ok="0" type="button">Decline</button>` : ''}</div></div>`).join('')
       : `<p class="muted">${role === 'bank' ? 'No applications yet (Bank loan page, or 4 in the call preview).' : 'No receipts waiting.'}</p>`;
@@ -1162,12 +1196,21 @@ async function loadPartners() {
       $$('[data-agree]', side).forEach(b => b.onclick = async () => { await api(`/api/groups/${b.dataset.agree}/agree`, {min_sacks: Number(b.dataset.min)}); loaded.delete('group'); loadPartners(); });
     }
   } else {
-    $('#roleSideTitle').textContent = role === 'buyer' ? 'How buyers answer' : 'How helpers answer';
-    side.innerHTML = role === 'buyer' ? '<p>Buyers see each lot with its quantity and the farmer\'s price today, and answer with an offer. KrishiVault ranks offers by the money left to the farmer (Buyers page) and calls the farmer back. Fees never change the order.</p>'
-      : '<p>A KrishiVault helper calls back farmers who pressed 9 or could not be understood, with the values the call already collected.</p>';
+    $('#roleSideTitle').textContent = role === 'buyer' ? 'How buyers answer' : 'Price-window alerts';
+    if (role === 'buyer') {
+      side.innerHTML = '<p>Buyers see each lot (one farmer\'s or a group\'s) with its quantity and the farmer\'s price today, and answer with an offer. KrishiVault ranks offers by the money left to the farmer (Buyers page) and calls the farmer back. Fees never change the order.</p>';
+    } else if (!$('#alGo')) {
+      side.innerHTML = `<p>Step 4 of the plan's loop: for every receipt still in a cold storage, the engine runs again for today and the farmer gets an SMS: <b>sell now</b> (how many sacks, to which buyer) or <b>hold</b> (until when). Field agents also call back farmers who pressed 9.</p>
+        <div class="row"><button class="btn primary" id="alGo" type="button">Check price windows and SMS farmers (dry run)</button></div><div id="alOut" class="small" style="margin-top:8px"></div>`;
+      $('#alGo').onclick = async () => { const s = season(); try {
+        const list = await api('/api/alerts/price-window', {month: s.month, year: s.year, price_today: s.price, send: true});
+        $('#alOut').innerHTML = list.length ? `<p>${esc(list[0].when)}, ৳${num(s.price, 1)}/kg (the season above).</p>` + list.map(a => `<div class="event"><b>${esc(a.receipt)}</b> · ${esc(a.farmer)} · ${a.sacks} sacks: <b>${a.action === 'sell' ? 'sell ' + a.sell_sacks + ' now' + (a.buyer ? ' → ' + esc(a.buyer.name) + ' (' + tk(a.buyer.money_total) + ')' : '') : 'hold until ' + esc(a.hold_until || '')}</b>${a.held_for_bank ? ' · held for the bank' : ''}<div class="bn small">${esc(a.sms)}</div><div class="small">${a.sms_result && a.sms_result.error ? esc(a.sms_result.error) : 'SMS dry run'}</div></div>`).join('')
+          : '<p class="muted">No receipts in store. Issue one on the Cold storage screen first.</p>';
+      } catch (e) { $('#alOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
+    }
   }
 }
-$('#rcGo').onclick = async () => { try { const r = await api('/api/receipts', {cold_storage_id: $('#rcCs').value, farmer_name: $('#rcName').value || 'Demo farmer', phone: $('#rcPhone').value.trim() || null, sacks: val('#rcSacks'), kg_weighed: val('#rcKg'), grade: $('#rcGrade').value, advance_per_sack: val('#rcAdv') || 0});
+$('#rcGo').onclick = async () => { try { const r = await api('/api/receipts', {cold_storage_id: $('#rcCs').value, farmer_name: $('#rcName').value || 'Demo farmer', phone: $('#rcPhone').value.trim() || null, sacks: val('#rcSacks'), kg_weighed: val('#rcKg'), grade: $('#rcGrade').value, advance_per_sack: val('#rcAdv') || 0, month: season().stored === 'cold' ? 3 : season().month, year: season().year});
   $('#rcOut').innerHTML = `Receipt <b>${esc(r.receipt.no)}</b> issued. SMS ${r.sms_result ? (r.sms_result.error ? '<span class="err">not sent: ' + esc(r.sms_result.error) + '</span>' : r.sms_result.dry_run ? '(dry run)' : 'sent') : '(no phone given)'}: <span class="bn">${esc(r.receipt.sms)}</span> Use the number on the Bank loan page.`;
   loadPartners(); } catch (e) { $('#rcOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
 $$('#roleTabs button').forEach(b => b.onclick = () => { role = b.dataset.role; $$('#roleTabs button').forEach(x => x.setAttribute('aria-pressed', x === b)); loadPartners(); });
@@ -1186,6 +1229,7 @@ $('#lGo').onclick = runLoan;
 $('#aGo').onclick = async () => { const s = season(); try { const r = await api('/api/finance/apply', {sacks: val('#lSacks'), price_today: val('#lPrice'), month: s.month, year: s.year, months: val('#lMonths'), amount: val('#lAmount') || null, bank_id: $('#aBank').value, farmer_name: $('#aName').value || 'Demo farmer', phone: $('#aPhone').value.trim() || null, cold_storage_id: $('#aCs').value, receipt_no: $('#aReceipt').value.trim() || 'not given'});
   $('#aOut').innerHTML = `Application no. <b>${esc(r.ref)}</b>: ${esc(r.status)}. See Partner screens → Cold storage, then Bank.`; } catch (e) { $('#aOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
 $('#gGo').onclick = runGroupCompare; $('#gPool').onchange = runGroupCompare;
+$('#gLot').onclick = async () => { try { const r = await api(`/api/groups/${encodeURIComponent($('#gPool').value)}/lot?price_today=${season().price}`, {}); $('#gLotOut').innerHTML = `Sent, no. <b>${esc(r.ref)}</b> (Partner screens → Buyer).`; } catch (e) { $('#gLotOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
 $('#gJoin').onclick = async () => { try { const r = await api('/api/groups/join', {pool_id: $('#gPool').value, sacks: val('#gSacks'), name: $('#gName').value || 'Demo farmer'}); $('#gOut').innerHTML = `Joined, no. <b>${esc(r.ref)}</b>. The group now has ${num(r.pool.total_sacks)} sacks.`; const keep = $('#gPool').value; await loadGroups(); $('#gPool').value = keep; await runGroupCompare(); } catch (e) { $('#gOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
 $('#xGo').onclick = runExport;
 $('#prAddSale').onclick = () => saleRow();

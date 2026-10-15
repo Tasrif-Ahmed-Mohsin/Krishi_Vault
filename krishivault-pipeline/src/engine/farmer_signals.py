@@ -28,6 +28,7 @@ from typing import Optional
 
 from src import demo_data, events
 from src.engine.facts import MONTHS_EN
+from src.engine.storage_plan import is_glut
 from src.models.price_outlook import rise_strength, season_for_decision
 
 MIN_GROUP = 5          # a district with fewer farmers is not shown
@@ -79,7 +80,7 @@ def glut_watch(month: int, year: int, gap_override_pct: Optional[float] = None) 
     season = season_for_decision(year, month)
     rs = rise_strength(season, gap_override_pct=gap_override_pct, decision_year=year, decision_month=month)
     gap, k = rs["gap_pct"], rs["k"]
-    if gap >= 3 or k <= 0.3:
+    if is_glut(rs):
         level, say = "high", "A big crop: prices may stay flat for most of the year. Expect pressure to sell early and gluts at the haats."
     elif gap <= -3:
         level, say = "low", "A small crop: prices are likely to rise after the harvest; watch for hoarding."
@@ -89,6 +90,28 @@ def glut_watch(month: int, year: int, gap_override_pct: Optional[float] = None) 
             "rise_strength": k, "level": level, "say": say,
             "basis": "BBS production against its trend (estimated from planted area at the harvest) and the "
                      "price outlook's rise strength (1 = the usual rise, 0 = flat)"}
+
+
+def free_sacks(cs: dict) -> int:
+    """Space left in a cold storage: capacity less booked sacks, KrishiVault receipts and earlier requests."""
+    evs = events.recent(limit=500)
+    requested = sum(int((e.get("details") or {}).get("sacks") or 0) for e in evs
+                    if e["kind"] == "cold_storage_booking" and (e.get("details") or {}).get("cold_storage") == cs["name"]
+                    and not (e.get("details") or {}).get("no_space"))
+    received = sum(r["sacks"] for r in demo_data.load_list("storage_receipts") if r["cold_storage"]["id"] == cs["id"])
+    return cs["capacity_sacks"] - cs["booked_sacks"] - received - requested
+
+
+def no_space_share() -> dict:
+    """The plan's signal: how many farmers who asked for cold-storage space could not get it, by district."""
+    by = {}
+    for e in events.recent(limit=500):
+        if e["kind"] != "cold_storage_booking":
+            continue
+        d = by.setdefault(e.get("district") or "Unknown", {"requests": 0, "no_space": 0})
+        d["requests"] += 1
+        d["no_space"] += 1 if (e.get("details") or {}).get("no_space") else 0
+    return {k: {**v, "share": _share(v["no_space"], v["requests"])} for k, v in by.items()}
 
 
 def storage_fill() -> list[dict]:
@@ -101,6 +124,8 @@ def storage_fill() -> list[dict]:
                         if e["kind"] == "cold_storage_booking" and (e.get("details") or {}).get("cold_storage") == cs["name"])
         received = sum(r["sacks"] for r in recs if r["cold_storage"]["id"] == cs["id"])
         rows.append({"cold_storage": cs["name"], "district": cs["district"], "upazila": cs["upazila"],
+                     "generator": bool(cs.get("generator")),
+                     "separate_seed_table_chambers": bool(cs.get("separate_seed_table_chambers")),
                      "capacity_sacks": cs["capacity_sacks"], "booked_sacks": cs["booked_sacks"] + received,
                      "fill": round((cs["booked_sacks"] + received) / cs["capacity_sacks"], 2),
                      "requested_on_krishivault": requested, "receipts_on_krishivault": received,
@@ -116,6 +141,7 @@ def government_view(month: int, year: int, gap_override_pct: Optional[float] = N
         "storage": fill,
         "average_rent_per_sack": round(statistics.mean(r["rent_per_sack"] for r in fill)) if fill else None,
         "farmers": district_figures(),
+        "space_requests": no_space_share(),
         "consent": "Counted only with the farmer's agreement; no names or phone numbers; districts with fewer "
                    f"than {MIN_GROUP} farmers are not shown.",
         "made": datetime.now().isoformat(timespec="seconds"),

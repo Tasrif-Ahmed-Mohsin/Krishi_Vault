@@ -20,7 +20,7 @@ What we have, where it is, how fresh it is, what uses it, and what is still to c
 
 ## Field notes (team, 14 October 2026)
 
-Cold-storage sack 84 kg; rent about ৳250 a sack (some ৳300) for up to 9 months, the same for any length of stay; a cold storage holds 50,000 to 2.5 lakh sacks; cold storages lend ৳200-300 a sack with the sacks as security; potatoes keep about 3 months at home (onion 2-3 months); farmers who store tend to sell within 1-3 months; traders, not farmers, store potatoes for sale; farmers mostly store seed potato. Check this season's rates in the field before the demo (some cold storages charge per kg).
+Cold-storage sack 84 kg; rent about ৳250 a sack (some ৳300) for up to 9 months (**the plan document uses ৳300, and the engine follows the plan**), the same for any length of stay; a cold storage holds 50,000 to 2.5 lakh sacks; cold storages lend ৳200-300 a sack with the sacks as security; potatoes keep about 3 months at home (onion 2-3 months); farmers who store tend to sell within 1-3 months; traders, not farmers, store potatoes for sale; farmers mostly store seed potato. Check this season's rates in the field before the demo (some cold storages charge per kg).
 
 ## The plan document and the value-chain study (15 October 2026)
 
@@ -40,6 +40,8 @@ The team's plan document (Google Doc "Krishi Vault", `HANDOFF.md`) quotes figure
 | Potato exports | 103,000 tonnes (Malaysia, Singapore, Sri Lanka) | Not yet; year unknown | Docs (phase 3) |
 | Bangladesh potato production | 8.6 million tons | **Out of date**: that is BBS 2012-13 (8,603,122 t); BBS 2024-25 is 11.6 million tonnes | Use the BBS figure |
 
+**Current growing cost (the engine's pre-loaded benchmark):** about ৳14 a kg for the 2024-25 season, from DAE Bogura as reported by The Financial Express (2025) ("Bogura farmers take a hit as potato price drops 55pc"); the government's average for 2024-25 was also about ৳14 a kg (The Daily Star, 2025), with northern farmers reporting up to ৳20 and Bogura and Joypurhat ৳12-14 in other reports. Used by `src/engine/facts.py` (`COST_BENCHMARKS`) when a farmer gives no cost of their own. The same reports put Bogura's farm-gate price at ৳5-8 a kg late in the 2025 glut: the March 2025 replay's ৳14 is the harvest-time price, not the later low.
+
 The plan's business figures (fees, start-up money, the 3-year projection) are worked out in `src/engine/business_model.py` from the plan's own assumptions; they are projections, not data.
 
 ## Kept for later (not used by the current plan)
@@ -56,7 +58,7 @@ The plan's business figures (fees, start-up money, the 3-year projection) are wo
 |---|---|---|---|
 | Monthly potato prices, 2010-2026, wholesale and retail, by district | DAM (`https://market.dam.gov.bd/`); FAO GIEWS FPMA (Dhaka wholesale and retail) | Fix `src/scrapers/dam_scraper.py` for the new site, or download; save as `data/raw/price_history.csv` with `date, admin2, market, price`; then run `python -m src.models.backtest` | To do. Blocked from the cloud: the network list does not allow `market.dam.gov.bd`, `fpma.fao.org`, `data.humdata.org` (add them, or do it on a laptop) |
 | Farm-gate prices at harvest and later | DAM farm-gate reports; the field check | A few dated prices per month for Bogura | To do |
-| Season weather per district, 2012-2025 | NASA POWER | Mati Kohon's fetcher; then add to the production model | To do |
+| Season weather per district, 2012-2025 | NASA POWER | Mati Kohon's fetcher; then add to the production model | To do. Blocked from the cloud (15 October): `power.larc.nasa.gov` and Open-Meteo are not on the network list |
 | This season's planted area | DAE district reports (January) | Enter as "planted area" on the Forecasts page | At the season |
 | Cold-storage rent, advance and interest, sack size, group rates | Two Bogura cold storages | Field check | To do |
 | Storage and selling costs, weight loss (is it near the study's 8.65%?) | Five farmers | Field check (interview guide) | To do |

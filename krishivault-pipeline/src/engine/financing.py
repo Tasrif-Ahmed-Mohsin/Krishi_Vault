@@ -30,9 +30,9 @@ from typing import Optional
 
 import numpy as np
 
-from src import demo_data, events
+from src import contacts, demo_data, events
 from src.engine import receipts
-from src.engine.facts import StorageTerms, MONTHS_EN, month_after
+from src.engine.facts import GLUT_LTV_CAP, StorageTerms, MONTHS_EN, month_after
 from src.models.price_outlook import rise_strength, simulate, season_for_decision
 
 
@@ -57,7 +57,9 @@ def loan_estimate(sacks: int, price_today: float, decision_month: int, decision_
     careful_price = min(price_today, float(np.percentile(end_prices, 10)))
     claims = sacks * ((t.rent_per_sack if rent_due else 0) + cs_advance_taken_per_sack + t.sell_from_store_per_sack)
     collateral = kept_kg * careful_price - claims
-    max_loan = max(0.0, math.floor(b["ltv"] * collateral / 100) * 100)
+    glut = rs.get("gap_pct", 0) >= 3 or rs.get("k", 1) <= 0.3       # the plan's glut warning
+    ltv = min(b["ltv"], GLUT_LTV_CAP) if glut else b["ltv"]           # the plan's 50% cap in a glut year
+    max_loan = max(0.0, math.floor(ltv * collateral / 100) * 100)
     principal = float(amount) if amount else max_loan
     interest = principal * b["rate_year"] * months / 12
     fee = principal * b["processing_fee_pct"] / 100
@@ -82,6 +84,7 @@ def loan_estimate(sacks: int, price_today: float, decision_month: int, decision_
     if principal > max_loan:
         problems.append(f"Asked ৳{principal:,.0f}, above the most this crop supports (৳{max_loan:,.0f}).")
     return {
+        "ltv_used": ltv, "glut_cap": glut and ltv < b["ltv"],
         "bank": {"id": b["id"], "name": b["name"], "ltv": b["ltv"], "rate_year": b["rate_year"],
                  "processing_fee_pct": b["processing_fee_pct"], "needs": b["needs"], "demo": True},
         "crop": {"sacks": sacks, "kg": round(kg), "kg_at_end": round(kept_kg), "shrinkage_buffer": round(t.season_loss(), 4),
@@ -143,6 +146,7 @@ def apply(farmer_name: str, phone: Optional[str], district: str, cold_storage_id
     event = events.record("loan_application", f"{sacks} বস্তা জামানতে ঋণের আবেদন, রসিদ {receipt_no}",
                           {"application": app_id, "bank": est["bank"]["name"], "loan": est["loan"]},
                           district=district, phone=phone)
+    contacts.save(f"application:{app_id}", phone or (contacts.get(f"receipt:{receipt['no']}") if receipt else None))
     return demo_data.append("loan_applications", {
         "id": app_id, "ref": event["ref"], "farmer": farmer_name, "phone": events.mask_phone(phone),
         "district": district, "cold_storage": {"id": cs["id"], "name": cs["name"]},
@@ -173,10 +177,25 @@ def bank_decision(app_id: str, approve: bool) -> Optional[dict]:
         held = (receipts.get(current["receipt"]["no"]) or {}).get("hold")
         if held and held["application"] != app_id:     # the same sacks cannot back two loans
             raise ValueError(f"Receipt {current['receipt']['no']} is already held for a loan from {held['bank']}")
-    app = demo_data.update("loan_applications", "id", app_id, {"status": STATUS[2] if approve else STATUS[3]})
+    changes = {"status": STATUS[2] if approve else STATUS[3]}
+    if approve and current:     # step 3 of the plan's loop: the bank pays the loan out (demo; KrishiVault never holds it)
+        changes["paid_out"] = {"amount": current["estimate"]["loan"], "by": current["estimate"]["bank"]["name"],
+                               "to": "the farmer's bank or mobile-money account", "demo": True}
+    app = demo_data.update("loan_applications", "id", app_id, changes)
     if app and approve and app.get("receipt"):
         receipts.place_hold(app["receipt"]["no"], app["estimate"]["bank"]["name"], app_id, app["estimate"]["loan"])
     return app
+
+
+def decision_sms(app: dict) -> str:
+    """The farmer's SMS after the bank decides (numbers from the application; demo)."""
+    from src.voice.bangla_numbers import fmt_taka
+    bank = demo_data.bank(app["estimate"]["bank"]["id"])
+    if app["status"] == STATUS[2]:
+        return (f"কৃষিভল্ট: {bank['name_bn']} রসিদ {app['receipt_no']}-এর জামানতে "
+                f"{fmt_taka(app['estimate']['loan'], rounded=False)} টাকা ঋণ অনুমোদন করেছে। টাকা আপনার ব্যাংক বা মোবাইল "
+                f"অ্যাকাউন্টে পাঠাবে ব্যাংক। বস্তা বেচলে আগে হিমাগার ও ব্যাংক পাবে, বাকিটা আপনার। (ডেমো)")
+    return f"কৃষিভল্ট: {bank['name_bn']} এবার ঋণ দিচ্ছে না। আমাদের সহকারী ফোন করে অন্য উপায় জানাবেন। (ডেমো)"
 
 
 def settle_sale(app_id: str, price_per_kg: float, kg_sold: Optional[float] = None) -> Optional[dict]:

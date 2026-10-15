@@ -16,7 +16,7 @@ its own assumptions, so the pitch deck and the docs quote sums that add up.
 
 Shares the plan's table implies but does not state (checked in the tests): 60%
 of bags financed, 30% of bags sold to a buyer through KrishiVault, 40 bags per
-farmer. `checks()` lists where the plan's figures differ from the engine's.
+farmer. `notes()` says how the plan's figures are read where it gives two.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ from __future__ import annotations
 from src.engine.facts import RENT_PER_SACK, SACK_KG
 
 # ------------------------------------------------------------------ the plan's assumptions
-STORAGE_FEE_PER_BAG = 300.0       # the plan's revenue table ("Tk 300/bag"); field notes: ৳250, some ৳300
+STORAGE_FEE_PER_BAG = RENT_PER_SACK   # the plan's ৳300 a bag (the engine uses the same rent)
 COLD_STORAGE_COMMISSION = 0.04    # → ৳12 a bag
 LOAN_PER_BAG = 300.0              # "partner banks lend ~Tk 300/bag (50% LTV on crop value)"
 LOAN_FEE = 0.015                  # → ৳4.50 a financed bag
@@ -96,27 +96,26 @@ def startup_capital() -> dict:
                                       for n, a, c in STARTUP_CAPITAL]}
 
 
-def checks(price_per_kg: float = 16.0) -> list[str]:
-    """Where the plan's business figures and the engine's figures differ: for the team to settle."""
+def notes(price_per_kg: float = 16.0) -> list[str]:
+    """How the plan document's figures are read where it gives two (the plan is the main model)."""
     bag_value = SACK_KG * price_per_kg
     return [
-        f"Storage fee: the projection uses ৳{STORAGE_FEE_PER_BAG:.0f} a bag; the engine uses the field notes' "
-        f"৳{RENT_PER_SACK:.0f} (some cold storages charge ৳300). At ৳{RENT_PER_SACK:.0f} the cold-storage fee is "
-        f"৳{RENT_PER_SACK * COLD_STORAGE_COMMISSION:.0f} a bag, not ৳{STORAGE_FEE_PER_BAG * COLD_STORAGE_COMMISSION:.0f}.",
-        f"Loan per bag: ৳{LOAN_PER_BAG:.0f} is what cold storages already advance. At ৳{price_per_kg:.0f}/kg a bag is "
-        f"worth ৳{bag_value:,.0f}, so 50% would be ৳{bag_value * 0.5:,.0f}; the engine lends on a careful value after "
-        f"the season's weight loss, rent and selling costs.",
-        "Telco VAS: farmers would pay a premium call rate (৳2-3 a minute), but the plan also says KrishiVault is "
-        "free for farmers, and the call rule is a missed call, then KrishiVault calls back. Decide which.",
-        "Pilot size: Phase 1 is 50-100 farmers with 1-2 cold storages (months 1-4) and Phase 2 is 1,000+ farmers "
-        "with 10 cold storages (months 5-12), but the year-1 projection and the funding goal use 2,000 farmers and "
-        "5 cold storages.",
+        f"Rent: the plan's ৳{RENT_PER_SACK:.0f} a sack is used everywhere: in the engine, the demo cold storages and "
+        f"the projection (4% = ৳{RENT_PER_SACK * COLD_STORAGE_COMMISSION:.0f} a sack).",
+        f"Loan per sack: the projection uses the plan's ৳{LOAN_PER_BAG:.0f} a sack. The engine's banks lend the plan's "
+        f"50-60% of a careful value (after the 8.65% loss, rent and selling costs); at ৳{price_per_kg:.0f}/kg a sack is "
+        f"worth ৳{bag_value:,.0f}, so real loans can be larger and the ৳4.50 fee is a cautious figure.",
+        "Calls: the farmer pays no fee to KrishiVault. Calls to the KrishiVault voice line are charged at a "
+        "Grameenphone VAS rate (৳2-3 a minute), shared 50/50 with Grameenphone (the plan's first income stream).",
+        "Pilot: phase 1 (months 1-4) is 50-100 farmers in Kahaloo; phase 2 (months 5-12) grows to 1,000+ farmers in "
+        "Bogura and Munshiganj; the year-1 projection counts 2,000 active farmers and 5 cold storages by the end of "
+        "year 1.",
     ]
 
 
 def business_plan() -> dict:
     return {"unit_fees": unit_fees(), "projection": projection(), "startup_capital": startup_capital(),
-            "funding": FUNDING, "checks": checks(),
+            "funding": FUNDING, "notes": notes(),
             "assumptions": {"bags_per_farmer": BAGS_PER_FARMER, "share_financed": SHARE_FINANCED,
                             "share_sold_to_buyers": SHARE_SOLD_TO_BUYERS},
             "rule": "No paid placement: a partner's fee never changes what a farmer is advised."}

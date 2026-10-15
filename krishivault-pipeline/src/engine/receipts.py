@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from src import demo_data, events
+from src import contacts, demo_data, events
 from src.engine.facts import StorageTerms
 from src.voice.bangla_numbers import group_bd, to_bn_digits, to_en_digits
 
@@ -45,10 +45,24 @@ def receipt_sms(r: dict) -> str:
             f"ভাড়া বস্তাপ্রতি {_fmt(r['rent_per_sack'])} টাকা। ঋণের জন্য এই নম্বর বলুন। (ডেমো)")
 
 
+def partner_check(cs: dict) -> list[str]:
+    """The plan's rule for partner cold storages: a backup generator, and separate seed and table chambers."""
+    missing = []
+    if not cs.get("generator"):
+        missing.append("a backup generator")
+    if not cs.get("separate_seed_table_chambers"):
+        missing.append("separate seed and table chambers")
+    return missing
+
+
 def issue(cold_storage_id: str, farmer_name: str, phone: Optional[str], sacks: int,
-          kg_weighed: Optional[float] = None, grade: str = "table", advance_per_sack: float = 0.0) -> dict:
+          kg_weighed: Optional[float] = None, grade: str = "table", advance_per_sack: float = 0.0,
+          month: int = 3, year: int = 2027) -> dict:
     """The cold storage records weighed and graded sacks; returns the receipt with its SMS text."""
     cs = demo_data.cold_storage(cold_storage_id)
+    missing = partner_check(cs)
+    if missing:
+        raise ValueError(f"{cs['name']} is not a KrishiVault partner yet: it needs {' and '.join(missing)} (plan rule)")
     if grade not in GRADES:
         raise ValueError("grade must be 'table' or 'seed'")
     if advance_per_sack > cs["advance_per_sack"]:
@@ -63,13 +77,14 @@ def issue(cold_storage_id: str, farmer_name: str, phone: Optional[str], sacks: i
         "sacks": int(sacks), "kg": round(kg), "kg_per_sack": round(kg / sacks, 1), "grade": grade,
         "rent_per_sack": cs["rent_per_sack"], "rent_paid": False,
         "advance": round(advance_per_sack * sacks), "advance_rate_year": cs["advance_rate_year"],
-        "status": "in store", "hold": None, "demo": True,
+        "status": "in store", "hold": None, "stored_month": int(month), "stored_year": int(year), "demo": True,
     }
     record["sms"] = receipt_sms(record)
     event = events.record("storage_receipt", f"{farmer_name}: {sacks} বস্তা আলু জমা, রসিদ দেওয়া হয়েছে",
                           {"receipt": no, "sacks": int(sacks), "kg": round(kg), "grade": grade,
                            "cold_storage": cs["name"]}, district=cs["district"], phone=phone)
     record["ref"] = event["ref"]
+    contacts.save(f"receipt:{no}", phone)        # for the loan and price-window SMS later; never shown
     return demo_data.append("storage_receipts", record)
 
 

@@ -6,13 +6,13 @@ The parts of the plan that `HANDOFF.md` only summarizes. Read `HANDOFF.md` first
 
 Code: `krishivault-pipeline/src/engine/storage_plan.py`, costs in `src/engine/facts.py`.
 
-**Inputs:** how much potato (maunds, 84 kg sacks or kg), the price offered today, the month, whether the potatoes are already in cold storage, any cash needed and by when, the farmer's own cost per kg (optional), and the costs below.
+**Inputs:** how much potato (maunds, 84 kg sacks or kg), the price offered today, the month, whether the potatoes are already in cold storage, any cash needed and by when, the farmer's own growing cost per kg (optional: otherwise the pre-loaded local benchmark, ৳14 a kg, DAE Bogura 2024-25), and the costs below. On USSD only two numbers are asked (sacks and cash needed now); the local price and costs are pre-loaded.
 
 **Costs per sack (editable):**
 
 | Cost | Default | Source |
 |---|---|---|
-| Rent for the season (up to 9 months) | ৳250 | Field notes (some charge ৳300; the plan's money sums use ৳300) |
+| Rent for the season (up to 9 months) | ৳300 | Plan document (the field notes found some at ৳250) |
 | Sack size | 84 kg | Field notes |
 | Empty sack, carrying to the cold storage, loading and unloading | ৳40 + ৳25 + ৳15 | Assumption |
 | Selling from the store / selling at the field | ৳30 / ৳10 | Assumption |
@@ -32,10 +32,10 @@ Code: `krishivault-pipeline/src/engine/storage_plan.py`, costs in `src/engine/fa
 | Recommendation | When |
 |---|---|
 | **Sell now** | Storing to the best month adds less than ৳500 or 3% on average, or beats selling now in fewer than 55 of 100 paths, or no loan can cover the cash need and selling part does not help |
-| **Store, sell in month X** | Storing beats selling now in at least 80 of 100 paths and the bad case (1 in 10) loses at most 5% |
-| **Sell part, store the rest** | In between. It sells enough sacks for the cash need, and at least a safety share (25%, 40% or 50% as the chance of gain falls) |
+| **Sell part, store the rest** | Storing pays (it beats selling now in at least 55 of 100 paths and adds more than ৳500 or 3%). It sells enough sacks for the cash need, and at least the plan's 30% (storing wins in 8 of 10 paths) or 40% (less sure) |
+| **Store, sell in month X** | Only for potatoes already in cold storage: storing beats selling now in at least 80 of 100 paths and the bad case (1 in 10) loses at most 5%. At the harvest "store everything" is shown but never advised: the plan never bets the whole crop on one month |
 
-The plan's risk answer is split selling (sell 30-40% at harvest, or exits of 30% / 40% / 30%) so a farmer never bets the whole crop on one month. The engine's safety share does this when storing is uncertain; whether "store" should also always keep a share is an open point (`HANDOFF.md`, section 13).
+The plan's staggered exit (30% at the harvest, 40% mid-season, 30% at the best month) is worked out for every harvest plan and shown beside the advice; it is advised only when it beats the split on average and in a bad case. With flat rent it usually gives less: the mid-season 40% pays a full season's rent before the rise. **Net profit** (money in hand minus the growing cost) comes with every answer. **In a glut year** (crop 3% or more above trend, or a flat outlook) a bank lends at most 50% of the careful value.
 
 ## 2. How the forecasts work
 
@@ -56,13 +56,13 @@ The plan's risk answer is split selling (sell 30-40% at harvest, or exits of 30%
 
 | Step | Screen | What the judges see |
 |---|---|---|
-| 1. The trap | Dashboard → Season overview, season "Replay March 2025" | A fair replay: only what was known in March 2025. A big crop (about 7% above trend at the harvest); the outlook stays flat, and so did the real prices (dark squares); storing 36 sacks loses money in every month: "sell now". What really happened: storing all 36 sacks would have lost ৳15,300 to ৳23,500, whichever month they were sold, turning a ৳3,660 profit into a loss |
-| 2. A normal year | Season "Replay March 2024" | A fair replay with no earlier price season to learn from: "sell 9 sacks now, store 27 until December"; selling after one month still loses (flat rent). Prices really nearly doubled; the advice brought ৳20,480 more than selling everything at the harvest: net profit ৳36,240 against ৳15,760, **2.3 times** (the plan's "2x to 3x", in a normal year) |
-| 3. The farmer's call | `/call`, season "Next harvest", the first "Try" sentence | Dialect speech understood, numbers read back, "sell 19 sacks now, store 17 until December", the money and the risk; press 2: cold-storage request; press 8: counted for the district figures; SMS receipt |
-| 4. The receipt and the bank | Partner screens → Cold storage, Bank loan, Partner screens → Bank | The cold storage issues a digital receipt for 36 sacks (SMS); the loan application uses its number; the bank sees the value after weight loss, the careful price, the risk and approves (demo): the receipt is now held for the bank. "Record the sale": the sale pays the cold storage, then the bank, then the farmer |
+| 1. The trap | Dashboard → Season overview, season "Replay March 2025" | A fair replay: only what was known in March 2025. A big crop (about 7% above trend at the harvest); the outlook stays flat, and so did the real prices (dark squares); storing 36 sacks loses money in every month: "sell now". What really happened: storing all 36 sacks would have lost ৳17,100 to ৳25,300, whichever month they were sold; the harvest price only covered the ৳14 a kg growing cost |
+| 2. A normal year | Season "Replay March 2024" | A fair replay with no earlier price season to learn from: "sell 11 sacks now, store 25 until December" (the plan's 30% at harvest); selling after one month still loses (flat rent). Prices really nearly doubled; the advice brought ৳17,710 more than selling everything at the harvest: net profit ৳29,450 against ৳11,740, **2.5 times** (the plan's own example figure, in a normal year) |
+| 3. The farmer's call | `/call`, season "Next harvest", the first "Try" sentence | Dialect speech understood, numbers read back, "sell 19 sacks now, store 17 until December", the money, the risk and the net profit (৳12,900 on average against ৳5,600 now); press 2: cold-storage request; press 8: counted for the district figures; SMS receipt. Then `/ussd`: the same question with two numbers |
+| 4. The receipt and the bank | Partner screens → Cold storage, Bank loan, Partner screens → Bank | The cold storage issues a digital receipt for 36 sacks (SMS); Demo Cold Storage C is refused (no generator: the plan's partner rule); the loan application uses the receipt's number; the bank sees the value after weight loss, the careful price, the risk and approves (demo): payout SMS, and the receipt is held for the bank. Season "Today: October 2026", Field agent → "Check price windows": sell 15 sacks now, to the buyer that pays most. Bank → "Record the sale": the cold storage, then the bank, then the farmer |
 | 5. Government | Partner screens → Government | The glut warning from the crop size (real BBS data), cold-storage fill (demo), and farmer figures by district, only from farmers who agreed, hidden under 5 |
-| 6. Group and export | Group storage, Export | A shared truck saves money now; the discount counts only when the cold storage agrees. The UAE quotes most, Singapore pays most after costs |
-| 7. Profit | Profit calculator | One bigha: cost ৳15.59/kg; storing part added about ৳10,400 against selling everything at harvest |
+| 6. Group and export | Group storage, Export | A shared truck saves money now; the discount counts only when the cold storage agrees; "Sell together": the group's lot reaches a supermarket chain and an exporter, about ৳117 a sack more than the haat. The UAE quotes most, Singapore pays most after costs |
+| 7. Profit | Profit calculator | One bigha: cost ৳15.92/kg; storing part added about ৳9,400 against selling everything at harvest |
 
 ## 4. What partners see
 
@@ -71,7 +71,8 @@ The plan's risk answer is split selling (sell 30-40% at harvest, or exits of 30%
 - **Buyer:** lots with quantity and today's price; offers go back to the farmer, ranked by money in hand.
 - **Exporter:** sourcing districts and market margins after costs (the Export page).
 - **Government (DAM, DAE):** the glut warning (crop against its trend and the outlook's rise strength), cold-storage fill (demo), and farmer figures by district: the share at harvest who needed cash within 7 days, the middle cash need, what the engine advised. Only farmers who agreed; no names or numbers; a district with fewer than 5 farmers is not shown.
-- **KrishiVault helper:** callback requests with what the call already collected.
+- **Field agent (helper):** callback requests with what the call already collected; **price-window alerts**: for every receipt in store, sell how many sacks now and to whom, or hold until when, sent by SMS.
+- **Buyer (group lots):** a group's combined lot, shared out by money per kg.
 
 Phone numbers are masked on every partner screen. KrishiVault never holds money: the split at sale is worked out here and paid by the bank or a mobile-money account.
 
@@ -82,14 +83,16 @@ Phone numbers are masked on every partner screen. KrishiVault never holds money:
 - Every answer ends with "১ = আবার শুনুন, ০ = মূল মেনু, ৯ = সহকারী".
 - After the store-or-sell answer: "press ৮ to be counted, without name or number, in the district figures". Nothing is counted otherwise; the greeting promises that what the farmer says is used only to advise them.
 - Never ask what a cold storage, bank or buyer can record instead.
-- The farmer pays nothing: missed call, then we call back (when there is a phone line). Open point: the plan also counts on a VAS call rate (`HANDOFF.md`, section 13).
+- The farmer pays no fee to KrishiVault: calls to the voice line are charged at a Grameenphone VAS rate, shared 50/50 (the plan). USSD and SMS cost the farmer nothing extra beyond the operator's charges.
 - The answer always says it is an estimate, never a promise.
 
 ## 6. The phone line (after the prototype)
 
-There is no phone line in the prototype; the call preview runs the same steps in the browser.
+There is no phone line in the prototype; the call preview (`/call`) and the USSD preview (`/ussd`) run the same steps in the browser. The full design, with diagrams and the judges' questions, is in `docs/ai_architecture.html`.
 
-**Options:** a licensed Bangladeshi IP-telephony 096 number over a SIP trunk into our own Asterisk server (production); Twilio Media Streams (testing only, about 13 times Awaj's cost); or a hybrid where an Awaj broadcast call ends with "press 1 to talk to KrishiVault". **Do not use** a GSM gateway with a GP or Teletalk SIM (treated as illegal VoIP, blocked by operators).
+**The plan's channels:** Grameenphone as a VAS partner: a Bangla voice line on a short code (call revenue shared 50/50), a USSD code, and SMS. The USSD handler (`src/voice/ussd.py`) already speaks the gateway format ("1*36*25000" in, "CON"/"END" out).
+
+**Until a Grameenphone deal (the pilot), options:** a licensed Bangladeshi IP-telephony 096 number over a SIP trunk into our own Asterisk server (production); Twilio Media Streams (testing only, about 13 times Awaj's cost); or a hybrid where an Awaj broadcast call ends with "press 1 to talk to KrishiVault". **Do not use** a GSM gateway with a GP or Teletalk SIM (treated as illegal VoIP, blocked by operators).
 
 **The listening steps:** phone → SIP trunk → Asterisk → live audio and keypad → turn detection → Google bn-BD speech to text (Whisper tested on the same audio) → Bangla parser, then Gemini with fixed fields → the call steps (`src/voice/conversation.py`) → the engine → Bangla template → number lock → Google Bangla voice. About 2 to 4 seconds a turn.
 
@@ -123,5 +126,5 @@ For Round 2 of Grameenphone FutureMakers the plan says the execution and feasibi
 | Differentiation | Not information alone: a decision in taka with its risk, plus the action (booking, receipt, loan, group, buyer); cash plus cold storage in one loop (`HANDOFF.md`, section 5) |
 | AI rationale | Statistics and simulation where the future is uncertain; exact sums where money is; the number lock |
 | Feasibility and scale | Working prototype on real national data; 64 districts covered; the four-step loop runs end to end with demo partners; phased rollout from Kahaloo; partners paid only when they gain; ৳20 lakh to start, break-even in year 2 (projection) |
-| Impact | Farmers keep more of the post-harvest price rise (2024 replay: net profit 2.3 times); fewer forced sales; less storage waste; ground-level figures for government |
+| Impact | Farmers keep more of the post-harvest price rise (2024 replay: net profit 2.5 times); fewer forced sales; less storage waste; ground-level figures for government |
 | Q&A | `HANDOFF.md`, section 12 |

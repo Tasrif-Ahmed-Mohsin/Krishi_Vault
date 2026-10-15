@@ -54,7 +54,8 @@ def test_keypad_advice_at_harvest_with_cash_need():
     assert r["result"]["key"] == "sell_part"
     assert r["say"].endswith(CLOSING)
     assert "বস্তা বেচুন" in r["say"] and "২৫,০০০ টাকার দরকার মিটবে" in r["say"]
-    assert {o["key"] for o in r["result"]["options"]} == {"sell_now", "store", "sell_part"}
+    assert {o["key"] for o in r["result"]["options"]} == {"sell_now", "store", "sell_part", "staggered"}
+    assert "উৎপাদন খরচ কেজিতে ১৪ টাকা" in r["say"] and r["result"]["net_profit"]["growing_cost_per_kg"] == 14.0
     assert len(r["result"]["by_month"]) == 10
 
 

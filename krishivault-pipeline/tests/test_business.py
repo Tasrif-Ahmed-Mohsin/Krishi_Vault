@@ -24,7 +24,7 @@ def test_highest_quote_is_not_always_best():
 
 def test_loan_counts_cold_storage_first():
     e = financing.loan_estimate(36, 16, 3, 2027, 6, "bank-a")
-    assert e["paid_first_to_cold_storage"] == 36 * (250 + 30)
+    assert e["paid_first_to_cold_storage"] == 36 * (300 + 30)       # the plan's ৳300 rent, then selling
     assert e["max_loan"] <= 0.6 * e["collateral_value"]
     assert e["careful_price"] <= 16
 
@@ -50,11 +50,11 @@ def test_receipt_must_match():
 
 def test_group_discount_counts_only_when_agreed():
     cmp = group_storage.compare("g-shibganj", 40)
-    assert cmp["group_now"]["rent"] == 250            # offer reached but not agreed
-    assert cmp["group_if_agreed"]["rent"] == 240
+    assert cmp["group_now"]["rent"] == 300            # offer reached but not agreed
+    assert cmp["group_if_agreed"]["rent"] == 285
     group_storage.agree_offer("g-shibganj", 300)
     cmp = group_storage.compare("g-shibganj", 40)
-    assert cmp["group_now"]["rent"] == 240
+    assert cmp["group_now"]["rent"] == 285
 
 
 def test_export_costs_add_up_and_flag_losses():
@@ -162,7 +162,7 @@ def test_business_plan_reproduces_the_plan_document():
     assert (y1["profit"], y2["profit"], y3["profit"]) == (-126_000, 6_830_000, 34_720_000)
     assert (y1["margin"], y2["margin"], y3["margin"]) == (-0.073, 0.541, 0.705)
     assert bm.startup_capital()["total"] == 2_000_000
-    assert len(bm.checks()) == 4
+    assert len(bm.notes()) == 4 and "৳300" in bm.notes()[0]
 
 
 def test_curing_reminder_text():
@@ -179,3 +179,48 @@ def test_one_receipt_cannot_back_two_loans():
     with pytest.raises(ValueError):
         financing.bank_decision(second["id"], True)
     assert financing.bank_decision(second["id"], False)["status"].startswith("declined")
+
+
+# ------------------------------------------------------------- the rest of the plan's loop
+
+def test_only_verified_cold_storages_issue_receipts():
+    from src.engine import receipts
+    with pytest.raises(ValueError, match="generator"):
+        receipts.issue("cs-c", "Demo", None, 10)          # no backup generator: not a partner yet (plan rule)
+
+
+def test_bank_approval_pays_out_and_messages_the_farmer():
+    from src import contacts
+    from src.engine import receipts
+    r = receipts.issue("cs-a", "Demo farmer", "01711998877", 36)
+    app = financing.apply("Demo farmer", None, "Bogura", "cs-a", r["no"], 36, 16, 3, 2027, 6, "bank-a")
+    assert contacts.get(f"application:{app['id']}") == "01711998877"    # from the receipt, never shown
+    out = financing.bank_decision(app["id"], True)
+    assert out["paid_out"]["amount"] == app["estimate"]["loan"] and "mobile" in out["paid_out"]["to"]
+    assert r["no"] in financing.decision_sms(out) and "ডেমো" in financing.decision_sms(out)
+
+
+def test_price_window_alerts_say_sell_or_hold():
+    from src.engine import alerts, receipts
+    receipts.issue("cs-a", "Demo farmer", "01711998877", 36, month=3, year=2026)
+    found = alerts.price_window(10, 2026, 22)
+    a = found[0]
+    assert a["action"] in ("sell", "hold") and a["receipt"] == "CSA-0001" and "ডেমো" in a["sms"]
+    if a["action"] == "sell":
+        assert a["sell_sacks"] > 0 and a["buyer"]["money_total"] > 0
+    sent = alerts.send(found, lambda phone, text: {"dry_run": True, "to": phone})
+    assert sent[0]["sms_result"]["to"] == "01711998877"
+
+
+def test_group_sell_reaches_big_buyers():
+    s = group_storage.group_sale("g-shibganj", 16)
+    assert s["lot_per_kg"] > s["haat_per_kg"] and s["total_gain"] > 0
+    assert any(x["min_kg"] >= 5000 for x in s["shares"])           # a buyer one farmer alone cannot reach
+    assert sum(x["kg"] for x in s["shares"]) == s["lot_kg"]
+
+
+def test_full_cold_storage_counts_for_government():
+    from src.engine import farmer_signals
+    from src import demo_data
+    cs = demo_data.cold_storage("cs-a")
+    assert farmer_signals.free_sacks(cs) == cs["capacity_sacks"] - cs["booked_sacks"]

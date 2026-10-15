@@ -12,22 +12,24 @@ This file is the short version.
 
 **One focus: potato after the harvest.** "Store or sell, and until when?" KrishiVault helps Bangladeshi farmers earn more through better predictions, smarter storage decisions, easier financing and better market access: **Know, Calculate, Decide, Act**. The wedge: market timing, the cold-storage sums and crop-backed cash through a bank, in one loop.
 
-**The problem (field notes):** the cold-storage sack is 84 kg and the rent is about ৳250 a sack for up to 9 months, the same for 1 month or 9. Cold storages lend ৳200-300 a sack against the sacks. Big crops bring low prices; afraid, farmers sell within 1-3 months, after paying the full rent. Traders, with the cash and the information, store and sell later. Farmers mostly store only seed. **The plan's value-chain study** (Bogura and Munshiganj, 2016 fieldwork): farmers sell 64% at harvest, traders buy 97.6% of cold-stored potatoes, cold storage loses 8.65% of the weight (the engine's default). Quote its taka figures with their year; they are a decade old.
+**The problem (field notes and the plan document):** the cold-storage sack is 84 kg and the rent is about ৳300 a sack for up to 9 months (the plan; some charge ৳250), the same for 1 month or 9. Cold storages lend ৳200-300 a sack against the sacks. Big crops bring low prices; afraid, farmers sell within 1-3 months, after paying the full rent. Traders, with the cash and the information, store and sell later. Farmers mostly store only seed. **The plan's value-chain study** (Bogura and Munshiganj, 2016 fieldwork): farmers sell 64% at harvest, traders buy 97.6% of cold-stored potatoes, cold storage loses 8.65% of the weight (the engine's default). Quote its taka figures with their year; they are a decade old.
 
 **Seven parts:**
 1. **Production and price prediction** with ranges (BBS production trend; price outlook driven by crop size; regional prices).
-2. **Storage and selling-time engine:** sell now / store until month X / sell part and store the rest, after rent, losses, transport and interest, with the chance that storing pays.
+2. **Storage and selling-time engine:** sell now / sell part and store the rest / store until month X (already-stored potatoes), after rent, losses, transport and interest, with the chance that storing pays and the net profit after the growing cost (the farmer's own, or the local benchmark: ৳14 a kg, DAE Bogura 2024-25). At the harvest it never stores the whole crop: it sells 30-40% (the plan's rule) and compares the plan's staggered exit (30/40/30). In a glut year banks lend at most 50%.
 3. **Market access:** buyers and offers ranked by money in the farmer's hand.
 4. **Crop-backed financing through banks:** a digital storage receipt from the cold storage (SMS), careful value after the 8.65% loss, repayment risk, application; the bank decides; approval holds the receipt; the sale pays the cold storage, the bank, then the farmer. KrishiVault does not lend or hold money.
 5. **Export market intelligence:** sourcing districts and market margins after every cost.
-6. **Group storage:** combined sacks; a discount counts only after the cold storage agrees.
+6. **Group storage and group selling:** combined sacks; a discount counts only after the cold storage agrees; the group's lot reaches big buyers (shared out by money per kg, against the haat).
 7. **Profit calculator:** costs, sales, profit per kg, sack, maund and harvest.
+
+**The plan's loop, all running with demo partners:** harvest call or USSD (two numbers: sacks and cash needed) → digital receipt from a verified cold storage (generator, separate seed and table chambers) → bank loan, paid out by the bank (SMS) → price-window alerts by SMS (sell how many, to whom, or hold) → the sale pays the cold storage, the bank, then the farmer.
 
 **Around the seven parts:** the government screen (glut warning from real data; farmer figures by district only with consent, press 8 in the call; hidden under 5 farmers), the curing reminder SMS, the business plan (`src/engine/business_model.py`: five income streams, ৳20 lakh start-up, 3-year projection). Rollout: Kahaloo (Bogura) pilot, then Bogura and Munshiganj, then national.
 
 **Not in the current plan:** fertilizer and pesticide supply, the seed and machinery marketplace, weather danger alerts, a phone-number ID with a PIN. Their data stays in `data/reference/mati_kohon/` for later. Do not build them unless the user asks.
 
-**Channels:** farmers by voice call (keypad or speech) and SMS; **in the prototype there is no phone line**, so the call is previewed in the browser (`/call`), and **SMS can be sent** (dry run until switched on). Helpers, cold storages, banks, buyers and exporters use the web dashboard (`/`).
+**Channels (the plan):** Grameenphone voice line (VAS rate, no other fee for farmers), USSD and SMS; **in the prototype there is no phone line or USSD code**, so the call is previewed in the browser (`/call`) and the USSD menu too (`/ussd`), and **SMS can be sent** (dry run until switched on). The AI and voice architecture, today and after the pilot: `docs/ai_architecture.html`. Helpers, cold storages, banks, buyers and exporters use the web dashboard (`/`).
 
 **Hero crop:** potato in Bogura; data covers 64 districts. Onion is next.
 
@@ -36,15 +38,15 @@ This file is the short version.
 - `krishivault-pipeline/`: the Python backend (FastAPI).
   - `src/main.py`: the API; serves `static/index.html` (the dashboard, `/`) and `static/call.html` (the call preview, `/call`).
   - `src/models/production_forecast.py` (BBS trend, crop gap, district supply) and `price_outlook.py` (crop-size price outlook, simulated ranges, regional index, model card).
-  - `src/engine/`: `storage_plan.py` (the store-or-sell engine), `facts.py` (sack, rent, 8.65% loss and cost defaults with sources), `market_access.py`, `financing.py`, `receipts.py` (digital receipts, the bank's hold, the split at sale), `farmer_signals.py` (the government screen), `group_storage.py`, `export_intel.py`, `profit.py`, `business_model.py`.
-  - `src/voice/`: `conversation.py` (the call: menu, questions, read-back, answer, action, helper; signed SMS and actions), `understanding.py`, `intent_parser.py`, `bangla_numbers.py`, `number_lock.py`, `gemini.py`, `tts_generator.py`.
+  - `src/engine/`: `storage_plan.py` (the store-or-sell engine), `facts.py` (sack, rent, 8.65% loss and cost defaults with sources), `market_access.py`, `financing.py`, `receipts.py` (digital receipts, the bank's hold, the split at sale), `alerts.py` (price-window SMS), `farmer_signals.py` (the government screen), `group_storage.py` (incl. group selling), `export_intel.py`, `profit.py`, `business_model.py`. `src/contacts.py` keeps phone numbers for later SMS, never shown.
+  - `src/voice/`: `conversation.py` (the call: menu, questions, read-back, answer, action, helper; signed SMS and actions), `ussd.py` (the USSD menu, gateway format), `understanding.py`, `intent_parser.py`, `bangla_numbers.py`, `number_lock.py`, `gemini.py`, `tts_generator.py`.
   - `src/notify/`: `sms.py` (REVE), `awaj.py` (calls, kept for later); dry run by default.
   - `src/demo_data.py` + `data/demo/demo_partners.json`: made-up partners. `src/events.py`: requests for partner screens (`data/runtime/`, not committed).
   - `data/`: WFP prices (`processed/potato_prices_wfp.csv`), BBS statistics (`reference/mati_kohon/crop_district_panel.csv`). Optional longer price history: `data/raw/price_history.csv`.
   - `src/scrapers/dam_scraper.py`: **broken**, the DAM site moved to `https://market.dam.gov.bd/`.
   - `tests/`: pytest.
 - `reference/mati_kohon_code/`: Mati Kohon code that was ported. **Do not import it.**
-- `docs/`: the plan documents, `readiness_check.html`, the field check guide for farmers and cold storages (`farmer_interview_guide.html` and its PDF; to-do 3).
+- `docs/`: the plan documents, `ai_architecture.html` (AI and voice, now and after the pilot), `readiness_check.html`, the field check guide for farmers and cold storages (`farmer_interview_guide.html` and its PDF; to-do 3).
 - `krishivault-pitch-deck.html`, `slide-images/`: the pitch deck, 10 slides for 2 minutes (synced with the plan document, 15 October; arrow keys, N for speaker notes, P to print). Every figure on it comes from the engine or the data; update it when they change.
 
 ## Running it

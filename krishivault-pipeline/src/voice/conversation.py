@@ -30,7 +30,7 @@ import re
 from typing import Optional
 
 from src import demo_data, events
-from src.engine import farmer_signals, financing, group_storage
+from src.engine import farmer_signals, financing, group_storage, receipts
 from src.engine.facts import CURING_WEEKS, MAUND_KG, SACK_KG, MONTHS_BN, StorageTerms
 from src.engine.storage_plan import FarmerLot, StoragePlanner, months_left
 from src.models.price_outlook import SEASON_CURVE, outlook as price_outlook
@@ -246,6 +246,21 @@ def advice_sms(plan: dict) -> str:
         return text + f"খরচ বাদে প্রায় {fmt_taka(chosen['money_mean'])} টাকা।"
     return text + (f"গড়ে প্রায় {fmt_taka(chosen['money_mean'])} টাকা (খারাপ হলে {fmt_taka(chosen['money_low'])})। "
                    f"এখন সব বেচলে {fmt_taka(opts['sell_now']['money_mean'])} টাকা। নিশ্চিত নয়।")
+
+
+def _profit_lines(p: dict, key: str) -> list[str]:
+    """Net profit after the growing cost (the plan's "net-profit visibility"): the farmer's local benchmark."""
+    cost = f"এলাকার গড় উৎপাদন খরচ কেজিতে {fmt_num(p['growing_cost_per_kg'])} টাকা ধরলে"
+    if key == "sell_now":
+        if p["below_cost_now"]:
+            return [f"{cost}, এই দামে খরচও পুরো উঠছে না; তবু রাখলে লোকসান আরও বাড়তে পারে।"]
+        return [f"{cost}, লাভ থাকে প্রায় {fmt_taka(p['sell_all_now'])} টাকা।"]
+    now = (f"এখন সব বেচলে লাভ প্রায় {fmt_taka(p['sell_all_now'])} টাকা" if p["sell_all_now"] >= 0
+           else f"এখন সব বেচলে লোকসান প্রায় {fmt_taka(-p['sell_all_now'])} টাকা")
+    lines = [f"{cost}, {now}; পরামর্শমতো গড়ে লাভ প্রায় {fmt_taka(p['with_advice'])} টাকা।"]
+    if p["with_advice_low"] < 0:
+        lines.append(f"দাম খারাপ হলে প্রায় {fmt_taka(-p['with_advice_low'])} টাকা লোকসানও হতে পারে।")
+    return lines
 
 
 def curing_sms() -> str:
@@ -621,10 +636,13 @@ class Conversation:
             nxt = None if lot.stored == "cold" else {
                 "kind": "cold_storage_booking", "sacks": sacks,
                 "line": f"হিমাগারে {fmt_num(sacks, 0)} বস্তার জায়গা চাইতে ২ চাপুন।"}
-        else:  # sell_part
+        else:  # sell_part (or the staggered exit)
             lines.append(f"পরামর্শ: এখন {fmt_num(chosen['sell_sacks_now'], 0)} বস্তা বেচুন, "
                          f"হাতে আসবে প্রায় {fmt_taka(chosen['cash_now'])} টাকা।")
-            lines.append(f"বাকি {fmt_num(chosen['store_sacks'], 0)} বস্তা হিমাগারে রেখে {chosen['sell_month_bn']} মাসে বেচুন।")
+            if rec["key"] == "staggered":
+                lines.append(f"বাকি {fmt_num(chosen['store_sacks'], 0)} বস্তা হিমাগারে রাখুন: {chosen['title_bn'].split(': ', 1)[1]}।")
+            else:
+                lines.append(f"বাকি {fmt_num(chosen['store_sacks'], 0)} বস্তা হিমাগারে রেখে {chosen['sell_month_bn']} মাসে বেচুন।")
             lines.append(f"সব মিলিয়ে গড়ে প্রায় {fmt_taka(chosen['money_mean'])} টাকা, এখন সব বেচার চেয়ে প্রায় "
                          f"{fmt_taka(chosen['gain_vs_now'])} টাকা বেশি; দাম খারাপ হলে প্রায় {fmt_taka(chosen['money_low'])} টাকা।")
             if lot.cash_needed_tk > 0 and chosen["cash_now"] >= lot.cash_needed_tk:
@@ -634,8 +652,10 @@ class Conversation:
                 "kind": "cold_storage_booking", "sacks": chosen["store_sacks"],
                 "line": f"হিমাগারে {fmt_num(chosen['store_sacks'], 0)} বস্তার জায়গা চাইতে ২ চাপুন।"}
 
+        lines.extend(_profit_lines(plan["net_profit"], rec["key"]))
         result = {
             "flow": "advice", "title_bn": rec["title_bn"], "title_en": rec["title_en"], "key": rec["key"],
+            "net_profit": plan["net_profit"],
             "reasons": rec["reasons"], "notes": plan["notes"], "price_today": price, "price_assumed": assumed,
             "months_left": plan["months_left"], "outlook": plan["outlook"],
             "options": [dict(o, recommended=(o["key"] == rec["key"])) for o in opts.values() if o],
@@ -769,12 +789,21 @@ class Conversation:
         if kind == "cold_storage_booking":
             cs = next((c for c in demo_data.partners()["cold_storages"]
                        if c["district"].lower() == district.lower()), demo_data.partners()["cold_storages"][0])
+            if farmer_signals.free_sacks(cs) < sacks:      # full: try a partner cold storage with space
+                other = next((c for c in demo_data.partners()["cold_storages"]
+                              if c["id"] != cs["id"] and not receipts.partner_check(c)
+                              and farmer_signals.free_sacks(c) >= sacks), None)
+                events.record(kind, f"{sacks} বস্তা আলু রাখার অনুরোধ (জায়গা নেই)",
+                              {"sacks": sacks, "cold_storage": cs["name"], "no_space": True},
+                              district=district, phone=phone)
+                cs = other or cs
             event = events.record(kind, f"{sacks} বস্তা আলু রাখার অনুরোধ",
                                   {"sacks": sacks, "cold_storage": cs["name"], "rent_per_sack": cs["rent_per_sack"],
                                    "advice": state["result"]["title_en"]}, district=district, phone=phone)
             state["booking_ref"] = event["ref"]
             say = (f"{cs['name_bn']}-তে {fmt_num(sacks, 0)} বস্তার জায়গার অনুরোধ পাঠানো হয়েছে। অনুরোধ নম্বর "
-                   f"{to_bn_digits(event['ref'])}। হিমাগার ফোন করে তারিখ জানাবে। এই নম্বর দিয়ে পরে বস্তার জামানতে ঋণের আবেদন করা যাবে।")
+                   f"{to_bn_digits(event['ref'])}। আলু রাখার সময় হিমাগার ওজন করে রসিদ এসএমএসে পাঠাবে; সেই রসিদ দিয়ে "
+                   f"বস্তার জামানতে ব্যাংক ঋণের আবেদন করা যাবে।")
         elif kind == "buyer_lot":
             event = events.record(kind, f"{sacks} বস্তা আলু বিক্রির লট",
                                   {"sacks": sacks, "kg": round(sacks * SACK_KG),
