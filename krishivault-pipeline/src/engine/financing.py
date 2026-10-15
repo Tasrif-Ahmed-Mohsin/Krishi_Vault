@@ -6,13 +6,17 @@ and helps the farmer apply:
 
 1. **Proof the potatoes are there:** the cold storage confirms the receipt
    (number of sacks) on its KrishiVault screen.
-2. **What they are worth:** the sacks' weight after storage loss, valued at a
+2. **What they are worth:** the sacks' weight after a full season's storage
+   loss (the plan's 8.65% buffer, whatever the loan's length), valued at a
    careful price: the lower of today's price and the low end of the outlook
    (1 path in 10 is lower) when the loan ends.
 3. **Who is paid first:** the cold storage holds the sacks, so its rent and any
    advance it gave come off first.
 4. **Repayment risk:** the chance, over 2,000 simulated price paths, that the
    potatoes are worth less than the loan plus interest when it ends.
+5. **The hold and the split at sale** (`src/engine/receipts.py`): once the bank
+   approves, the cold storage releases the sacks only with the bank's agreement;
+   the sale pays the cold storage, then the bank, then the farmer.
 
 The bank sets its own loan share (loan-to-value) and rate and decides; the
 figures here are for the bank's review, subject to its rules and the law.
@@ -27,6 +31,7 @@ from typing import Optional
 import numpy as np
 
 from src import demo_data, events
+from src.engine import receipts
 from src.engine.facts import StorageTerms, MONTHS_EN, month_after
 from src.models.price_outlook import rise_strength, simulate, season_for_decision
 
@@ -48,7 +53,7 @@ def loan_estimate(sacks: int, price_today: float, decision_month: int, decision_
                        decision_month=decision_month)
     paths = simulate(decision_month, months, rs["k"], rs["k_sd"], sigma=rs["sigma_month"]) * price_today
     end_prices = paths[:, months]
-    kept_kg = kg * (1 - t.monthly_weight_loss) ** months * (1 - t.exit_sorting_loss)
+    kept_kg = kg * (1 - t.season_loss())          # the 8.65% shrinkage buffer
     careful_price = min(price_today, float(np.percentile(end_prices, 10)))
     claims = sacks * ((t.rent_per_sack if rent_due else 0) + cs_advance_taken_per_sack + t.sell_from_store_per_sack)
     collateral = kept_kg * careful_price - claims
@@ -60,10 +65,17 @@ def loan_estimate(sacks: int, price_today: float, decision_month: int, decision_
     value_at_end = kept_kg * end_prices - claims
     shortfall = float((value_at_end < repay).mean()) if principal > 0 else 0.0
     mid_price = float(np.median(end_prices))
-    sack_net = t.sack_kg * (1 - t.monthly_weight_loss) ** months * (1 - t.exit_sorting_loss) * mid_price \
+    sack_net = t.sack_kg * (1 - t.season_loss()) * mid_price \
         - (t.rent_per_sack if rent_due else 0) - t.sell_from_store_per_sack
     sacks_to_repay = math.ceil(repay / sack_net) if sack_net > 0 else None
     end_month = month_after(decision_month, months)
+    # The sale at the loan's end, at the middle price: who is paid, in order (the plan's automatic deduction)
+    at_sale = receipts.split_sale(
+        kept_kg * mid_price, sacks * t.sell_from_store_per_sack,
+        {"Rent": sacks * t.rent_per_sack if rent_due else 0,
+         "Cold-storage advance": sacks * cs_advance_taken_per_sack},
+        {"Bank loan": principal, "Bank interest": interest})
+    at_sale["price_per_kg"] = round(mid_price, 2)
     problems = []
     if sacks < b["min_sacks"]:
         problems.append(f"{b['name']} lends from {b['min_sacks']} sacks; join a group or try another lender.")
@@ -72,7 +84,8 @@ def loan_estimate(sacks: int, price_today: float, decision_month: int, decision_
     return {
         "bank": {"id": b["id"], "name": b["name"], "ltv": b["ltv"], "rate_year": b["rate_year"],
                  "processing_fee_pct": b["processing_fee_pct"], "needs": b["needs"], "demo": True},
-        "crop": {"sacks": sacks, "kg": round(kg), "kg_at_end": round(kept_kg), "price_today": price_today,
+        "crop": {"sacks": sacks, "kg": round(kg), "kg_at_end": round(kept_kg), "shrinkage_buffer": round(t.season_loss(), 4),
+                 "price_today": price_today,
                  "value_today": round(kg * price_today), "season": rs.get("season", f"{season}-{str(season + 1)[-2:]}")},
         "months": months, "ends": MONTHS_EN[end_month],
         "careful_price": round(careful_price, 2),
@@ -88,6 +101,7 @@ def loan_estimate(sacks: int, price_today: float, decision_month: int, decision_
         "sacks_to_repay": sacks_to_repay, "repay_month": end_month,
         "repayment_plan": (f"Sell about {sacks_to_repay} of {sacks} sacks in {MONTHS_EN[end_month]} to repay"
                            if sacks_to_repay else "The crop does not cover the loan"),
+        "at_sale": at_sale,
         "problems": problems,
     }
 
@@ -122,6 +136,9 @@ def apply(farmer_name: str, phone: Optional[str], district: str, cold_storage_id
           bank_id: str, amount: Optional[float] = None) -> dict:
     est = loan_estimate(sacks, price_today, decision_month, decision_year, months, bank_id, amount)
     cs = demo_data.cold_storage(cold_storage_id)
+    receipt = receipts.get(receipt_no)          # a receipt the cold storage issued on KrishiVault, if any
+    if receipt:
+        cs = demo_data.cold_storage(receipt["cold_storage"]["id"])
     app_id = uuid.uuid4().hex[:8]
     event = events.record("loan_application", f"{sacks} বস্তা জামানতে ঋণের আবেদন, রসিদ {receipt_no}",
                           {"application": app_id, "bank": est["bank"]["name"], "loan": est["loan"]},
@@ -129,7 +146,10 @@ def apply(farmer_name: str, phone: Optional[str], district: str, cold_storage_id
     return demo_data.append("loan_applications", {
         "id": app_id, "ref": event["ref"], "farmer": farmer_name, "phone": events.mask_phone(phone),
         "district": district, "cold_storage": {"id": cs["id"], "name": cs["name"]},
-        "receipt_no": receipt_no, "sacks": sacks, "status": STATUS[0], "estimate": est, "demo": True,
+        "receipt_no": receipt["no"] if receipt else receipt_no, "sacks": sacks, "status": STATUS[0],
+        "receipt": ({"no": receipt["no"], "sacks": receipt["sacks"], "kg": receipt["kg"], "grade": receipt["grade"],
+                     "on_krishivault": True, "enough": receipt["sacks"] >= sacks} if receipt else None),
+        "estimate": est, "demo": True,
     })
 
 
@@ -148,4 +168,39 @@ def confirm_receipt(app_id: str, sacks_found: int) -> Optional[dict]:
 
 
 def bank_decision(app_id: str, approve: bool) -> Optional[dict]:
-    return demo_data.update("loan_applications", "id", app_id, {"status": STATUS[2] if approve else STATUS[3]})
+    current = next((a for a in demo_data.load_list("loan_applications") if a["id"] == app_id), None)
+    if current and approve and current.get("receipt"):
+        held = (receipts.get(current["receipt"]["no"]) or {}).get("hold")
+        if held and held["application"] != app_id:     # the same sacks cannot back two loans
+            raise ValueError(f"Receipt {current['receipt']['no']} is already held for a loan from {held['bank']}")
+    app = demo_data.update("loan_applications", "id", app_id, {"status": STATUS[2] if approve else STATUS[3]})
+    if app and approve and app.get("receipt"):
+        receipts.place_hold(app["receipt"]["no"], app["estimate"]["bank"]["name"], app_id, app["estimate"]["loan"])
+    return app
+
+
+def settle_sale(app_id: str, price_per_kg: float, kg_sold: Optional[float] = None) -> Optional[dict]:
+    """
+    The stored potatoes are sold (demo): the sale pays the cold storage, then the bank's loan and interest,
+    then the farmer; the hold on the receipt ends. Only for an approved loan.
+    """
+    app = next((a for a in demo_data.load_list("loan_applications") if a["id"] == app_id), None)
+    if not app:
+        return None
+    if app["status"] != STATUS[2]:
+        raise ValueError("Only an approved loan is repaid from the sale")
+    est = app["estimate"]
+    bank = {"loan": est["loan"], "interest": est["interest"]}
+    if app.get("receipt"):
+        out = receipts.settle(app["receipt"]["no"], price_per_kg, kg_sold, est["months"], bank)
+    else:   # a receipt from outside KrishiVault: use the loan's own figures
+        t = StorageTerms()
+        kg = float(kg_sold) if kg_sold else est["crop"]["kg_at_end"]
+        out = receipts.split_sale(kg * price_per_kg, app["sacks"] * t.sell_from_store_per_sack,
+                                  {"Rent": app["sacks"] * t.rent_per_sack},
+                                  {"Bank loan": bank["loan"], "Bank interest": bank["interest"]})
+        out.update({"receipt": app["receipt_no"], "kg_sold": round(kg), "price_per_kg": price_per_kg})
+    status = ("repaid from the sale (demo)" if out["covered"]
+              else f"sale did not cover the loan: ৳{out['unpaid']:,} still owed (demo)")
+    demo_data.update("loan_applications", "id", app_id, {"status": status, "settlement": out})
+    return out

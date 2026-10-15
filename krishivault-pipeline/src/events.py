@@ -1,7 +1,8 @@
 """
 Event log: what happened in farmers' calls that a partner must act on
 =====================================================================
-A cold-storage booking, a lot sent to buyers, a group-storage join, a loan application, a helper callback.
+A cold-storage booking, a storage receipt, a lot sent to buyers, a group-storage join, a loan application,
+a helper callback.
 Each is one JSON line in data/runtime/events.jsonl (not committed), so the partner screens can show it
 straight after the call. Phone numbers are stored masked.
 
@@ -23,6 +24,7 @@ from src.voice.bangla_numbers import to_bn_digits
 PARTNER_FOR = {
     "cold_storage_booking": "cold_storage",
     "group_storage_join": "cold_storage",
+    "storage_receipt": "cold_storage",
     "buyer_lot": "buyer",
     "loan_application": "bank",
     "helper_callback": "helper",

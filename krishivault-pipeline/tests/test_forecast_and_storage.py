@@ -149,6 +149,23 @@ def test_replays_are_scored_on_the_real_prices():
     assert quick_plan(84 * 36, 16, decision_month=3, decision_year=2027)["replay"] is None
 
 
+def test_storage_loss_is_the_plans_865_percent_a_season():
+    t = StorageTerms()
+    assert round(t.season_loss(), 4) == 0.0865          # the plan's shrinkage buffer
+    assert t.kept_share(9) == pytest.approx(1 - 0.0865)
+    assert t.kept_share(1) > t.kept_share(5) > t.kept_share(9)
+
+
+def test_replay_shows_net_profit_after_growing_cost():
+    normal = quick_plan(84 * 36, 18, decision_month=3, decision_year=2024, production_cost_per_kg=12.67)
+    p = normal["replay"]["net_profit"]
+    assert p["growing_cost"] == round(84 * 36 * 12.67, -1)
+    assert p["with_advice"] > p["sold_at_harvest"] > 0 and p["times"] >= 2      # the plan's "2x to 3x", in a normal year
+    big = quick_plan(84 * 36, 14, decision_month=3, decision_year=2025, production_cost_per_kg=12.67)
+    assert big["replay"]["net_profit"]["with_advice"] == big["replay"]["net_profit"]["sold_at_harvest"]
+    assert quick_plan(84 * 36, 18, decision_month=3, decision_year=2024)["replay"]["net_profit"] is None
+
+
 def test_flat_rent_makes_early_sale_a_loss():
     r = quick_plan(3000, 18, decision_month=3, decision_year=2024)
     first = r["by_month"][1]

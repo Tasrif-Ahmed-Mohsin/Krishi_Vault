@@ -146,3 +146,33 @@ def test_backtest(client):
     assert r.status_code == 200
     data = r.json()
     assert data["seasons"] and data["summary"]["outlook"]["average_miss_pct"] is not None
+
+
+def test_receipt_loan_and_sale_through_the_api(client):
+    r = client.post("/api/receipts", json={"cold_storage_id": "cs-a", "farmer_name": "Demo", "phone": "01711998877",
+                                           "sacks": 36, "grade": "table"}).json()
+    no = r["receipt"]["no"]
+    assert r["sms_result"]["dry_run"] is True and no in r["sms_result"]["request"]["messageContent"]
+    assert client.get("/api/receipts").json()[0]["phone"] == "01711-XXX877"
+    app_ = client.post("/api/finance/apply", json={"sacks": 36, "price_today": 16, "month": 3, "year": 2027,
+                                                   "months": 8, "bank_id": "bank-a", "farmer_name": "Demo",
+                                                   "cold_storage_id": "cs-a", "receipt_no": no}).json()
+    assert client.post(f"/api/finance/applications/{app_['id']}/sale", json={"price_per_kg": 25}).status_code == 400
+    client.post(f"/api/finance/applications/{app_['id']}/receipt", json={"sacks_found": 36})
+    client.post(f"/api/finance/applications/{app_['id']}/decision", json={"approve": True})
+    assert "held for the bank" in client.get("/api/receipts").json()[0]["status"]
+    split = client.post(f"/api/finance/applications/{app_['id']}/sale", json={"price_per_kg": 25}).json()
+    assert split["covered"] and split["lines"][-1]["to"] == "farmer"
+
+
+def test_government_screen_counts_only_with_consent(client):
+    body = {"quantity": 36, "unit": "sack", "price_today": 16, "month": 3, "year": 2027,
+            "cash_needed_tk": 25000, "cash_days": 4}
+    assert "counted" not in client.post("/api/storage/plan", json=body).json()
+    assert client.get("/api/government?month=3&year=2027").json()["farmers"] == []
+    for _ in range(5):
+        assert client.post("/api/storage/plan", json={**body, "count_me": True}).json()["counted"]
+    g = client.get("/api/government?month=3&year=2027").json()
+    assert g["farmers"][0]["shown"] and g["farmers"][0]["need_cash_within_7_days"] == 1.0
+    assert g["glut"]["level"] in ("high", "normal", "low")
+    assert client.get("/api/government?month=13").status_code == 400

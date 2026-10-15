@@ -189,3 +189,27 @@ def test_bad_state_from_the_browser_is_cleaned():
     conv = Conversation()
     r = conv.turn({"step": "ask", "asking": "nonsense", "month": "x", "slots": {"a": 1}}, {"kind": "keypad", "digits": "1"})
     assert r["state"]["month"] == 3 and r["state"]["flow"] == "advice"
+
+
+def test_press_8_counts_the_answer_without_name_or_number():
+    from src.engine import farmer_signals
+    call = Call(month=3, year=2027, phone="01711998877")
+    call.press("1"); call.press("80#"); call.press("16#"); call.press("25000#"); call.press("4#")
+    r = call.press("1")
+    assert "৮ চাপুন" in r["say"] and "8" in r["keys"]
+    assert farmer_signals.district_figures() == []            # nothing is counted without the key
+    r = call.press("8")
+    assert "গোনা হলো" in r["say"] and "8" not in r["keys"] and call.step == "result"
+    assert "৮ চাপুন" not in call.press("1")["say"]             # the repeat no longer asks
+    rows = farmer_signals.district_figures(min_group=1)
+    assert rows[0]["district"] == "Bogura" and rows[0]["need_cash_within_7_days"] == 1.0
+    import json, os
+    saved = open(os.path.join(os.environ["KV_RUNTIME_DIR"], "farmer_signals.json"), encoding="utf-8").read()
+    assert "01711" not in saved and "998877" not in saved and "phone" not in json.loads(saved)[0]
+
+
+def test_other_answers_do_not_ask_to_count():
+    call = Call(month=3, year=2027)
+    call.press("2"); call.press("16#")
+    r = call.press("1")
+    assert "8" not in r["keys"] and "৮ চাপুন" not in r["say"]

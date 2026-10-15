@@ -30,8 +30,8 @@ import re
 from typing import Optional
 
 from src import demo_data, events
-from src.engine import financing, group_storage
-from src.engine.facts import MAUND_KG, SACK_KG, MONTHS_BN, StorageTerms
+from src.engine import farmer_signals, financing, group_storage
+from src.engine.facts import CURING_WEEKS, MAUND_KG, SACK_KG, MONTHS_BN, StorageTerms
 from src.engine.storage_plan import FarmerLot, StoragePlanner, months_left
 from src.models.price_outlook import SEASON_CURVE, outlook as price_outlook
 from src.voice.bangla_numbers import fmt_num, fmt_taka, nfc, to_bn_digits
@@ -62,6 +62,9 @@ CONFIRM_KEYS = "ঠিক হলে ১, ভুল হলে ২ চাপুন
 NOT_UNDERSTOOD = "দুঃখিত, বুঝতে পারিনি।"
 HELP = "দুঃখিত, আমি বুঝতে পারছি না। আবার চেষ্টা করতে ১ চাপুন। আমাদের সহকারী আপনাকে ফোন করবেন, এর জন্য ৯ চাপুন।"
 CLOSING = "আবার শুনতে ১, মূল মেনুতে ০, সহকারীর ফোনের জন্য ৯ চাপুন।"
+# Asked once after the store-or-sell answer: counting is opt-in, so the greeting's promise stays true
+CONSENT_ASK = "নাম ও নম্বর ছাড়া আপনার উত্তর জেলার হিসাবে গুনতে দিলে ৮ চাপুন।"
+COUNTED = "ধন্যবাদ। নাম ও নম্বর ছাড়া আপনার উত্তর জেলার হিসাবে গোনা হলো।"
 HELPER = "ঠিক আছে। কৃষিভল্টের একজন সহকারী শিগগির আপনাকে ফোন করবেন। কৃষিভল্টে ফোন করার জন্য ধন্যবাদ।"
 ENDED = "কলটি শেষ হয়েছে। ধন্যবাদ।"
 
@@ -245,6 +248,13 @@ def advice_sms(plan: dict) -> str:
                    f"এখন সব বেচলে {fmt_taka(opts['sell_now']['money_mean'])} টাকা। নিশ্চিত নয়।")
 
 
+def curing_sms() -> str:
+    """The reminder sent before the harvest: cure in shade, sort, then cold storage (from the plan)."""
+    lo, hi = CURING_WEEKS
+    return (f"কৃষিভল্ট: আলু তোলার পর {fmt_num(lo, 0)}-{fmt_num(hi, 0)} সপ্তাহ ছায়ায় রেখে শুকিয়ে নিন (কিউরিং), "
+            f"কাটা ও পচা আলু বাদ দিন, তারপর হিমাগারে দিন। এতে হিমাগারে ওজন ও পচন কম হয়। বীজ আলু আলাদা রাখুন।")
+
+
 # The call state lives in the browser, so the SMS text in it is signed: only text this server wrote
 # can be sent. The key is random per server start unless KV_STATE_SECRET is set.
 _SECRET = (os.getenv("KV_STATE_SECRET") or os.urandom(16).hex()).encode()
@@ -328,7 +338,25 @@ class Conversation:
         return out
 
     def _result_keys(self, state: dict) -> list:
-        return (["2"] if (state.get("result") or {}).get("next") else []) + ["1", "0", "9"]
+        result = state.get("result") or {}
+        consent = ["8"] if result.get("flow") == "advice" and not state.get("counted") else []
+        return (["2"] if result.get("next") else []) + consent + ["1", "0", "9"]
+
+    def _count_me(self, state: dict) -> dict:
+        """The farmer pressed 8: count this answer for the district figures, without a name or number."""
+        # The state comes back from the browser: take the figures from the read-back answers, within limits
+        result, slots = state["result"], state["slots"]
+        cash = min(max(_value(slots, "cash_needed_tk"), 0.0), 10_000_000)
+        key = result.get("key") if result.get("key") in ("sell_now", "sell_part", "store") else "unknown"
+        farmer_signals.record(state.get("district", ""), state["month"], state["year"],
+                              min(_sacks(_value(slots, "quantity_kg")), 100_000), cash,
+                              min(int(_value(slots, "deadline_days", 30)), 365) if cash > 0 else 0,
+                              "cold" if _value(slots, "in_storage") else "no", key, "call")
+        state["counted"] = True
+        state["result_say"] = state["result_say"].replace(CONSENT_ASK + " ", "")
+        next_line = (result.get("next") or {}).get("line")
+        return self._reply(state, f"{COUNTED} " + (next_line + " " if next_line else "") + CLOSING,
+                           "choice", self._result_keys(state))
 
     def _prompt(self, state: dict) -> tuple[str, str, list]:
         step = state["step"]
@@ -468,6 +496,8 @@ class Conversation:
         result = state.get("result") or {}
         if key == "2" and result.get("next"):
             return self._next_step(state)
+        if key == "8" and "8" in self._result_keys(state):
+            return self._count_me(state)
         if key == "1":
             return self._reply(state, state["result_say"], "choice", self._result_keys(state))
         if key == "0":
@@ -520,7 +550,8 @@ class Conversation:
             rewrite = lambda t: self.gemini.text(REWORD_PROMPT.format(text=t))  # noqa: E731
         narration = narrate(body, rewrite)
         next_line = (result.get("next") or {}).get("line")
-        say = narration["text"] + (" " + next_line if next_line else "") + " " + CLOSING
+        consent = CONSENT_ASK if flow == "advice" and not state.get("counted") else ""
+        say = narration["text"] + (" " + next_line if next_line else "") + (" " + consent if consent else "") + " " + CLOSING
         state.update({"result": result, "result_say": say, "result_body": narration["text"], "sms": sms,
                       "sms_sig": sign(sms) if sms else None, "next_sig": _sign_next(result.get("next")),
                       "step": "result", "fails": 0, "action": None})

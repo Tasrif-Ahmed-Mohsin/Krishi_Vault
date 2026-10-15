@@ -3,7 +3,8 @@ KrishiVault API and web screens
 ===============================
 One FastAPI app for the prototype:
 - `/`      the dashboard (static/index.html): forecasts, the store-or-sell engine, buyers, bank loans,
-           group storage, export and the profit calculator, plus the partner screens;
+           group storage, export and the profit calculator, plus the partner screens (cold-storage
+           receipts, the bank's hold and the split at sale, the government screen);
 - `/call`  the call preview (static/call.html): a farmer's phone call played in the browser.
 
 Run:  uvicorn src.main:app --port 8000      (from krishivault-pipeline/)
@@ -24,12 +25,13 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from src import demo_data, events as event_log
-from src.engine import export_intel, financing, group_storage, market_access, profit
+from src.engine import (business_model, export_intel, farmer_signals, financing, group_storage, market_access,
+                        profit, receipts)
 from src.engine.facts import MAUND_KG, SACK_KG, SOURCES, StorageTerms
 from src.engine.storage_plan import FarmerLot, StoragePlanner
 from src.models import backtest as price_backtest, price_outlook, production_forecast
 from src.notify import sms as sms_client
-from src.voice.conversation import Conversation, advice_sms, receipt_sms
+from src.voice.conversation import Conversation, advice_sms, curing_sms, receipt_sms
 from src.voice.gemini import GeminiClient
 from src.voice.tts_generator import BengaliVoiceSynthesizer
 
@@ -162,6 +164,8 @@ class PlanIn(BaseModel):
     gap_override_pct: Optional[float] = Field(None, ge=-40, le=40)
     area_ha: Optional[float] = Field(None, gt=0)
     terms: Optional[TermsIn] = None
+    district: str = Field("Bogura", max_length=40)
+    count_me: bool = False             # the farmer agreed to be counted, without name or number
 
     def lot(self) -> FarmerLot:
         terms = self.terms.build() if self.terms else StorageTerms()
@@ -178,7 +182,13 @@ class PlanIn(BaseModel):
 
 @app.post("/api/storage/plan")
 def storage_plan(req: PlanIn):
-    return planner.plan(req.lot())
+    lot = req.lot()
+    plan = planner.plan(lot)
+    if req.count_me:     # only with the farmer's agreement; nothing with a name or number is kept
+        farmer_signals.record(req.district, lot.decision_month, lot.decision_year, lot.sacks, lot.cash_needed_tk,
+                              lot.cash_days, lot.stored, plan["recommendation"]["key"], "dashboard")
+        plan["counted"] = True
+    return plan
 
 
 class BookIn(BaseModel):
@@ -204,7 +214,37 @@ def storage_book(req: BookIn):
 
 @app.get("/api/storage/terms")
 def storage_terms():
-    return {"defaults": StorageTerms().to_dict(), "sources": SOURCES}
+    return {"defaults": StorageTerms().to_dict(), "season_loss": round(StorageTerms().season_loss(), 4),
+            "sources": SOURCES}
+
+
+class ReceiptIn(BaseModel):
+    cold_storage_id: str = "cs-a"
+    farmer_name: str = Field(..., min_length=1, max_length=80)
+    phone: Optional[str] = Field(None, max_length=200)
+    sacks: int = Field(..., gt=0, le=100_000)
+    kg_weighed: Optional[float] = Field(None, gt=0, le=10_000_000)
+    grade: Literal["table", "seed"] = "table"
+    advance_per_sack: float = Field(0, ge=0, le=2000)
+
+
+@app.post("/api/receipts")
+def receipt_issue(req: ReceiptIn):
+    """The cold storage weighs and grades the sacks and issues a digital receipt; the farmer gets it by SMS."""
+    try:
+        r = receipts.issue(req.cold_storage_id, req.farmer_name, req.phone, req.sacks, req.kg_weighed,
+                           req.grade, req.advance_per_sack)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="No such cold storage")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    sent = sms_client.send_sms(req.phone, r["sms"]) if req.phone else None
+    return {"receipt": r, "sms_result": sent}
+
+
+@app.get("/api/receipts")
+def receipt_list(cold_storage_id: Optional[str] = None):
+    return list(reversed(receipts.all_receipts(cold_storage_id)))
 
 
 # ============================================================ market access
@@ -305,9 +345,29 @@ class DecisionIn(BaseModel):
     approve: bool
 
 
+class SaleIn(BaseModel):
+    price_per_kg: float = Field(..., gt=0, le=500)
+    kg_sold: Optional[float] = Field(None, gt=0, le=10_000_000)
+
+
 @app.post("/api/finance/applications/{app_id}/decision")
 def finance_decision(app_id: str, req: DecisionIn):
-    out = financing.bank_decision(app_id, req.approve)
+    try:
+        out = financing.bank_decision(app_id, req.approve)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not out:
+        raise HTTPException(status_code=404, detail="No such application")
+    return out
+
+
+@app.post("/api/finance/applications/{app_id}/sale")
+def finance_sale(app_id: str, req: SaleIn):
+    """The stored potatoes are sold (demo): the sale pays the cold storage, the bank, then the farmer."""
+    try:
+        out = financing.settle_sale(app_id, req.price_per_kg, req.kg_sold)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     if not out:
         raise HTTPException(status_code=404, detail="No such application")
     return out
@@ -423,6 +483,25 @@ def sms_advice(req: AdviceSmsIn):
     return {"text": text, **sms_client.send_sms(req.phone, text)}
 
 
+class PhoneIn(BaseModel):
+    phone: str = Field(..., max_length=200)
+
+
+@app.post("/api/sms/curing")
+def sms_curing(req: PhoneIn):
+    """The reminder before the harvest: cure the potatoes in shade before cold storage."""
+    text = curing_sms()
+    return {"text": text, **sms_client.send_sms(req.phone, text)}
+
+
+# ============================================================ the business plan
+
+@app.get("/api/business/plan")
+def business_plan():
+    """The plan's income streams, start-up money and 3-year projection, worked out from its assumptions."""
+    return business_model.business_plan()
+
+
 # ============================================================ call preview
 
 class CallTurnRequest(BaseModel):
@@ -490,6 +569,16 @@ def call_sms(req: CallSmsRequest):
 
 
 # ============================================================ partner screens
+
+@app.get("/api/government")
+def government(month: int = 3, year: int = 2027, gap_override_pct: Optional[float] = None):
+    """The government screen: glut warning (real data), cold-storage fill (demo), farmer figures (with consent)."""
+    if not (1 <= month <= 12 and 2013 <= year <= 2035):
+        raise HTTPException(status_code=400, detail="month 1-12, year 2013-2035")
+    if gap_override_pct is not None and not -40 <= gap_override_pct <= 40:
+        raise HTTPException(status_code=400, detail="gap_override_pct must be between -40 and 40")
+    return farmer_signals.government_view(month, year, gap_override_pct)
+
 
 @app.get("/api/events")
 def list_events(partner: Optional[str] = None, limit: int = 50):

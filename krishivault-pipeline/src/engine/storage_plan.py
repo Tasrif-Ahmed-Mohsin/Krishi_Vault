@@ -128,7 +128,7 @@ class StoragePlanner:
             costs = sacks * (t.rent_per_sack + t.sell_from_store_per_sack)
             if not already:
                 costs += sacks * t.handling_per_sack()
-            kept = kg * (1 - t.monthly_weight_loss) ** h * (1 - t.exit_sorting_loss)
+            kept = kg * t.kept_share(h)
         return kept * prices[:, h] - costs, {"kept_kg": kept, "costs": costs}
 
     def _home_net(self, lot: FarmerLot, kg: float, sacks: int, prices: np.ndarray, h: int) -> np.ndarray:
@@ -268,6 +268,18 @@ class StoragePlanner:
                     "sold_in": MONTHS_EN[month_after(lot.decision_month, h)]}
 
         valued = {key: outcome(o) for key, o in options.items()}
+        # Net profit, when the farmer's growing cost is known: money in hand minus the cost of growing the crop
+        profit = None
+        if lot.production_cost_per_kg:
+            growing = lot.quantity_kg * lot.production_cost_per_kg
+            at_harvest = now_value - growing
+            advice_gain = (valued.get(rec["key"]) or {}).get("vs_sell_now")
+            with_advice = at_harvest + advice_gain if advice_gain is not None else None
+            profit = {"growing_cost": _round_tk(growing), "growing_cost_per_kg": lot.production_cost_per_kg,
+                      "sold_at_harvest": _round_tk(at_harvest),
+                      "with_advice": _round_tk(with_advice) if with_advice is not None else None,
+                      "times": (round(with_advice / at_harvest, 1)
+                                if with_advice is not None and at_harvest > 0 else None)}
         # Storing every sack, sold in each month that has a real price
         by_month = []
         for h in range(1, H + 1):
@@ -277,7 +289,7 @@ class StoragePlanner:
                                  "vs_sell_now": _round_tk(money - now_value)})
         return {"basis": "the national retail price change that really followed (WFP), applied to today's price",
                 "options": valued, "advice": {"key": rec["key"], **(valued.get(rec["key"]) or {})},
-                "store_all_by_month": by_month}
+                "store_all_by_month": by_month, "net_profit": profit}
 
     # ----------------------------------------------------------- the three options
     def _option_now(self, lot: FarmerLot, now_value: float) -> dict:
