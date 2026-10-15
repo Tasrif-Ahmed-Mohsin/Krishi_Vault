@@ -409,7 +409,7 @@ def profit_calculate(req: ProfitIn):
 # ============================================================ SMS (dry run unless SMS_LIVE=1)
 
 class AdviceSmsIn(PlanIn):
-    phone: str = Field(..., max_length=20)
+    phone: str = Field(..., max_length=200)
 
 
 @app.post("/api/sms/advice")
@@ -430,12 +430,12 @@ class CallTurnRequest(BaseModel):
     district: Optional[str] = "Bogura"
     month: Optional[int] = Field(None, ge=1, le=12)
     year: Optional[int] = Field(None, ge=2013, le=2035)
-    phone: Optional[str] = Field(None, max_length=20)
+    phone: Optional[str] = Field(None, max_length=200)
 
 
 class CallSmsRequest(BaseModel):
     state: dict
-    phone: str = Field(..., max_length=20)
+    phone: str = Field(..., max_length=200)
 
 
 class SpeakRequest(BaseModel):

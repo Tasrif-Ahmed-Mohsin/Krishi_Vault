@@ -300,8 +300,7 @@
       <div class="panel-body">
         <div class="sms-preview" id="smsPreview"><span class="empty">পরামর্শের পর এসএমএস রসিদ এখানে দেখা যাবে।</span></div>
         <div class="notify-row">
-          <label class="sr-only" for="phone">Farmer's mobile number</label>
-          <input id="phone" inputmode="tel" placeholder="01XXXXXXXXX" autocomplete="off">
+          <input id="phone" inputmode="tel" placeholder="01XXXXXXXXX (or comma-separated)" autocomplete="off">
           <button class="btn" id="smsBtn" onclick="notify()" disabled>✉ SMS me</button>
         </div>
         <div class="small en" id="notifyMode" style="margin-top:6px"></div>
@@ -788,8 +787,10 @@ function replayLast() { if (lastSay) speak(lastSay, true); }
 async function notify() {
   const phone = $("phone").value.trim();
   store.set("phone", phone);
-  if (!/^(\+?88)?01[3-9]\d{8}$/.test(phone.replace(/[\s-]/g, ""))) {
-    showNotify("Enter a Bangladeshi mobile number: 01XXXXXXXXX");
+  const parts = phone.split(/[,;\s/]+/).filter(Boolean);
+  const valid = parts.filter(p => /^(\+?88)?01[3-9]\d{8}$/.test(p.replace(/[\s-]/g, "")));
+  if (!valid.length) {
+    showNotify("Enter a Bangladeshi mobile number: 01XXXXXXXXX (or multiple numbers separated by comma)");
     return;
   }
   if (!state) return;
@@ -798,7 +799,8 @@ async function notify() {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state, phone }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || res.statusText);
+    if (!res.ok) throw new Error(data.detail || data.error || res.statusText);
+    if (data.error) throw new Error(data.error);
     const head = data.dry_run ? "DRY RUN: no SMS sent. This is the request REVE would get:" : "SENT (live SMS):";
     showNotify(head + "\n\n" + JSON.stringify(data, null, 2));
   } catch (err) {

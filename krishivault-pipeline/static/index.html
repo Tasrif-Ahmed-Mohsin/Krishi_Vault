@@ -781,7 +781,7 @@ async function runPlan() {
       ${floor ? `<p class="note ${floor.below_cost_today ? 'honest' : ''}">Own cost ৳${num(floor.production_cost_per_kg, 1)}/kg: ${floor.below_cost_today ? 'selling today is below cost, a loss of ৳' + num(floor.loss_per_kg_if_sold_now, 1) + ' a kg.' : 'today\'s price covers it.'}</p>` : ''}
       </div></div>` : ''}
     <div class="panel" style="margin-top:14px"><h2>Act on it <span class="bn">পরবর্তী ধাপ</span></h2><div class="panel-body">
-      <div class="form"><div><label class="f" for="actName">Farmer</label><input id="actName" value="Demo farmer"></div><div><label class="f" for="actPhone">Phone (for SMS)</label><input id="actPhone" placeholder="01XXXXXXXXX"></div></div>
+      <div class="form"><div><label class="f" for="actName">Farmer</label><input id="actName" value="Demo farmer"></div><div><label class="f" for="actPhone">Phone (for SMS)</label><input id="actPhone" placeholder="01XXXXXXXXX (or comma-separated)"></div></div>
       <div class="row" style="margin-top:8px"><button class="btn primary" id="actSms" type="button">Send this advice by SMS</button>
         ${rec.key !== 'sell_now' && inp.stored === 'no' ? `<button class="btn" id="actBook" type="button">Ask the cold storage for ${rec.key === 'sell_part' ? opts.sell_part.store_sacks : inp.sacks} sacks</button>` : ''}
         <a class="btn" href="#buyers" style="text-decoration:none;text-align:center">Compare buyers</a><a class="btn" href="#loan" style="text-decoration:none;text-align:center">Loan against the sacks</a></div>
@@ -790,7 +790,12 @@ async function runPlan() {
   if (plan.months_left) divBars($('#planChart'), gainRows(plan), {zeroLabel: 'sell today'});
   $('#actSms').onclick = async () => {
     const o = $('#actOut');
-    try { const r = await api('/api/sms/advice', Object.assign({}, body, {phone: $('#actPhone').value.trim()}));
+    const phone = $('#actPhone').value.trim();
+    if (!phone) {
+      o.innerHTML = `<span class="err">Enter a phone number to send SMS.</span>`;
+      return;
+    }
+    try { const r = await api('/api/sms/advice', Object.assign({}, body, {phone}));
       o.innerHTML = r.error ? `<span class="err">${esc(r.error)}</span>` : `${r.dry_run ? '<span class="tag info">DRY RUN</span> not sent; this is the SMS that would go out:' : '<span class="tag real">SENT</span>'}<pre class="req bn">${esc(r.text)}</pre>`;
     } catch (e) { o.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
   };

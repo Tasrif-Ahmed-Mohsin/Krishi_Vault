@@ -53,6 +53,12 @@ def test_sms_bad_number_is_not_sent():
     assert "error" in result
 
 
+def test_sms_multiple_numbers_parsed_and_formatted():
+    result = sms.send_sms("01712345678, 01812345678", "পরীক্ষা")
+    assert result["dry_run"] is True
+    assert result["request"]["toUser"] == "8801712345678,8801812345678"
+
+
 def test_awaj_tts_call_dry_run_request():
     result = awaj.send_tts_call(["+8801712345678", "01712345678", "bad"], ["আসসালামু আলাইকুম"])
     assert result["dry_run"] is True
