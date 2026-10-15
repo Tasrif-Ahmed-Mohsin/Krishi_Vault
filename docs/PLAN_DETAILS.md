@@ -54,7 +54,7 @@ Code: `krishivault-pipeline/src/engine/storage_plan.py`, costs in `src/engine/fa
 
 | Step | Screen | What the judges see |
 |---|---|---|
-| 1. The trap | Dashboard → Season overview, season "Replay March 2025" | A fair replay: only what was known in March 2025. A big crop (about 7% above trend at the harvest); the outlook stays flat, and so did the real prices (dark squares); storing 36 sacks loses money in every month: "sell now". What really happened: storing would have lost about ৳11,000 to ৳20,000 |
+| 1. The trap | Dashboard → Season overview, season "Replay March 2025" | A fair replay: only what was known in March 2025. A big crop (about 7% above trend at the harvest); the outlook stays flat, and so did the real prices (dark squares); storing 36 sacks loses money in every month: "sell now". What really happened: storing all 36 sacks would have lost ৳15,000 to ৳23,000, whichever month they were sold |
 | 2. A normal year | Season "Replay March 2024" | A fair replay with no earlier price season to learn from: "sell 9 sacks now, store 27 until December"; selling after one month still loses (flat rent). Prices really nearly doubled; the advice brought about ৳22,000 more than selling everything at the harvest |
 | 3. The farmer's call | `/call`, season "Next harvest", the first "Try" sentence | Dialect speech understood, numbers read back, "sell 19 sacks now, store 17 until December", the money and the risk; press 2: cold-storage request; SMS receipt |
 | 4. The bank | Dashboard → Bank loan, then Partner screens | The cold storage confirms 36 sacks; the bank sees the value, the careful price, the risk and approves (demo) |

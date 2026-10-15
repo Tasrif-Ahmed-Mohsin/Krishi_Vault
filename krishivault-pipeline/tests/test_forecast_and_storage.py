@@ -143,6 +143,7 @@ def test_replays_are_scored_on_the_real_prices():
     big = quick_plan(84 * 36, 14, decision_month=3, decision_year=2025)
     assert big["recommendation"]["key"] == "sell_now"
     assert big["replay"]["options"]["store"]["vs_sell_now"] < 0          # storing really lost money
+    assert all(m["vs_sell_now"] < 0 for m in big["replay"]["store_all_by_month"])   # in every month
     normal = quick_plan(84 * 36, 18, decision_month=3, decision_year=2024)
     assert normal["replay"]["advice"]["vs_sell_now"] > 10000              # the advice really gained
     assert quick_plan(84 * 36, 16, decision_month=3, decision_year=2027)["replay"] is None

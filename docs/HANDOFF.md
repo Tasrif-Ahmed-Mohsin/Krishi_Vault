@@ -69,7 +69,7 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 
 **Rule:** the farmer's advice is never for sale. A partner's fee never changes what KrishiVault advises; offers are ranked by money in the farmer's hand. KrishiVault is the data and connection platform; it does not lend its own money.
 
-**Why it holds up:** one season's gain is large next to the fees. In the fair replays, scored on the prices that really followed: in a normal-crop year (March 2024, 36 sacks at ৳18) the advice "sell 9 sacks now, store 27 until December" brought about ৳22,000 more than selling everything at the harvest (storing all 36 would have brought about ৳30,000 more, but the engine could not be sure of that then); in a big-crop year (March 2025, at ৳14) the advice "sell now" avoided a loss of about ৳20,000 (storing all 36 sacks to April) to ৳11,000 (to December).
+**Why it holds up:** one season's gain is large next to the fees. In the fair replays, scored on the prices that really followed: in a normal-crop year (March 2024, 36 sacks at ৳18) the advice "sell 9 sacks now, store 27 until December" brought about ৳22,000 more than selling everything at the harvest (storing all 36 would have brought about ৳30,000 more, but the engine could not be sure of that then); in a big-crop year (March 2025, at ৳14) the advice "sell now" avoided a loss: storing all 36 sacks would really have lost ৳15,000 to ৳23,000, whichever month they were sold.
 
 ## 6. AI and technology, and why
 

@@ -704,7 +704,9 @@ function replayNote(plan) {
     .filter(([k]) => k !== rec.key && o[k]).map(([k, name]) => `${name} until ${esc(o[k].sold_in)}: ${tkSigned(o[k].vs_sell_now)}`).join('; ');
   return `<p class="note"><b>What really happened.</b> Following this advice (${esc(rec.title_en)}) brought ${tk(rp.advice.money)}` +
     (rec.key === 'sell_now' ? '.' : `, ${tkSigned(rp.advice.vs_sell_now)} against selling everything at once.`) +
-    (alt ? ` The other choices: ${alt}.` : '') + ` <span class="small">Valued at ${esc(rp.basis)}, with the same costs.</span></p>`;
+    (alt ? ` The other choices: ${alt}.` : '') +
+    (rp.store_all_by_month.length > 1 ? (() => { const v = rp.store_all_by_month.map(m => m.vs_sell_now), lo = Math.min(...v), hi = Math.max(...v);
+      return ` Storing all ${sacks} sacks, sold in any month with a real price (${rp.store_all_by_month.map(m => m.month_en.slice(0, 3)).join(', ')}): ${hi < 0 ? 'a loss of ' + tk(-hi) + ' to ' + tk(-lo) : lo > 0 ? 'a gain of ' + tk(lo) + ' to ' + tk(hi) : tkSigned(lo) + ' to ' + tkSigned(hi)}.`; })() : '') + ` <span class="small">Valued at ${esc(rp.basis)}, with the same costs.</span></p>`;
 }
 function learnedNote(rise, replay) {
   const s = rise.learned_from;

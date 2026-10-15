@@ -268,8 +268,16 @@ class StoragePlanner:
                     "sold_in": MONTHS_EN[month_after(lot.decision_month, h)]}
 
         valued = {key: outcome(o) for key, o in options.items()}
+        # Storing every sack, sold in each month that has a real price
+        by_month = []
+        for h in range(1, H + 1):
+            if real[h] is not None:
+                money = float(self._cold_net(lot, lot.quantity_kg, lot.sacks, prices, h)[0][0])
+                by_month.append({"h": h, "month_en": MONTHS_EN[month_after(lot.decision_month, h)],
+                                 "vs_sell_now": _round_tk(money - now_value)})
         return {"basis": "the national retail price change that really followed (WFP), applied to today's price",
-                "options": valued, "advice": {"key": rec["key"], **(valued.get(rec["key"]) or {})}}
+                "options": valued, "advice": {"key": rec["key"], **(valued.get(rec["key"]) or {})},
+                "store_all_by_month": by_month}
 
     # ----------------------------------------------------------- the three options
     def _option_now(self, lot: FarmerLot, now_value: float) -> dict:
