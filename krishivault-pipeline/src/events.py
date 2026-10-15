@@ -34,11 +34,13 @@ def events_path() -> Path:
 
 
 def mask_phone(phone: Optional[str]) -> Optional[str]:
-    """'01711998877' -> '01711-XXX877'."""
-    digits = re.sub(r"\D", "", phone or "")
-    if len(digits) < 6:
-        return None
-    return f"{digits[-11:-6]}-XXX{digits[-3:]}"
+    """'01711998877' -> '01711-XXX877'. Several numbers (comma or space separated) are masked one by one."""
+    masked = []
+    for part in re.split(r"[,;/]+|\s{2,}|\s(?=\+?(?:88)?01)", phone or ""):
+        digits = re.sub(r"\D", "", part)
+        if len(digits) >= 6:
+            masked.append(f"{digits[-11:-6]}-XXX{digits[-3:]}")
+    return ", ".join(masked) or None
 
 
 def new_reference() -> str:

@@ -113,7 +113,7 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 **Real now:**
 - BBS potato production for 64 districts, 2012-13 to 2024-25, and the production forecast built on it.
 - WFP retail potato prices, February 2024 to July 2026 (19 usable months), and the price outlook fitted on them.
-- The storage engine, market comparison, loan valuation, group storage, export cost build-up and profit calculator: all built and tested (`tests/`, 114 tests).
+- The storage engine, market comparison, loan valuation, group storage, export cost build-up and profit calculator: all built and tested (`tests/`, 121 tests).
 - The call preview with the Bangla number reader and the number lock; the SMS client (dry run).
 
 **Not yet, or demo:**
@@ -127,7 +127,7 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 - **All partners are demo:** cold storages, banks, buyers, exporters, groups. Export prices, freight and duties are demo figures.
 - **Gemini was tried with the real key on 14 October** (cloud session): it fills in what the parser cannot place ("ফড়িয়া ১৬ টেকা দিবার চায়" → ৳16 a kg) and rewords the answer; the number check kept every number in the test calls. The number check compares numbers and banned words, not meaning, so listen to a reworded answer before a demo.
 - **The Google voice has not been tried with its key yet**: the key (`GOOGLE_TTS_JSON_B64`) was not in the cloud environment. Speech recognition has not been tried with a Bogura speaker.
-- **No live SMS from KrishiVault's own code yet** (REVE worked from Mati Kohon on 8 October). From cloud sessions the REVE gateway (`smpp.revesms.com:7790`) closes the connection, tried twice on 14 October: the request leaves the cloud machine and REVE hangs up, so it is likely an address allow-list on REVE's side. Send the first live SMS from a laptop, or ask REVE whether they allow only listed addresses. The SMS keys were also not in the cloud environment. The dry run works: the demo receipt is 168 Bangla characters, 3 SMS parts.
+- **No live SMS from KrishiVault's own code yet** (REVE worked from Mati Kohon on 8 October). From cloud sessions the REVE gateway (`smpp.revesms.com:7790`) closes the connection, tried twice on 14 October: the request leaves the cloud machine and REVE hangs up, so it is likely an address allow-list on REVE's side. Send the first live SMS from a laptop, or ask REVE whether they allow only listed addresses. The SMS keys were also not in the cloud environment. The dry run works: the demo receipt is 168 Bangla characters, 3 SMS parts. One send can go to up to 5 numbers (comma-separated); REVE's format for several numbers in one request is not confirmed, so make the first live send to one number. On 15 October the SMS variables were still not in the cloud session.
 - **No phone line.**
 
 ## 10. Prototype to-do, in order

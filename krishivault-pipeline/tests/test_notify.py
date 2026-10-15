@@ -11,7 +11,7 @@ from src.notify import awaj, sms
 @pytest.fixture(autouse=True)
 def clean_env(monkeypatch):
     for key in ("SMS_API_KEY", "SMS_SECRET_KEY", "SMS_SENDER_ID", "SMS_LIVE", "SMS_BASE_URL",
-                "AWAJ_API_TOKEN", "AWAJ_SENDER", "AWAJ_LIVE", "AWAJ_BASE_URL", "AWAJ_VOICE"):
+                "AWAJ_API_TOKEN", "AWAJ_SENDER", "AWAJ_SENDER_NUMBER", "AWAJ_LIVE", "AWAJ_BASE_URL", "AWAJ_VOICE"):
         monkeypatch.delenv(key, raising=False)
 
 
@@ -57,6 +57,50 @@ def test_sms_multiple_numbers_parsed_and_formatted():
     result = sms.send_sms("01712345678, 01812345678", "পরীক্ষা")
     assert result["dry_run"] is True
     assert result["request"]["toUser"] == "8801712345678,8801812345678"
+
+
+def test_sms_too_many_numbers_is_not_sent():
+    numbers = ", ".join(f"0171100000{i}" for i in range(sms.MAX_RECIPIENTS + 1))
+    result = sms.send_sms(numbers, "পরীক্ষা")
+    assert "error" in result and "endpoint" not in result
+
+
+def test_sms_keys_never_reach_the_log(monkeypatch):
+    # A failed request's error text holds the whole URL, keys included; it must not be logged or returned
+    from loguru import logger
+    import requests
+
+    monkeypatch.setenv("SMS_API_KEY", "KEY-SHOULD-NOT-LEAK")
+    monkeypatch.setenv("SMS_SECRET_KEY", "SECRET-SHOULD-NOT-LEAK")
+    monkeypatch.setenv("SMS_SENDER_ID", "8809600000000")
+    monkeypatch.setenv("SMS_LIVE", "1")
+
+    def unreachable(url, params=None, **kw):
+        raise requests.ConnectionError(f"Max retries exceeded with url: {url}?apikey={params['apikey']}&secretkey={params['secretkey']}")
+
+    monkeypatch.setattr(sms.requests, "get", unreachable)
+    lines = []
+    sink = logger.add(lines.append, level="DEBUG")
+    try:
+        result = sms.send_sms("01711998877", "পরীক্ষা")
+    finally:
+        logger.remove(sink)
+    text = "".join(lines) + str(result)
+    assert "could not reach" in result["error"]
+    assert "LEAK" not in text
+    assert "01711998877" not in text and "01711-XXX877" in text
+
+
+def test_partner_screens_mask_every_number():
+    from src.events import mask_phone
+    assert mask_phone("01711998877") == "01711-XXX877"
+    assert mask_phone("01711000000, 01811000123") == "01711-XXX000, 01811-XXX123"
+    assert mask_phone("") is None
+
+
+def test_awaj_sender_under_either_name(monkeypatch):
+    monkeypatch.setenv("AWAJ_SENDER_NUMBER", "09612345678")
+    assert awaj.awaj_config()["sender"] == "09612345678"
 
 
 def test_awaj_tts_call_dry_run_request():
