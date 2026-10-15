@@ -83,9 +83,12 @@ def status():
 
 @app.get("/api/forecast/production")
 def forecast_production(district: Optional[str] = None, season_start: Optional[int] = None,
-                        area_ha: Optional[float] = None, weather_adjust_pct: float = 0.0):
+                        area_ha: Optional[float] = None, weather_adjust_pct: float = 0.0,
+                        as_known_at_harvest: bool = False):
+    """as_known_at_harvest: for a past season, the crop as it could be estimated at its harvest (fair replays)."""
     try:
-        return production_forecast.production_forecast(district, season_start, area_ha, weather_adjust_pct)
+        return production_forecast.production_forecast(district, season_start, area_ha, weather_adjust_pct,
+                                                       as_known_at_harvest)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

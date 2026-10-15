@@ -52,7 +52,8 @@ def test_storage_plan(client):
     r = client.post("/api/storage/plan", json={"quantity": 36, "unit": "sack", "price_today": 18, "month": 3, "year": 2024})
     assert r.status_code == 200
     plan = r.json()
-    assert plan["inputs"]["sacks"] == 36 and plan["recommendation"]["key"] == "store"
+    assert plan["inputs"]["sacks"] == 36 and plan["recommendation"]["key"] in ("store", "sell_part")
+    assert plan["replay"]["advice"]["vs_sell_now"] > 0   # March 2024 replay, scored on the real prices
     r = client.post("/api/storage/plan", json={"quantity": 80, "price_today": 16, "terms": {"rent_per_sack": 300}})
     assert r.json()["inputs"]["terms"]["rent_per_sack"] == 300
     assert client.post("/api/storage/plan", json={"quantity": -1, "price_today": 16}).status_code == 422
@@ -114,7 +115,7 @@ def test_call_turns_and_sms(client):
     r = client.post("/api/call/turn", json={"kind": "start", "month": 3, "year": 2024}).json()
     for d in ["1", "80#", "18#", "0#", "1"]:
         r = client.post("/api/call/turn", json={"kind": "keypad", "digits": d, "state": r["state"]}).json()
-    assert r["result"]["key"] == "store"
+    assert r["result"]["key"] in ("store", "sell_part")
     sms = client.post("/api/call/sms", json={"state": r["state"], "phone": "01711000000"}).json()
     assert sms["dry_run"] is True
     bad = dict(r["state"], sms="anything")

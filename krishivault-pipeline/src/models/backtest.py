@@ -21,8 +21,8 @@ Scores:
 Run it:  python -m src.models.backtest   (or GET /api/forecast/backtest)
 
 Honest limits (also in the result):
-  - The model is given the real crop size (BBS). At a real harvest the crop size is an estimate, so real
-    results would be somewhat worse.
+  - The crop is estimated as it could be at the harvest: planted area x the yield trend of earlier seasons
+    (the BBS area stands in for DAE's January planted-area report).
   - With few seasons, a season is predicted from the others, including later ones. With a long history in
     data/raw/price_history.csv, use only_past=True (each season predicted from earlier seasons only).
   - Prices are the national median of retail town-market prices. The store-or-sell check applies the real
@@ -197,7 +197,8 @@ def backtest(only_past: bool = False) -> dict:
             "When a season is left out, the crop-size link cannot be fitted from one season; an assumed slope is "
             "used (the rise falls by 1.5 for every 10% bigger crop), set by the team after seeing both seasons. "
             "The slope check shows how the store-or-sell calls change with other slopes.",
-            "The model is given the real crop size (BBS); at a real harvest it is an estimate.",
+            "The crop is estimated as at the harvest (planted area x the earlier yield trend); the BBS area "
+            "stands in for DAE's January planted-area report.",
             "National median retail prices; the store-or-sell check assumes the farm-gate price is half the "
             "retail price and moves with it.",
         ],

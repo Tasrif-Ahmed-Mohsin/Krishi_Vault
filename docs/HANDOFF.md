@@ -69,7 +69,7 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 
 **Rule:** the farmer's advice is never for sale. A partner's fee never changes what KrishiVault advises; offers are ranked by money in the farmer's hand. KrishiVault is the data and connection platform; it does not lend its own money.
 
-**Why it holds up:** one season's gain is large next to the fees. 36 sacks stored to December in a normal-crop year (the 2024 replay) earn about ৳29,000 more than selling at harvest; in a big-crop year (the 2025 replay) the engine's "sell now" avoids a loss of about ৳14,000.
+**Why it holds up:** one season's gain is large next to the fees. In the fair replays, scored on the prices that really followed: in a normal-crop year (March 2024, 36 sacks at ৳18) the advice "sell 9 sacks now, store 27 until December" brought about ৳22,000 more than selling everything at the harvest (storing all 36 would have brought about ৳30,000 more, but the engine could not be sure of that then); in a big-crop year (March 2025, at ৳14) the advice "sell now" avoided a loss of about ৳20,000 (storing all 36 sacks to April) to ৳11,000 (to December).
 
 ## 6. AI and technology, and why
 
@@ -104,7 +104,7 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 | SMS receipt | Ported to Python; dry run | "SMS me" on `/call` and "Send this advice by SMS" on the dashboard |
 | Phone calls | Not in the prototype | No phone line; the Awaj port stays in `src/notify/awaj.py` for later |
 
-**The season selector** replays real seasons: **March 2025** (big crop: the engine says sell now), **March 2024** (normal crop: store until December), plus **March 2027** (the next harvest, forecast) and **October 2026** (potatoes already in store).
+**The season selector** replays real seasons: **March 2025** (big crop: the engine says sell now), **March 2024** (normal crop: sell a safety share, store the rest until December), plus **March 2027** (the next harvest, forecast) and **October 2026** (potatoes already in store).
 
 **The demo moment:** a teammate calls as a farmer ("হামার ৮০ মণ আলু উঠছে, ফড়িয়া ১৬ টেকা দিবার চায়, ২৫ হাজার টেকা নাগবে ৪ দিনের মইধ্যে"), hears "sell 19 sacks now, store 17 until December" with the money and the risk, presses 2 for a cold-storage request, gets the SMS; the cold storage confirms the sacks on its screen and the bank sees a loan application with its risk.
 
@@ -118,8 +118,8 @@ Every number is read back for a keypad "yes"; every answer ends with "১ = আ�
 
 **Not yet, or demo:**
 - **The price outlook rests on two full seasons.** It is a careful statistical scenario, not a trained AI forecast. Say "statistical outlook with ranges".
-- **The backtest covers only two seasons** (12 months with prices from 4+ markets; `python -m src.models.backtest`, the Forecasts page). Predicting each season with a model that had not seen it, the outlook missed by 9% on average against 52% for "usual seasonal shape only", and got store-or-sell right in both seasons (the usual shape: 1 of 2). That is far too little to judge it, and with one season left to learn from, the crop-size link is an assumption: the calls stay right if a 10% bigger crop cuts the rise by 0.8 or more, and both go wrong at 0.5. Say "tested on two past seasons", not "proven".
-- **The dashboard's replays use some hindsight:** "Replay March 2025" and "Replay March 2024" use today's model, which learned from those same seasons' prices. The backtest is the fair version.
+- **The backtest covers only two seasons** (12 months with prices from 4+ markets; `python -m src.models.backtest`, the Forecasts page). Predicting each season with a model that had not seen it, and estimating each crop from its planted area as at the harvest, the outlook missed by 11% on average against 52% for "usual seasonal shape only", the real price fell inside its 8-in-10 range in 92% of months, and it got store-or-sell right in both seasons (the usual shape: 1 of 2). That is far too little to judge it, and with one season left to learn from, the crop-size link is an assumption: the calls stay right if a 10% bigger crop cuts the rise by 0.8 or more; at 0.5 one goes wrong. Say "tested on two past seasons", not "proven".
+- **The replays are fair (15 October):** "Replay March 2025" and "Replay March 2024" use only what was known on that date. The price link is learned from seasons that had finished by then (none for March 2024, so the starting assumptions; 2023-24 for March 2025), and the crop is estimated from its planted area and the earlier yield trend. The dashboard then shows what really happened: the real price change, and what the advice and the other options really earned.
 - **WFP has gaps:** no month from March to August 2024 has prices from 4 or more markets.
 - **Weather is not in the production forecast** yet.
 - **Farm-gate prices:** the outlook moves the farmer's own price by the retail change; real farm-gate history is needed.

@@ -46,7 +46,7 @@ def loan_estimate(sacks: int, price_today: float, decision_month: int, decision_
     season = season_for_decision(decision_year, decision_month)
     rs = rise_strength(season, gap_override_pct=gap_override_pct, decision_year=decision_year,
                        decision_month=decision_month)
-    paths = simulate(decision_month, months, rs["k"], rs["k_sd"]) * price_today
+    paths = simulate(decision_month, months, rs["k"], rs["k_sd"], sigma=rs["sigma_month"]) * price_today
     end_prices = paths[:, months]
     kept_kg = kg * (1 - t.monthly_weight_loss) ** months * (1 - t.exit_sorting_loss)
     careful_price = min(price_today, float(np.percentile(end_prices, 10)))

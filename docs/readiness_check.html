@@ -176,7 +176,7 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     </div>
     <div class="item work">
       <div class="top"><span class="claim">Price outlook 1 to 9 months after the harvest</span><span class="chip work">Small work</span></div>
-      <div class="row"><b>We have</b><span>A statistical outlook: the usual seasonal shape, made steeper or flatter by the crop size, corrected by the season's own prices, with 2,000 simulated paths. Fitted on only two full seasons of WFP prices. Backtest (Forecasts page): on the two seasons, each predicted without seeing it, it missed by 9% on average against 52% for the usual seasonal shape, and called store-or-sell right in both. Only 12 months of prices, and the crop-size link had to be assumed for the test. The dashboard's season replays use some hindsight (the model learned from those seasons).</span></div>
+      <div class="row"><b>We have</b><span>A statistical outlook: the usual seasonal shape, made steeper or flatter by the crop size, corrected by the season's own prices, with 2,000 simulated paths. Fitted on only two full seasons of WFP prices. Backtest (Forecasts page): on the two seasons, each predicted without seeing it, it missed by 11% on average against 52% for the usual seasonal shape, and called store-or-sell right in both. Only 12 months of prices, and the crop-size link had to be assumed for the test. The dashboard's season replays are fair too: only what was known on that date.</span></div>
       <div class="row"><b>Say</b><span class="say">"A statistical outlook with ranges, built on official production and market data." Not "our AI predicts the price." "Tested on two past seasons" is fair; "proven" is not. Load the DAM history and re-run the backtest before saying more.</span></div>
     </div>
     <div class="item work">
@@ -191,7 +191,7 @@ a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     <div class="item ok">
       <div class="top"><span class="claim">The store-or-sell engine: sell now, store until a month, or sell part</span><span class="chip ok">Ready</span></div>
       <div class="row"><b>We have</b><span>Exact sums for every month to December: 84 kg sacks, flat ৳250 rent, losses, handling, selling costs, loans for a cash need; the chance that storing beats selling now; the price at which storing pays. Covered by tests.</span></div>
-      <div class="row"><b>Say</b><span class="say">"Replay 2025, the big crop: the engine says sell now. Replay 2024: store until December, about ৳29,000 more on 36 sacks." Both use the prices that really followed.</span></div>
+      <div class="row"><b>Say</b><span class="say">"Replay 2025, the big crop, using only what was known then: the engine says sell now; storing would really have lost about ৳11,000 to ৳20,000 on 36 sacks. Replay 2024: sell 9 sacks, store 27 until December; that really brought about ৳22,000 more than selling at the harvest." Two seasons only.</span></div>
     </div>
     <div class="item work">
       <div class="top"><span class="claim">Costs and losses checked in the field</span><span class="chip work">Small work</span></div>

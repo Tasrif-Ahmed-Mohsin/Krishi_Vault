@@ -116,11 +116,36 @@ def test_big_crop_year_says_sell_now():
     assert r["recommendation"]["key"] == "sell_now"
 
 
-def test_normal_crop_year_says_store():
+def test_normal_crop_year_says_store_most():
+    # A fair replay of March 2024: no earlier price season to learn from, so the engine keeps a safety share
     r = quick_plan(3000, 18, decision_month=3, decision_year=2024)   # the 2023-24 crop
-    assert r["recommendation"]["key"] == "store"
+    assert r["recommendation"]["key"] in ("store", "sell_part")
     assert r["best_month"]["month_en"] in ("November", "December")
+    chosen = r["options"][r["recommendation"]["key"]]
+    assert chosen["store_sacks"] >= r["inputs"]["sacks"] / 2
     assert r["options"]["store"]["gain_vs_now"] > 10000
+
+
+def test_replays_use_only_what_was_known_then():
+    from src.models.price_outlook import rise_strength
+    assert rise_strength(2024, decision_year=2025, decision_month=3)["learned_from"] == ["2023-24"]
+    assert rise_strength(2023, decision_year=2024, decision_month=3)["learned_from"] == []
+    assert rise_strength(2026, decision_year=2027, decision_month=3)["learned_from"] == ["2023-24", "2024-25"]
+    # the 2024-25 crop as it could be estimated at its harvest: planted area x the earlier yield trend
+    f = production_forecast(None, 2024, as_known_at_harvest=True)
+    assert f["basis"].startswith("as known at the harvest")
+    assert f["gap_sd_pct"] > 0 and f["gap_pct"] > 3                      # still a big crop
+    assert all(h["start_year"] < 2024 for h in f["history"])
+    assert production_forecast(None, 2024)["basis"] == "BBS figure for this season"
+
+
+def test_replays_are_scored_on_the_real_prices():
+    big = quick_plan(84 * 36, 14, decision_month=3, decision_year=2025)
+    assert big["recommendation"]["key"] == "sell_now"
+    assert big["replay"]["options"]["store"]["vs_sell_now"] < 0          # storing really lost money
+    normal = quick_plan(84 * 36, 18, decision_month=3, decision_year=2024)
+    assert normal["replay"]["advice"]["vs_sell_now"] > 10000              # the advice really gained
+    assert quick_plan(84 * 36, 16, decision_month=3, decision_year=2027)["replay"] is None
 
 
 def test_flat_rent_makes_early_sale_a_loss():

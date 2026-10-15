@@ -46,7 +46,7 @@ Code: `krishivault-pipeline/src/engine/storage_plan.py`, costs in `src/engine/fa
 4. 2,000 paths: each draws its own rise (crop uncertainty) and a monthly wander of about 6%. The outlook gives the middle and the 8-in-10 range.
 5. The farmer's own price today anchors the path. Retail and farm-gate prices are assumed to move together (a conservative assumption; farm-gate prices usually swing more).
 
-**Backtest** (`src/models/backtest.py`, the Forecasts page, `/api/forecast/backtest`): each past season is replayed from its first month with prices, with a model fitted on the other seasons only, against "usual seasonal shape only" and "no change". Scores: average miss, how often the real price fell inside the 8-in-10 range, and whether "store until the best month" or "sell now" was right for one sack. A slope check shows how much the calls depend on the assumed crop-size link. With a long history, `only_past=True` predicts each season from earlier seasons only.
+**Backtest** (`src/models/backtest.py`, the Forecasts page, `/api/forecast/backtest`): each past season is replayed from its first month with prices, with a model fitted on the other seasons only and the crop estimated from its planted area, against "usual seasonal shape only" and "no change". Scores: average miss, how often the real price fell inside the 8-in-10 range, and whether "store until the best month" or "sell now" was right for one sack. A slope check shows how much the calls depend on the assumed crop-size link. With a long history, `only_past=True` predicts each season from earlier seasons only.
 
 **Honest limits** (also on the dashboard): two full price seasons, backtested on 12 months only; no weather in production; retail prices. Adding a longer price history refits it automatically (`data/raw/price_history.csv`).
 
@@ -54,8 +54,8 @@ Code: `krishivault-pipeline/src/engine/storage_plan.py`, costs in `src/engine/fa
 
 | Step | Screen | What the judges see |
 |---|---|---|
-| 1. The trap | Dashboard → Season overview, season "Replay March 2025" | A big crop (6% above trend); the price path stays flat; storing 36 sacks loses money in every month: "sell now" |
-| 2. A normal year | Season "Replay March 2024" | Prices nearly double by November; storing until December gains about ৳29,000; selling after 1-2 months still loses (flat rent) |
+| 1. The trap | Dashboard → Season overview, season "Replay March 2025" | A fair replay: only what was known in March 2025. A big crop (about 7% above trend at the harvest); the outlook stays flat, and so did the real prices (dark squares); storing 36 sacks loses money in every month: "sell now". What really happened: storing would have lost about ৳11,000 to ৳20,000 |
+| 2. A normal year | Season "Replay March 2024" | A fair replay with no earlier price season to learn from: "sell 9 sacks now, store 27 until December"; selling after one month still loses (flat rent). Prices really nearly doubled; the advice brought about ৳22,000 more than selling everything at the harvest |
 | 3. The farmer's call | `/call`, season "Next harvest", the first "Try" sentence | Dialect speech understood, numbers read back, "sell 19 sacks now, store 17 until December", the money and the risk; press 2: cold-storage request; SMS receipt |
 | 4. The bank | Dashboard → Bank loan, then Partner screens | The cold storage confirms 36 sacks; the bank sees the value, the careful price, the risk and approves (demo) |
 | 5. Group and export | Group storage, Export | A shared truck saves money now; the discount counts only when the cold storage agrees. The UAE quotes most, Singapore pays most after costs |

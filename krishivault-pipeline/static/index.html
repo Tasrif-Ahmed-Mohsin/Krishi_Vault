@@ -212,7 +212,7 @@
   <div class="grid two">
     <div class="panel"><h2>Price outlook after the harvest <span class="bn">দামের পূর্বাভাস</span></h2>
       <div class="panel-body"><div class="chart" id="ovPrice"></div>
-        <div class="legend"><span><i style="background:var(--series)"></i>Middle path (৳/kg)</span><span><i style="background:var(--series-band)"></i>8 in 10 paths</span><span><i style="background:transparent;border:1px dashed var(--muted)"></i>Price today</span></div>
+        <div class="legend"><span><i style="background:var(--series)"></i>Middle path (৳/kg)</span><span><i style="background:var(--series-band)"></i>8 in 10 paths</span><span><i style="background:transparent;border:1px dashed var(--muted)"></i>Price today</span><span class="replay-only" hidden><i style="background:var(--text)"></i>What really happened</span></div>
         <p class="note" id="ovPriceNote"></p></div></div>
     <div class="panel"><h2>Storing 36 sacks: gain over selling today <span class="bn">রাখলে কত লাভ/ক্ষতি</span></h2>
       <div class="panel-body"><div class="chart" id="ovGain"></div>
@@ -472,8 +472,8 @@ const demoTag = demo => demo ? '<span class="tag demo">DEMO</span>' : '<span cla
 const SEASONS = {
   next:   {month: 3, year: 2027, stored: 'no',   price: 16, label: 'March 2027', note: 'The next harvest. Crop size is not known yet, so the range is wide.'},
   now:    {month: 10, year: 2026, stored: 'cold', price: 22, label: 'October 2026', note: 'Potatoes stored since March. Rent is owed either way; two months are left before the cold storages empty.'},
-  big:    {month: 3, year: 2025, stored: 'no',   price: 14, label: 'March 2025', note: 'The 2024-25 crop was 6% above the trend. Prices then stayed flat all year (WFP).'},
-  normal: {month: 3, year: 2024, stored: 'no',   price: 18, label: 'March 2024', note: 'The 2023-24 crop was close to the trend. Prices then nearly doubled by November (WFP).'},
+  big:    {month: 3, year: 2025, stored: 'no',   price: 14, label: 'March 2025', note: 'The 2024-25 crop was 6% above the trend (BBS). Prices then stayed flat all year (WFP). A fair replay: the engine sees only what was known in March 2025.'},
+  normal: {month: 3, year: 2024, stored: 'no',   price: 18, label: 'March 2024', note: 'The 2023-24 crop was close to the trend (BBS). Prices then nearly doubled by November (WFP). A fair replay: the engine sees only what was known in March 2024, when there was no earlier price season to learn from.'},
 };
 const season = () => SEASONS[$('#season').value];
 const whatIf = () => $('#whatif').value === '' ? null : Number($('#whatif').value);
@@ -521,7 +521,8 @@ function yAxis(f, y, tv, fmt) {
 /* line with a range band: rows [{label, mid, low, high, tip}] */
 function lineBand(box, rows, opt = {}) {
   const f = frame(box, opt.h || 260, {l: 44, r: 64, t: 14, b: 28});
-  const lo = Math.min(...rows.map(r => r.low), opt.ref ?? Infinity), hi = Math.max(...rows.map(r => r.high), opt.ref ?? -Infinity);
+  const reals = rows.map(r => r.real).filter(v => v != null);
+  const lo = Math.min(...rows.map(r => r.low), ...reals, opt.ref ?? Infinity), hi = Math.max(...rows.map(r => r.high), ...reals, opt.ref ?? -Infinity);
   const tv = ticks(Math.max(0, lo * 0.92), hi * 1.05);
   const y = scale(tv[0], tv[tv.length - 1], f.y0, f.y1);
   const x = scale(0, rows.length - 1, f.x0 + 8, f.x1 - 8);
@@ -538,6 +539,11 @@ function lineBand(box, rows, opt = {}) {
     el('circle', {cx: x(i), cy: y(r.mid), r: 4, fill: 'var(--series)', stroke: 'var(--paper)', 'stroke-width': 2}, f.svg);
     if (i % step === 0 || i === rows.length - 1) el('text', {x: x(i), y: f.y0 + 18, 'text-anchor': 'middle'}, f.svg).textContent = r.label;
   });
+  if (reals.length) {  // a replay: what really happened (WFP national change applied to today's price)
+    const pts = rows.map((r, i) => r.real == null ? null : `${x(i)},${y(r.real)}`).filter(Boolean).join(' ');
+    el('polyline', {points: pts, fill: 'none', stroke: 'var(--text)', 'stroke-width': 1.6, 'stroke-dasharray': '5 4'}, f.svg);
+    rows.forEach((r, i) => { if (r.real != null) el('rect', {x: x(i) - 4, y: y(r.real) - 4, width: 8, height: 8, fill: 'var(--text)', stroke: 'var(--paper)', 'stroke-width': 1.5}, f.svg); });
+  }
   const last = rows[rows.length - 1];
   el('text', {x: x(rows.length - 1) + 8, y: y(last.mid) + 4, class: 'lbl'}, f.svg).textContent = '৳' + num(last.mid, 1);
   el('text', {x: x(rows.length - 1) + 8, y: y(last.high) + 4}, f.svg).textContent = '৳' + num(last.high, 0);
@@ -685,8 +691,26 @@ window.addEventListener('hashchange', () => showPage(currentPage()));
 let resizeT; window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(() => { const n = currentPage(); loaded.delete(n); showPage(n); }, 250); });
 
 function outlookRows(months) {
-  return months.map(m => ({label: m.month_en.slice(0, 3), mid: m.mid, low: m.low, high: m.high,
-    tip: `<b>${m.month_en}</b><br>middle ৳${num(m.mid, 1)}/kg<br>8 in 10: ৳${num(m.low, 1)} to ৳${num(m.high, 1)}${m.h ? '<br>above today in ' + pct(m.chance_above_today) + ' of paths' : '<br>today'}`}));
+  return months.map(m => ({label: m.month_en.slice(0, 3), mid: m.mid, low: m.low, high: m.high, real: m.real,
+    tip: `<b>${m.month_en}</b><br>middle ৳${num(m.mid, 1)}/kg<br>8 in 10: ৳${num(m.low, 1)} to ৳${num(m.high, 1)}${m.h ? '<br>above today in ' + pct(m.chance_above_today) + ' of paths' : '<br>today'}${m.real != null ? '<br><b>what happened: ৳' + num(m.real, 1) + '</b>' : ''}`}));
+}
+function replayNote(plan) {
+  // A replay of a past season: the advice and the other options valued at the prices that really followed
+  const rp = plan.replay;
+  if (!rp || rp.advice.money == null) return '';
+  const o = rp.options, rec = plan.recommendation, sacks = plan.inputs.sacks;
+  const part = plan.options.sell_part;
+  const alt = [['store', `storing all ${sacks} sacks`], ['sell_part', part ? `selling ${part.sell_sacks_now} sacks and storing ${part.store_sacks}` : '']]
+    .filter(([k]) => k !== rec.key && o[k]).map(([k, name]) => `${name} until ${esc(o[k].sold_in)}: ${tkSigned(o[k].vs_sell_now)}`).join('; ');
+  return `<p class="note"><b>What really happened.</b> Following this advice (${esc(rec.title_en)}) brought ${tk(rp.advice.money)}` +
+    (rec.key === 'sell_now' ? '.' : `, ${tkSigned(rp.advice.vs_sell_now)} against selling everything at once.`) +
+    (alt ? ` The other choices: ${alt}.` : '') + ` <span class="small">Valued at ${esc(rp.basis)}, with the same costs.</span></p>`;
+}
+function learnedNote(rise, replay) {
+  const s = rise.learned_from;
+  const from = s.length ? `the price link learned from the ${s.join(' and ')} season${s.length > 1 ? 's' : ''}` : 'no earlier price season, so the starting assumptions';
+  return replay ? ` <b>Fair replay:</b> only what was known then (${from}; the crop estimated from its planted area). The dark squares show what really happened: the national retail price change (WFP) applied to today's price.`
+                : ` Uses ${from}.`;
 }
 function gainRows(plan) {
   const now = plan.options.sell_now.money_mean;
@@ -703,8 +727,8 @@ function planBody(extra = {}) {
 async function loadOverview() {
   const s = season();
   const [prodNat, prodBog, plan] = await Promise.all([
-    api(`/api/forecast/production?season_start=${s.year - 1}`),
-    api(`/api/forecast/production?district=Bogura&season_start=${s.year - 1}`),
+    api(`/api/forecast/production?season_start=${s.year - 1}&as_known_at_harvest=true`),
+    api(`/api/forecast/production?district=Bogura&season_start=${s.year - 1}&as_known_at_harvest=true`),
     api('/api/storage/plan', planBody({quantity: 36, unit: 'sack'})),
   ]);
   const rec = plan.recommendation, best = plan.best_month, store = plan.options.store;
@@ -712,11 +736,11 @@ async function loadOverview() {
   const gap = plan.outlook.gap_pct;
   $('#ovTiles').innerHTML = `
     <div class="tile"><div class="label">Bangladesh crop ${esc(prodNat.season)}</div><div class="value">${lakhT(prodNat.production_t)}</div>
-      <div class="sub">${prodNat.low_t === prodNat.high_t ? 'BBS figure' : 'range ' + lakhT(prodNat.low_t) + ' to ' + lakhT(prodNat.high_t)}</div></div>
+      <div class="sub">${prodNat.low_t === prodNat.high_t ? 'BBS figure' : (prodNat.basis.startsWith('as known') ? 'estimate at the harvest, ' : 'range ') + lakhT(prodNat.low_t) + ' to ' + lakhT(prodNat.high_t)}</div></div>
     <div class="tile"><div class="label">Against the trend</div><div class="value">${gap > 0 ? '+' : ''}${gap}%</div>
       <div class="sub">${whatIf() != null ? 'what-if setting' : gap > 3 ? 'a big crop: prices may stay low' : gap < -3 ? 'a small crop: prices may rise more' : 'about a normal crop'}</div></div>
     <div class="tile"><div class="label">Bogura crop ${esc(prodBog.season)}</div><div class="value">${lakhT(prodBog.production_t)}</div>
-      <div class="sub">${num(prodBog.history[prodBog.history.length - 1].production_t / prodNat.history[prodNat.history.length - 1].production_t * 100, 1)}% of the country (2024-25)</div></div>
+      <div class="sub">${num(prodBog.history[prodBog.history.length - 1].production_t / prodNat.history[prodNat.history.length - 1].production_t * 100, 1)}% of the country (${esc(prodNat.history[prodNat.history.length - 1].season)})</div></div>
     <div class="tile"><div class="label">Price in ${esc(last.month_en)}</div><div class="value">৳${num(last.price_mid, 1)}</div>
       <div class="sub">from ৳${num(plan.inputs.price_today, 1)} today; range ৳${num(last.price_low, 0)} to ৳${num(last.price_high, 0)}</div></div>
     <div class="tile"><div class="label">36 sacks: advice</div><div class="value" style="font-size:1.1rem">${esc(rec.title_en)}</div>
@@ -724,9 +748,10 @@ async function loadOverview() {
   if (plan.months_left > 0) {
     const o = await api(`/api/forecast/price?price_today=${s.price}&month=${s.month}&year=${s.year}${whatIf() != null ? '&gap_override_pct=' + whatIf() : ''}`);
     lineBand($('#ovPrice'), outlookRows(o.months), {ref: s.price});
-    $('#ovPriceNote').innerHTML = `Season ${esc(o.season)}. Rise strength ${o.rise.k.toFixed(2)} (1 = the usual rise, 0 = flat)${o.rise.season_months_used ? `, corrected by ${o.rise.season_months_used} months of this season's prices` : ''}. A statistical outlook, not a promise.`;
+    document.querySelectorAll('.replay-only').forEach(e => { e.hidden = !o.replay; });
+    $('#ovPriceNote').innerHTML = `Season ${esc(o.season)}. Rise strength ${o.rise.k.toFixed(2)} (1 = the usual rise, 0 = flat)${o.rise.season_months_used ? `, corrected by ${o.rise.season_months_used} months of this season's prices` : ''}. A statistical outlook, not a promise.` + learnedNote(o.rise, o.replay);
     divBars($('#ovGain'), gainRows(plan), {zeroLabel: 'sell today'});
-    $('#ovGainNote').innerHTML = esc(plan.notes.join(' ')) + (best ? ` Best month: <b>${esc(best.month_en)}</b>${store ? ` (${tkSigned(store.gain_vs_now)} on average, beats today in ${pct(store.chance_beats_now)} of paths)` : ''}.` : '');
+    $('#ovGainNote').innerHTML = esc(plan.notes.join(' ')) + (best ? ` Best month: <b>${esc(best.month_en)}</b>${store ? ` (${tkSigned(store.gain_vs_now)} on average, beats today in ${pct(store.chance_beats_now)} of paths)` : ''}.` : '') + replayNote(plan);
   } else {
     $('#ovPrice').innerHTML = '<p class="muted">The storage season is over for this month.</p>';
     $('#ovGain').innerHTML = '';
@@ -771,7 +796,7 @@ async function runPlan() {
   out.innerHTML = `
     <div class="rec ${rec.key}"><h3>${esc(rec.title_en)}</h3><div class="bn">${esc(rec.title_bn)}</div>
       <ul>${rec.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>
-      <div class="small" style="margin-top:6px">${num(inp.quantity_kg)} kg = ${inp.sacks} sacks of ${inp.terms.sack_kg} kg = ${num(inp.maunds, 1)} maunds · price today ৳${num(inp.price_today, 1)}/kg · season ${esc(plan.outlook.season)}, ${plan.months_left} month(s) of storage left</div></div>
+      <div class="small" style="margin-top:6px">${num(inp.quantity_kg)} kg = ${inp.sacks} sacks of ${inp.terms.sack_kg} kg = ${num(inp.maunds, 1)} maunds · price today ৳${num(inp.price_today, 1)}/kg · season ${esc(plan.outlook.season)}, ${plan.months_left} month(s) of storage left</div>${replayNote(plan)}</div>
     <div class="options">${optCard(opts.sell_now)}${optCard(opts.store)}${optCard(opts.sell_part)}</div>
     ${plan.months_left ? `<div class="panel"><h2>Gain over selling today, by month of sale <span class="bn">মাসভিত্তিক লাভ/ক্ষতি</span></h2><div class="panel-body"><div class="chart" id="planChart"></div>
       <div class="legend"><span><i style="background:var(--gain)"></i>More than selling today</span><span><i style="background:var(--loss)"></i>Less</span><span>│ 8 in 10 paths</span></div>
@@ -837,11 +862,11 @@ async function runPriceOutlook() {
   const s = season();
   const o = await api(`/api/forecast/price?price_today=${val('#foPrice') || s.price}&month=${s.month}&year=${s.year}${whatIf() != null ? '&gap_override_pct=' + whatIf() : ''}`);
   if (o.months.length > 1) lineBand($('#foChart'), outlookRows(o.months), {ref: o.price_today}); else $('#foChart').innerHTML = '<p class="muted">The storage season is over in this month.</p>';
-  $('#foTable').innerHTML = `<thead><tr><th>Month</th><th class="n">Low (1 in 10)</th><th class="n">Middle</th><th class="n">High (1 in 10)</th><th class="n">Above today</th></tr></thead><tbody>` +
-    o.months.map(m => `<tr><td>${esc(m.month_en)} <span class="bn small">${esc(m.month_bn)}</span></td><td class="n">৳${num(m.low, 1)}</td><td class="n">৳${num(m.mid, 1)}</td><td class="n">৳${num(m.high, 1)}</td><td class="n">${m.h ? pct(m.chance_above_today) : '—'}</td></tr>`).join('') + '</tbody>';
+  $('#foTable').innerHTML = `<thead><tr><th>Month</th><th class="n">Low (1 in 10)</th><th class="n">Middle</th><th class="n">High (1 in 10)</th><th class="n">Above today</th>${o.replay ? '<th class="n">What happened</th>' : ''}</tr></thead><tbody>` +
+    o.months.map(m => `<tr><td>${esc(m.month_en)} <span class="bn small">${esc(m.month_bn)}</span></td><td class="n">৳${num(m.low, 1)}</td><td class="n">৳${num(m.mid, 1)}</td><td class="n">৳${num(m.high, 1)}</td><td class="n">${m.h ? pct(m.chance_above_today) : '—'}</td>${o.replay ? `<td class="n">${m.real != null ? '৳' + num(m.real, 1) : '—'}</td>` : ''}</tr>`).join('') + '</tbody>';
   const r = o.rise;
   $('#foNote').innerHTML = `Season ${esc(o.season)}: crop gap ${r.gap_pct > 0 ? '+' : ''}${r.gap_pct}%${r.gap_sd_pct ? ' (± ' + r.gap_sd_pct + '%)' : ''} → rise strength ${r.k_from_crop} from crop size` +
-    (r.k_from_prices != null ? `, ${r.k_from_prices} from ${r.season_months_used} months of this season's prices, combined ${r.k}` : '') + '. 1 = the usual rise to December, 0 = flat, below 0 = falling.';
+    (r.k_from_prices != null ? `, ${r.k_from_prices} from ${r.season_months_used} months of this season's prices, combined ${r.k}` : '') + '. 1 = the usual rise to December, 0 = flat, below 0 = falling.' + learnedNote(r, o.replay);
 }
 async function loadModel() {
   const m = await api('/api/forecast/model');
