@@ -2,8 +2,9 @@
 // Every figure comes from the KrishiVault engine (krishivault-pipeline) or a source named on the slide.
 //
 // Run (needs: npm install pptxgenjs react react-dom react-icons sharp):
-//   node build_deck.js <out.pptx> <hook.mp4> <poster.jpg> <close.jpg> <pptx-skill-dir>
-// Then scripts/pitch_deck/finish_deck.ps1 sets the video to play on entry (PowerPoint COM).
+//   python make_hook_assets.py <frame.jpg> <hook dir> 2.78 3.05   (slide 1 still and newsprint)
+//   node build_deck.js <out.pptx> <hook.mp4> <poster.jpg> <close.jpg> <hook dir> <pptx-skill-dir>
+// Then finish_deck.ps1 sets the video to play on entry and fades in the clippings (PowerPoint COM).
 
 const fs = require("fs");
 const path = require("path");
@@ -13,7 +14,7 @@ const RDS = require("react-dom/server");
 const sharp = require("sharp");
 const lu = require("react-icons/lu");
 
-const [OUT, VIDEO, POSTER, CLOSE_BG, SKILL] = process.argv.slice(2);
+const [OUT, VIDEO, POSTER, CLOSE_BG, HOOK_DIR, SKILL] = process.argv.slice(2);
 const { applyTheme } = require(path.join(SKILL, "scripts", "apply_theme.js"));
 
 // ---------------------------------------------------------------- theme
@@ -122,48 +123,41 @@ masterWithHeader("KV Content Dark", C.text2, C.accent1, C.background1, "A9BDB0")
 
 // ================================================================= slides
 async function build() {
-  // ------------------------------------------------------------ 1. hook: the farmer, then the evidence
+  // ------------------------------------------------------------ 1. hook: the farmer, then the clippings
   pres.addSection({ title: "Hook" });
   const s1 = pres.addSlide({ masterName: "KV Dark Full", sectionTitle: "Hook" });
   s1.addMedia({ type: "video", path: VIDEO, cover: img64(POSTER), x: 0, y: 0, w: W, h: H, objectName: "Farmer video" });
-  // everything below appears after the clip ends (finish_deck.ps1 adds the fades and groups the "Ev N" shapes)
-  s1.addShape(RECT, { x: 0, y: 0, w: W, h: H, fill: { color: C.text2, transparency: 10 }, line: { type: "none" }, objectName: "Hook overlay" });
-  text(s1, "HE IS NOT ALONE  ·  THE SAME STORY, SEASON AFTER SEASON", { x: M, y: 0.5, w: W - 2 * M, h: 0.3, fontSize: 13, bold: true, charSpacing: 3, color: C.accent1, objectName: "Hook kicker" });
+  // everything below appears after the clip ends (finish_deck.ps1 fades it in and groups each "Ev N" clipping):
+  // a still of the farmer, his face clear on the left; four newspaper clippings on the darkened right
+  s1.addImage({ path: path.join(HOOK_DIR, "hook_after.jpg"), x: 0, y: 0, w: W, h: H, altText: "The farmer from our field interview", objectName: "Hook still" });
+  text(s1, "HE IS NOT ALONE", { x: M, y: 4.92, w: 5.8, h: 0.3, fontSize: 13, bold: true, charSpacing: 3, color: C.accent1, objectName: "Hook kicker" });
   text(s1, [
-    { text: "He grows the crop. ", options: { color: C.background1 } },
+    { text: "He grows the crop.", options: { color: C.background1, breakLine: true } },
     marked("Someone else gets paid for waiting."),
-  ], { x: M, y: 0.86, w: W - 2 * M, h: 0.62, fontFace: THEME.headFontFace, fontSize: 28, bold: true, objectName: "Hook caption" });
-  const news = [
-    ["FEB 2025  ·  BUSINESS STANDARD", "Farmers strain under losses, selling potatoes at half the production cost", "৳7–9 a kg at the farm gate, against a ৳17.26 cost."],
-    ["APR 2025  ·  BDNEWS24", "Surplus potatoes, empty pockets", "Cold storages full; farmers say middlemen bought the booking slips in advance."],
-    ["OCT 2025  ·  THE DAILY STAR", "Potato farmers left in the lurch as prices crash", "৳8 a kg wholesale, half the cost. Unsold sacks pass to the cold storage after 15 November."],
-    ["JUL 2026  ·  DHAKA TRIBUNE", "Potato farmers protest cold storage rent hike in Rangpur", "Rent up to ৳450 a sack while potatoes sell at ৳14–15 a kg, against a ৳25–26 cost."],
+  ], { x: M, y: 5.28, w: 5.9, h: 1.45, fontFace: THEME.headFontFace, fontSize: 26, bold: true, objectName: "Hook caption" });
+  const INK = "1C1C1C", PRESS = "Times New Roman";
+  const clippings = [
+    ["news", "The Business Standard", "13 FEBRUARY 2025", "Farmers strain under losses, selling potatoes at half the production cost", "Farm-gate ৳7–9 a kg, against a ৳17.26 production cost."],
+    ["news", "The Daily Star", "15 OCTOBER 2025", "Potato farmers left in the lurch as prices crash", "Wholesale ৳8 a kg, half the cost. After 15 November, unsold sacks pass to the cold-storage owners."],
+    ["news", "Dhaka Tribune", "1 JULY 2026", "Potato farmers protest cold storage rent hike in Rangpur", "Rent raised to ৳450 a sack, while potatoes sell at ৳14–15 a kg against a ৳25–26 cost."],
+    ["journal", "Universal Journal of Agricultural Research", "2014  ·  HAJONG AND OTHERS", "Storage System of Potato in Bangladesh", "High charges, an uncertain price and no money keep farmers out of cold storage. Prices bottom at harvest, peak in December."],
   ];
-  const nw = (W - 2 * M - 3 * 0.2) / 4, ny = 1.75, nh = 2.7;
+  const gx0 = 6.95, cgap = 0.22, cw1 = (W - M - gx0 - cgap) / 2, ch1 = 3.05, gy0 = 0.55, PADIN = 30 / 300;
   for (let i = 0; i < 4; i++) {
-    const x = M + i * (nw + 0.2);
-    s1.addShape(RECT, { x, y: ny, w: nw, h: nh, fill: { color: C.background1 }, line: { color: "D9E2D6", width: 0.75 }, shadow: shadow(0.35), objectName: `Ev ${i + 1} card` });
-    text(s1, news[i][0], { x: x + 0.2, y: ny + 0.18, w: nw - 0.4, h: 0.26, fontSize: 10.5, bold: true, charSpacing: 0.5, color: C.accent3, objectName: `Ev ${i + 1} source` });
-    text(s1, news[i][1], { x: x + 0.2, y: ny + 0.5, w: nw - 0.4, h: 1.15, fontFace: THEME.headFontFace, fontSize: 15, bold: true, color: C.text2, objectName: `Ev ${i + 1} headline` });
-    text(s1, news[i][2], { x: x + 0.2, y: ny + 1.72, w: nw - 0.4, h: 0.85, fontSize: 12.5, color: C.text1, objectName: `Ev ${i + 1} fact` });
+    const [kind, name, date, headline, body] = clippings[i];
+    const x = gx0 + (i % 2) * (cw1 + cgap), y = gy0 + Math.floor(i / 2) * (ch1 + 0.25), n = i + 1;
+    const ix = x + 0.2, iw = cw1 - 0.4;
+    s1.addImage({ path: path.join(HOOK_DIR, kind === "news" ? "news_paper.png" : "journal_paper.png"), x: x - PADIN, y: y - PADIN, w: cw1 + 2 * PADIN, h: ch1 + 2 * PADIN, altText: "Newsprint", objectName: `Ev ${n} paper` });
+    const np = kind === "news" ? 0.36 : 0.5;
+    text(s1, name, { x: ix, y: y + 0.16, w: iw, h: np, fontFace: PRESS, fontSize: kind === "news" ? 16 : 12.5, bold: true, color: INK, align: "center", valign: "middle", objectName: `Ev ${n} nameplate` });
+    const r1 = y + 0.16 + np + 0.04;
+    s1.addShape(pres.shapes.LINE, { x: ix, y: r1, w: iw, h: 0, line: { color: INK, width: 1.5 }, objectName: `Ev ${n} rule 1` });
+    text(s1, date, { x: ix, y: r1 + 0.04, w: iw, h: 0.22, fontFace: PRESS, fontSize: 9.5, charSpacing: 1, color: "3A3A3A", align: "center", valign: "middle", objectName: `Ev ${n} dateline` });
+    const r2 = r1 + 0.29;
+    s1.addShape(pres.shapes.LINE, { x: ix, y: r2, w: iw, h: 0, line: { color: INK, width: 0.5 }, objectName: `Ev ${n} rule 2` });
+    text(s1, headline, { x: ix, y: r2 + 0.1, w: iw, h: 1.05, fontFace: PRESS, fontSize: 15.5, bold: true, color: "111111", objectName: `Ev ${n} headline` });
+    text(s1, body, { x: ix, y: r2 + 1.18, w: iw, h: y + ch1 - 0.18 - (r2 + 1.18), fontFace: PRESS, fontSize: 12, color: "2E2E2E", objectName: `Ev ${n} body` });
   }
-  const ry = ny + nh + 0.2, rh2 = H - 0.5 - ry, rw = 4.55;
-  const research = [
-    ["RESEARCH  ·  BRAC UNIVERSITY  ·  2016 FIELDWORK", [
-      { text: "Farmer ৳480 ", options: { color: C.accent3 } }, { text: "→ retailer ৳819", options: { color: C.text2 } }], "for the same 40 kg in Bogura and Munshiganj, with several traders in between. Study-period prices, not today's."],
-    ["RESEARCH  ·  HAJONG AND OTHERS  ·  RANGPUR  ·  2014", [
-      { text: "Why farmers can't store", options: { color: C.text2 } }], "High cold-storage charges, an uncertain future price and no money. Prices bottom at harvest and peak in December."],
-  ];
-  for (let i = 0; i < 2; i++) {
-    const x = M + i * (rw + 0.2), n = i + 5;
-    s1.addShape(RECT, { x, y: ry, w: rw, h: rh2, fill: { color: "E6EEE5" }, line: { color: "CFDACB", width: 0.75 }, shadow: shadow(0.35), objectName: `Ev ${n} card` });
-    text(s1, research[i][0], { x: x + 0.22, y: ry + 0.16, w: rw - 0.44, h: 0.26, fontSize: 10.5, bold: true, charSpacing: 0.5, color: C.accent2, objectName: `Ev ${n} source` });
-    text(s1, research[i][1], { x: x + 0.22, y: ry + 0.5, w: rw - 0.44, h: 0.5, fontFace: THEME.headFontFace, fontSize: 19, bold: true, objectName: `Ev ${n} headline` });
-    text(s1, research[i][2], { x: x + 0.22, y: ry + 1.1, w: rw - 0.44, h: rh2 - 1.2, fontSize: 15, color: C.text1, objectName: `Ev ${n} fact` });
-  }
-  const pxx = M + 2 * (rw + 0.2), pww = W - M - pxx;
-  s1.addShape(RECT, { x: pxx, y: ry, w: pww, h: rh2, fill: { color: C.accent1 }, line: { type: "none" }, shadow: shadow(0.35), objectName: "Ev 7 card" });
-  text(s1, "KrishiVault makes sure the farmer can wait.", { x: pxx + 0.25, y: ry, w: pww - 0.45, h: rh2, fontFace: THEME.headFontFace, fontSize: 19, bold: true, color: C.text2, valign: "middle", objectName: "Ev 7 promise" });
   s1.addNotes(NOTES[1]);
 
   // ------------------------------------------------------------ 2. problem: the numbers and the three traps

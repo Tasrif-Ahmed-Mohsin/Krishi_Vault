@@ -1,5 +1,5 @@
 # Finishes the KrishiVault pitch deck in PowerPoint itself (COM), then renders every slide to PNG.
-# 1. Slide 1: the farmer video plays on entry; after it ends the caption and the evidence cards fade in.
+# 1. Slide 1: the farmer video plays on entry; after it ends a still of the farmer, the caption and four newspaper clippings fade in.
 # 2. Saves the deck, then exports slide PNGs for checking.
 # Usage: powershell -File finish_deck.ps1 -Deck <deck.pptx> -PngDir <folder> -VideoSeconds <clip length>
 param([Parameter(Mandatory)][string]$Deck, [Parameter(Mandatory)][string]$PngDir, [double]$VideoSeconds = 30)
@@ -27,21 +27,24 @@ try {
     $video.AnimationSettings.PlaySettings.HideWhileNotPlaying = 0
     $video.AnimationSettings.PlaySettings.StopAfterSlides = 1
 
-    # after the clip: the overlay and the caption fade in, then the evidence cards one by one
+    # after the clip: the still of the farmer fades in, then the caption, then the four clippings one by one
     # ("with previous" (2) and delays measured from the slide's start, when the clip starts)
-    foreach ($name in @("Hook overlay", "Hook kicker", "Hook caption")) {
+    $fx = $seq.AddEffect($s1.Shapes.Item("Hook still"), 10, 0, 2)
+    $fx.Timing.Duration = 0.8
+    $fx.Timing.TriggerDelayTime = $VideoSeconds + 0.2
+    foreach ($name in @("Hook kicker", "Hook caption")) {
         $fx = $seq.AddEffect($s1.Shapes.Item($name), 10, 0, 2)
         $fx.Timing.Duration = 0.6
-        $fx.Timing.TriggerDelayTime = $VideoSeconds + 0.3
+        $fx.Timing.TriggerDelayTime = $VideoSeconds + 0.9
     }
-    for ($n = 1; $n -le 7; $n++) {
+    for ($n = 1; $n -le 4; $n++) {
         $names = @()
         foreach ($sh in $s1.Shapes) { if ($sh.Name -like "Ev $n *") { $names += $sh.Name } }
         $group = $s1.Shapes.Range([string[]]$names).Group()
-        $group.Name = "Evidence $n"
+        $group.Name = "Clipping $n"
         $fx = $seq.AddEffect($group, 10, 0, 2)
         $fx.Timing.Duration = 0.5
-        $fx.Timing.TriggerDelayTime = $VideoSeconds + 1.0 + 0.35 * ($n - 1)
+        $fx.Timing.TriggerDelayTime = $VideoSeconds + 1.5 + 0.45 * ($n - 1)
     }
 
     # links to the live prototype: a click action on the shapes keeps their own text colour

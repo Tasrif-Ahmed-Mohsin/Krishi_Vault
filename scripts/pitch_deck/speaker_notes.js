@@ -5,22 +5,22 @@
 
 module.exports = {
   1: `[0:00-0:55 · Speaker A]
-DO: The slide opens and the clip plays by itself (34 s, English subtitles). Say nothing and do not click while it plays: a click jumps to slide 2. When it ends, the caption fades in, then seven cards (four news reports, two studies, our promise), one by one. Start speaking as the first card appears. Test the sound on the venue laptop.
+DO: The slide opens and the clip plays by itself (34 s, English subtitles). Say nothing and do not click while it plays: a click jumps to slide 2. When it ends, a still of the farmer fades in (his face on the left), then the caption, then four newspaper clippings on the right, one by one (three news reports, one study). Start speaking as the first clipping appears. Test the sound on the venue laptop.
 
-SAY (after the clip, as the cards come in):
+SAY (after the clip, as the clippings come in):
 "He grows the crop. Someone else gets paid for waiting.
 And he is not alone. February 2025: farmers selling at half their cost. October: prices crash, and unsold sacks pass to the cold storage. This July: rents up again.
 Research has said it since 2014: high rent, an uncertain price, no cash.
 We are KrishiVault, and we make sure the farmer can wait."
 
-IF THE VIDEO FAILS: hold up a button phone. "This is the only device the farmer in our story owns. Everything we show you today works on it." Click once: the cards still appear.
+IF THE VIDEO FAILS: hold up a button phone. "This is the only device the farmer in our story owns. Everything we show you today works on it." Click once: the clippings still appear.
 
-THE CARDS (all opened and checked on 16 October 2026):
+THE SOURCES (all opened and checked on 16 October 2026; four are on the slide, two are for Q&A only):
 - The Business Standard, 13 Feb 2025, "Farmers strain under losses, selling potatoes at half the production cost": farm gate ৳7-9 a kg; cost ৳17.26 (Department of Agricultural Marketing).
-- bdnews24, 23 Apr 2025, "Surplus potatoes, empty pockets": record area, cold storages full; farmers allege middlemen bought storage booking slips in advance (a manager denied local farmers were displaced).
+- Not on the slide, for Q&A: bdnews24, 23 Apr 2025, "Surplus potatoes, empty pockets": record area, cold storages full; farmers allege middlemen bought storage booking slips in advance (a manager denied local farmers were displaced).
 - The Daily Star, 15 Oct 2025, "Potato farmers left in the lurch as prices crash": ৳8 a kg wholesale; DAE cost in the north ৳14.5-16; after 15 November unsold stock passes to the cold-storage owners.
 - Dhaka Tribune, 1 Jul 2026, "Potato farmers protest cold storage rent hike in Rangpur": rent raised to ৳450 a 50-kg sack; potatoes at ৳14-15 a kg against a ৳25-26 cost.
-- BRAC University value-chain study (Bogura, Munshiganj; 2016 fieldwork): farmer ৳480.38, retailer ৳818.50 per 40 kg. Study-period prices; the gap also pays transport, labour and losses, so never call it all trader profit.
+- Not on the slide, for Q&A: BRAC University value-chain study (Bogura, Munshiganj; 2016 fieldwork): farmer ৳480.38, retailer ৳818.50 per 40 kg. Study-period prices; the gap also pays transport, labour and losses, so never call it all trader profit.
 - Hajong, Moniruzzaman, Mia, Rahman (2014), "Storage System of Potato in Bangladesh", Universal Journal of Agricultural Research 2(1): Rangpur, 10 cold storages, 20 traders, 30 farmers; farmers cannot use cold storage because of high charges, an uncertain future price and financial insolvency; prices lowest at harvest, peak in December.
 
 ABOUT THE CLIP: our own field interview, recorded 14 October 2026 (cut from presentation material/IMG_4781.MOV; cuts and subtitles in scripts/pitch_deck/hook_cuts.json). He grows potatoes, maize and rice; uses a button phone and cannot read SMS; sells at the haat and "never makes the money we should"; "some years profit, some years loss". Do not name him without his consent.`,
