@@ -302,7 +302,7 @@
         <div class="notify-row">
           <label class="sr-only" for="phone">Farmer's mobile number</label>
           <input id="phone" inputmode="tel" placeholder="01XXXXXXXXX" autocomplete="off">
-          <button class="btn primary" id="dialBtn" onclick="dialVoiceCall()" title="Send real voice call to this phone" style="background:#2a4a36;color:#fff;border-color:#1b2f21">📞 Call Phone</button>
+          <button class="btn primary" id="dialBtn" onclick="dialVoiceCall()" title="Send real voice call to this phone" style="background:#2a4a36;color:#fff;border-color:#1b2f21">📞 Call now</button>
           <button class="btn" id="smsBtn" onclick="notify()" disabled>✉ SMS</button>
         </div>
         <div class="small en" id="notifyMode" style="margin-top:6px"></div>
@@ -835,8 +835,16 @@ async function dialVoiceCall() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone: valid[0], text: adviceText })
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || data.error || res.statusText);
+    let data = null;
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
+    if (!res.ok) {
+      const errMsg = (data && (data.detail || data.error)) || res.statusText || ("HTTP " + res.status);
+      throw new Error(errMsg);
+    }
     const audioNote = data.audio_file_id ? ` (Audio ID: ${data.audio_file_id})` : "";
     showNotify(`✅ OUTBOUND VOICE CALL DISPATCHED!\n\nTarget Mobile: ${data.phone}\nCaller DID: ${data.caller_id}${audioNote}\nStatus: ${data.message || 'Call queued'}\n\nPhone should ring shortly. Listen for the customized advice!`);
 

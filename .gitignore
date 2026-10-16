@@ -10,6 +10,7 @@ env materials.txt
 *materials*.txt
 call env*.txt
 *env*.txt
+*keys*.txt
 calltest-*.json
 *service-account*.json
 *service_account*.json
