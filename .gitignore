@@ -25,6 +25,9 @@ client_secret*.json
 *.key
 *.pfx
 *.p12
+*.zip
+FOR_LAPTOP/
+START_*.bat
 id_rsa*
 id_ed25519*
 
