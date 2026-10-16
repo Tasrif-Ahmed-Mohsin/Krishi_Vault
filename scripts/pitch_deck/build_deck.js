@@ -115,92 +115,140 @@ masterWithHeader("KV Content Dark", C.text2, C.accent1, C.background1, "A9BDB0")
 
 // ================================================================= slides
 async function build() {
-  // ------------------------------------------------------------ 1. hook: the farmer
+  // ------------------------------------------------------------ 1. hook: the farmer, then the evidence
   pres.addSection({ title: "Hook" });
   const s1 = pres.addSlide({ masterName: "KV Dark Full", sectionTitle: "Hook" });
   s1.addMedia({ type: "video", path: VIDEO, cover: img64(POSTER), x: 0, y: 0, w: W, h: H, objectName: "Farmer video" });
-  // shown after the clip ends (finish_deck.ps1 adds the fade): the line the speaker says
-  s1.addShape(RECT, { x: 0.55, y: 4.6, w: 9.5, h: 2.3, fill: { color: C.text2, transparency: 10 }, line: { type: "none" }, shadow: shadow(0.3), objectName: "Hook caption panel" });
+  // everything below appears after the clip ends (finish_deck.ps1 adds the fades and groups the "Ev N" shapes)
+  s1.addShape(RECT, { x: 0, y: 0, w: W, h: H, fill: { color: C.text2, transparency: 10 }, line: { type: "none" }, objectName: "Hook overlay" });
+  text(s1, "HE IS NOT ALONE  ·  THE SAME STORY, SEASON AFTER SEASON", { x: M, y: 0.5, w: W - 2 * M, h: 0.3, fontSize: 13, bold: true, charSpacing: 3, color: C.accent1, objectName: "Hook kicker" });
   text(s1, [
-    { text: "He grows the crop.", options: { breakLine: true } },
+    { text: "He grows the crop. ", options: { color: C.background1 } },
     { text: "Someone else gets paid for waiting.", options: { color: C.accent1 } },
-  ], { x: 0.95, y: 4.88, w: 8.9, h: 1.2, fontFace: THEME.headFontFace, fontSize: 32, bold: true, color: C.background1, objectName: "Hook caption" });
-  text(s1, "KrishiVault makes sure the farmer can wait.", { x: 0.95, y: 6.18, w: 8.9, h: 0.45, fontSize: 18, color: "D7E3DA", objectName: "Hook promise" });
+  ], { x: M, y: 0.86, w: W - 2 * M, h: 0.62, fontFace: THEME.headFontFace, fontSize: 28, bold: true, objectName: "Hook caption" });
+  const news = [
+    ["FEB 2025  ·  BUSINESS STANDARD", "Farmers strain under losses, selling potatoes at half the production cost", "৳7–9 a kg at the farm gate, against a ৳17.26 cost."],
+    ["APR 2025  ·  BDNEWS24", "Surplus potatoes, empty pockets", "Cold storages full; farmers say middlemen bought the booking slips in advance."],
+    ["OCT 2025  ·  THE DAILY STAR", "Potato farmers left in the lurch as prices crash", "৳8 a kg wholesale, half the cost. Unsold sacks pass to the cold storage after 15 November."],
+    ["JUL 2026  ·  DHAKA TRIBUNE", "Potato farmers protest cold storage rent hike in Rangpur", "Rent up to ৳450 a sack while potatoes sell at ৳14–15 a kg, against a ৳25–26 cost."],
+  ];
+  const nw = (W - 2 * M - 3 * 0.2) / 4, ny = 1.75, nh = 2.7;
+  for (let i = 0; i < 4; i++) {
+    const x = M + i * (nw + 0.2);
+    s1.addShape(RECT, { x, y: ny, w: nw, h: nh, fill: { color: C.background1 }, line: { color: "D9E2D6", width: 0.75 }, shadow: shadow(0.35), objectName: `Ev ${i + 1} card` });
+    text(s1, news[i][0], { x: x + 0.2, y: ny + 0.18, w: nw - 0.4, h: 0.26, fontSize: 10.5, bold: true, charSpacing: 0.5, color: C.accent3, objectName: `Ev ${i + 1} source` });
+    text(s1, news[i][1], { x: x + 0.2, y: ny + 0.5, w: nw - 0.4, h: 1.15, fontFace: THEME.headFontFace, fontSize: 15, bold: true, color: C.text2, objectName: `Ev ${i + 1} headline` });
+    text(s1, news[i][2], { x: x + 0.2, y: ny + 1.72, w: nw - 0.4, h: 0.85, fontSize: 12.5, color: C.text1, objectName: `Ev ${i + 1} fact` });
+  }
+  const ry = ny + nh + 0.2, rh2 = H - 0.5 - ry, rw = 4.55;
+  const research = [
+    ["RESEARCH  ·  BRAC UNIVERSITY  ·  2016 FIELDWORK", [
+      { text: "Farmer ৳480 ", options: { color: C.accent3 } }, { text: "→ retailer ৳819", options: { color: C.text2 } }], "for the same 40 kg in Bogura and Munshiganj, with several traders in between. Study-period prices, not today's."],
+    ["RESEARCH  ·  HAJONG AND OTHERS  ·  RANGPUR  ·  2014", [
+      { text: "Why farmers can't store", options: { color: C.text2 } }], "High cold-storage charges, an uncertain future price and no money. Prices bottom at harvest and peak in December."],
+  ];
+  for (let i = 0; i < 2; i++) {
+    const x = M + i * (rw + 0.2), n = i + 5;
+    s1.addShape(RECT, { x, y: ry, w: rw, h: rh2, fill: { color: "E6EEE5" }, line: { color: "CFDACB", width: 0.75 }, shadow: shadow(0.35), objectName: `Ev ${n} card` });
+    text(s1, research[i][0], { x: x + 0.22, y: ry + 0.16, w: rw - 0.44, h: 0.26, fontSize: 10.5, bold: true, charSpacing: 0.5, color: C.accent2, objectName: `Ev ${n} source` });
+    text(s1, research[i][1], { x: x + 0.22, y: ry + 0.5, w: rw - 0.44, h: 0.5, fontFace: THEME.headFontFace, fontSize: 19, bold: true, objectName: `Ev ${n} headline` });
+    text(s1, research[i][2], { x: x + 0.22, y: ry + 1.1, w: rw - 0.44, h: rh2 - 1.2, fontSize: 15, color: C.text1, objectName: `Ev ${n} fact` });
+  }
+  const pxx = M + 2 * (rw + 0.2), pww = W - M - pxx;
+  s1.addShape(RECT, { x: pxx, y: ry, w: pww, h: rh2, fill: { color: C.accent1 }, line: { type: "none" }, shadow: shadow(0.35), objectName: "Ev 7 card" });
+  text(s1, "KrishiVault makes sure the farmer can wait.", { x: pxx + 0.25, y: ry, w: pww - 0.45, h: rh2, fontFace: THEME.headFontFace, fontSize: 19, bold: true, color: C.text2, valign: "middle", objectName: "Ev 7 promise" });
   s1.addNotes(NOTES[1]);
 
-  // ------------------------------------------------------------ 2. problem: the rise never reaches him
+  // ------------------------------------------------------------ 2. problem: the numbers and the three traps
   pres.addSection({ title: "Problem" });
   const s2 = pres.addSlide({ masterName: "KV Content Light", sectionTitle: "Problem" });
   header(s2, "THE PROBLEM  ·  11.6 MILLION TONNES OF POTATO A YEAR", "The price rise is real. It never reaches the farmer.");
-  card(s2, M, 1.95, 7.55, 4.75, { name: "Price chart card" });
-  text(s2, "Retail potato price, ৳ per kg (WFP, national median)", { x: M + 0.3, y: 2.12, w: 7, h: 0.32, fontSize: 14, bold: true, color: C.text1 });
-  const months = ["Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  s2.addChart(pres.charts.LINE, [
-    { name: "2024: normal crop", labels: months, values: [35, null, null, null, null, null, null, 54.5, 56.25, 67.5, 66.41] },
-    { name: "2025: big crop", labels: months, values: [25, null, 21.21, 20, 22.28, 24.64, 23.3, 22.65, 20.02, null, 23.7] },
-  ], {
-    x: M + 0.15, y: 2.5, w: 7.25, h: 3.7, objectName: "WFP price chart",
-    chartColors: [HEX.accent2, HEX.accent3], lineSize: 3, lineDataSymbol: "circle", lineDataSymbolSize: 8,
-    displayBlanksAs: "gap",
-    showLegend: true, legendPos: "t", legendFontSize: 12, legendColor: HEX.dk1, legendFontFace: "+mn-lt",
-    catAxisLabelColor: HEX.accent6, valAxisLabelColor: HEX.accent6, catAxisLabelFontSize: 12, valAxisLabelFontSize: 12,
-    catAxisLabelFontFace: "+mn-lt", valAxisLabelFontFace: "+mn-lt",
-    valAxisMinVal: 0, valAxisMaxVal: 80, valAxisMajorUnit: 20, valAxisLabelFormatCode: "৳0",
-    valGridLine: { color: "E3E9E0", size: 0.75 }, catGridLine: { style: "none" },
-    catAxisLineShow: false, valAxisLineShow: false,
-  });
-  // callouts on the chart
-  text(s2, [{ text: "৳35 → ৳67.50", options: { bold: true, color: C.accent2, breakLine: true } }, { text: "nearly doubled by November", options: { color: C.text1 } }],
-    { x: M + 2.55, y: 3.2, w: 2.45, h: 0.6, fontSize: 13, align: "right" });
-  text(s2, [{ text: "Stuck at ৳20–25", options: { bold: true, color: C.accent3, breakLine: true } }, { text: "the crop was 7% above trend", options: { color: C.text1 } }],
-    { x: M + 3.1, y: 4.3, w: 2.6, h: 0.6, fontSize: 13 });
-  text(s2, "Mar–Aug 2024: too few markets reported. Sources: WFP via HDX; BBS 2024-25.", { x: M + 0.3, y: 6.3, w: 7, h: 0.28, fontSize: 10, color: C.accent6 });
-
   const stats = [
-    ["64%", "of the harvest is sold right away, at the season's lowest price"],
-    ["97.6%", "of cold-stored potatoes are bought by traders, not farmers"],
-    ["33%", "of all the value added goes to wholesalers"],
+    ["64%", "of the harvest is sold right away, at the season's lowest price ¹", C.accent3],
+    ["97.6%", "of cold-stored potatoes are bought by traders, not farmers ¹", C.text2],
+    ["≈ 2×", "shop price after a normal crop: ৳35 in Feb, ৳67.50 by Nov 2024 ²", C.accent2],
+    ["৳20–25", "all through 2025, after a big crop: storing lost money ²", C.accent3],
   ];
-  for (let i = 0; i < 3; i++) {
-    const y = 1.95 + i * 1.5;
-    card(s2, 8.5, y, 4.23, 1.3, { name: `Stat card ${i + 1}` });
-    text(s2, stats[i][0], { x: 8.75, y: y + 0.2, w: 1.75, h: 0.9, fontFace: THEME.headFontFace, fontSize: 34, bold: true, color: i === 0 ? C.accent3 : C.text2, valign: "middle", fit: "shrink" });
-    text(s2, stats[i][1], { x: 10.5, y: y + 0.17, w: 2.05, h: 0.96, fontSize: 13.5, color: C.text1, valign: "middle" });
+  const stw = (W - 2 * M - 3 * 0.2) / 4, sty = 1.8, sth = 1.3;
+  for (let i = 0; i < 4; i++) {
+    const x = M + i * (stw + 0.2);
+    card(s2, x, sty, stw, sth, { name: `Stat card ${i + 1}` });
+    text(s2, stats[i][0], { x: x + 0.22, y: sty + 0.12, w: stw - 0.4, h: 0.55, fontFace: THEME.headFontFace, fontSize: 26, bold: true, color: stats[i][2], valign: "middle", fit: "shrink" });
+    text(s2, stats[i][1], { x: x + 0.22, y: sty + 0.68, w: stw - 0.4, h: 0.56, fontSize: 12, color: C.text1 });
   }
-  text(s2, "Value-chain study, Kahaloo (Bogura) and Munshiganj, 2016 fieldwork.", { x: 8.5, y: 6.42, w: 4.23, h: 0.28, fontSize: 10, color: C.accent6 });
-  s2.addNotes(NOTES[2]);
-
-  // ------------------------------------------------------------ 3. three traps
-  const s3 = pres.addSlide({ masterName: "KV Content Light", sectionTitle: "Problem" });
-  header(s3, "WHY HE SELLS AT THE BOTTOM", "Three traps force the sale, and nobody gets him out");
   const traps = [
-    ["LuHandCoins", "The cash trap", "Input loans and the trader's advance (dadon) fall due at harvest. He has to sell now, at the lowest price of the year.", "Debts due on day 1"],
-    ["LuWarehouse", "The flat-rent trap", "Cold storage costs about ৳300 a sack for 1 month or 9. Afraid of a fall, he sells after 1 to 3 months, having paid for 9.", "৳300 a sack, 1 month or 9"],
+    ["LuHandCoins", "The cash trap", "Loans and the trader's advance (dadon) fall due at harvest. He must sell now, at the year's lowest price.", "Debts due on day 1"],
+    ["LuWarehouse", "The flat-rent trap", "About ৳300 a sack for 1 month or 9. Afraid of a fall, he sells after 1 to 3 months, having paid for 9.", "৳300 a sack, 1 month or 9"],
     ["LuChartLine", "The blind-bet trap", "Crop size sets the price: 2024 doubled, 2025 stayed flat. Nobody tells him which kind of year it is.", "−৳25,280 storing 36 sacks in 2025"],
   ];
+  const tw3 = (W - 2 * M - 2 * 0.2) / 3, ty3 = 3.3, th3 = 2.2;
   for (let i = 0; i < 3; i++) {
-    const x = M + i * (3.91 + 0.2);
-    card(s3, x, 1.95, 3.91, 3.55, { name: `Trap card ${i + 1}` });
-    await tile(s3, x + 0.3, 2.25, 0.72, traps[i][0], { fill: C.accent1 });
-    text(s3, traps[i][1], { x: x + 1.2, y: 2.25, w: 2.55, h: 0.72, fontFace: THEME.headFontFace, fontSize: 21, bold: true, color: C.text2, valign: "middle" });
-    text(s3, traps[i][2], { x: x + 0.3, y: 3.2, w: 3.35, h: 1.3, fontSize: 15, color: C.text1 });
-    s3.addShape(RECT, { x: x + 0.3, y: 4.62, w: 3.31, h: 0.62, fill: { color: i === 2 ? C.accent3 : C.accent2, transparency: 88 }, line: { type: "none" }, objectName: `Trap figure ${i + 1}` });
-    text(s3, traps[i][3], { x: x + 0.45, y: 4.62, w: 3.1, h: 0.62, fontSize: 15.5, bold: true, color: i === 2 ? C.accent3 : C.accent2, valign: "middle" });
+    const x = M + i * (tw3 + 0.2);
+    card(s2, x, ty3, tw3, th3, { name: `Trap card ${i + 1}` });
+    await tile(s2, x + 0.25, ty3 + 0.2, 0.55, traps[i][0], { fill: C.accent1 });
+    text(s2, traps[i][1], { x: x + 0.95, y: ty3 + 0.2, w: tw3 - 1.15, h: 0.55, fontFace: THEME.headFontFace, fontSize: 18, bold: true, color: C.text2, valign: "middle" });
+    text(s2, traps[i][2], { x: x + 0.25, y: ty3 + 0.88, w: tw3 - 0.5, h: 0.78, fontSize: 13, color: C.text1 });
+    s2.addShape(RECT, { x: x + 0.25, y: ty3 + 1.7, w: tw3 - 0.5, h: 0.36, fill: { color: i === 2 ? C.accent3 : C.accent2, transparency: 88 }, line: { type: "none" }, objectName: `Trap figure ${i + 1}` });
+    text(s2, traps[i][3], { x: x + 0.38, y: ty3 + 1.7, w: tw3 - 0.7, h: 0.36, fontSize: 13.5, bold: true, color: i === 2 ? C.accent3 : C.accent2, valign: "middle" });
   }
-  card(s3, M, 5.7, W - 2 * M, 1.05, { fill: C.text2, line: false, name: "Insight band" });
-  text(s3, [
+  card(s2, M, 5.7, W - 2 * M, 0.8, { fill: C.text2, line: false, name: "Insight band" });
+  text(s2, [
     { text: "A price alert does not pay today's debt. ", options: { bold: true, color: C.accent1 } },
-    { text: "Traders have the cash to wait, the sums and the information. The farmer has none of the three.", options: { color: C.background1 } },
-  ], { x: M + 0.35, y: 5.7, w: W - 2 * M - 0.7, h: 1.05, fontSize: 18, valign: "middle" });
+    { text: "Traders have the cash, the sums and the information to wait. The farmer has none.", options: { color: C.background1 } },
+  ], { x: M + 0.3, y: 5.7, w: W - 2 * M - 0.6, h: 0.8, fontSize: 16, valign: "middle" });
+  text(s2, "¹ Value-chain study, Kahaloo (Bogura) and Munshiganj, 2016 fieldwork.   ² WFP retail prices (HDX); the 2025 loss is our engine's replay. Production: BBS 2024-25.",
+    { x: M, y: 6.6, w: W - 2 * M, h: 0.26, fontSize: 10, color: C.accent6 });
+  s2.addNotes(NOTES[2]);
+
+  // ------------------------------------------------------------ 3. what KrishiVault is
+  pres.addSection({ title: "Solution" });
+  const s3 = pres.addSlide({ masterName: "KV Content Light", sectionTitle: "Solution" });
+  header(s3, "WHAT KRISHIVAULT IS  ·  KNOW · CALCULATE · DECIDE · ACT", "One service that answers each trap");
+  card(s3, M, 1.75, W - 2 * M, 1.05, { fill: C.text2, line: false, name: "Definition band" });
+  text(s3, [
+    { text: "KrishiVault is a voice-first service for potato farmers. ", options: { color: C.accent1 } },
+    { text: "It tells him how many sacks to sell now and how many to store, until when, and lets a bank lend against the stored sacks, so he can afford to wait.", options: { color: C.background1 } },
+  ], { x: M + 0.35, y: 1.75, w: W - 2 * M - 0.7, h: 1.05, fontFace: THEME.headFontFace, fontSize: 17, bold: true, valign: "middle" });
+  const answers = [
+    ["The cash trap", "Debts fall due at harvest", "Cash without selling", "A bank lends against a digital cold-storage receipt in his name."],
+    ["The flat-rent trap", "Pays for 9 months, sells in 2", "The sums, sack by sack", "Sell how many now, store how many, until when: after rent, 8.65% loss and interest."],
+    ["The blind-bet trap", "Can't tell a 2024 from a 2025", "An outlook with a range", "Driven by crop size; in a glut year it says \"sell now\"."],
+    ["He can't read an SMS", "From our field interview", "A Bangla voice call", "Two numbers on any button phone; USSD and SMS as well."],
+  ];
+  const lx = M, lw3 = 2.75, aw3 = 4.65, gx = 0.45, ay = 3.0, ah = 0.74;
+  text(s3, "THE TRAP", { x: lx, y: ay - 0.02, w: lw3, h: 0.26, fontSize: 11.5, bold: true, charSpacing: 2, color: C.accent3 });
+  text(s3, "KRISHIVAULT'S ANSWER", { x: lx + lw3 + gx, y: ay - 0.02, w: aw3, h: 0.26, fontSize: 11.5, bold: true, charSpacing: 2, color: C.accent2 });
+  for (let i = 0; i < 4; i++) {
+    const y = ay + 0.32 + i * (ah + 0.1);
+    s3.addShape(RECT, { x: lx, y, w: lw3, h: ah, fill: { color: C.accent3, transparency: 90 }, line: { type: "none" }, objectName: `Trap ${i + 1}` });
+    text(s3, [{ text: answers[i][0], options: { bold: true, color: C.accent3, breakLine: true } }, { text: answers[i][1], options: { color: C.text1 } }],
+      { x: lx + 0.2, y, w: lw3 - 0.3, h: ah, fontSize: 13, valign: "middle" });
+    s3.addImage({ data: await icon("LuArrowRight", HEX.accent2), x: lx + lw3 + gx / 2 - 0.13, y: y + ah / 2 - 0.13, w: 0.26, h: 0.26, altText: "answered by" });
+    card(s3, lx + lw3 + gx, y, aw3, ah, { name: `Answer ${i + 1}`, shadowOpacity: 0.1 });
+    text(s3, [{ text: answers[i][2], options: { bold: true, color: C.text2, breakLine: true } }, { text: answers[i][3], options: { color: C.text1 } }],
+      { x: lx + lw3 + gx + 0.2, y, w: aw3 - 0.35, h: ah, fontSize: 13, valign: "middle" });
+  }
+  const fx = lx + lw3 + gx + aw3 + 0.3, fw = W - M - fx;
+  card(s3, fx, ay, fw, 4 * ah + 3 * 0.1 + 0.32, { name: "Facts card" });
+  const facts = [
+    ["FOR", "Smallholder potato farmers. First in Kahaloo, Bogura."],
+    ["THROUGH", "Grameenphone voice line, USSD and SMS. Cold storages and banks use the web."],
+    ["PAID BY", "Cold storages, banks and buyers. Never the farmer."],
+    ["NEVER", "Lends or holds money, or sells a place in the advice."],
+  ];
+  for (let i = 0; i < 4; i++) {
+    const y = ay + 0.16 + i * 0.83;
+    text(s3, facts[i][0], { x: fx + 0.25, y, w: fw - 0.45, h: 0.24, fontSize: 11, bold: true, charSpacing: 2, color: i === 3 ? C.accent3 : C.accent2 });
+    text(s3, facts[i][1], { x: fx + 0.25, y: y + 0.25, w: fw - 0.45, h: 0.58, fontSize: 13, color: C.text1 });
+  }
   s3.addNotes(NOTES[3]);
 
   // ------------------------------------------------------------ 4. solution: the loop
-  pres.addSection({ title: "Solution" });
   const s4 = pres.addSlide({ masterName: "KV Content Light", sectionTitle: "Solution" });
-  header(s4, "THE SOLUTION  ·  KNOW · CALCULATE · DECIDE · ACT", "One call turns a harvest into a plan, and the cash to wait");
+  header(s4, "HOW IT WORKS  ·  ONE FARMER, ONE SEASON", "One call turns a harvest into a plan, and the cash to wait");
   const steps = [
     ["LuPhoneCall", "1  Call", "He calls or dials USSD with two numbers: sacks harvested, cash needed now."],
-    ["LuCalculator", "2  Decide", "Sell 19 sacks now, store 17 until December. Net profit ৳12,940, not ৳5,610."],
+    ["LuCalculator", "2  Decide", "The engine answers in taka: sell 19 sacks now, store 17 until December."],
     ["LuReceiptText", "3  Vault", "The cold storage weighs the sacks and sends a digital receipt by SMS, in his name."],
     ["LuLandmark", "4  Cash", "A bank lends against the receipt and holds the sacks. No forced sale today."],
     ["LuBellRing", "5  Sell", "A price alert, by call or SMS, says how many sacks to sell and to whom. The sale pays storage, bank, then him."],
@@ -226,13 +274,16 @@ async function build() {
     text(s4, parts[i], { x: px, y: py, w: pw, h: 0.36, fontSize: 12.5, color: C.text1, align: "center", valign: "middle" });
     px += pw + 0.12;
   }
-  card(s4, 8.45, 5.15, W - M - 8.45, 1.6, { fill: C.text2, line: false, name: "Rules card" });
-  text(s4, "RULES WE NEVER BREAK", { x: 8.75, y: 5.3, w: 3.8, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: C.accent1 });
+  card(s4, 8.45, 5.15, W - M - 8.45, 1.6, { fill: C.text2, line: false, name: "Result card" });
+  text(s4, "HIS SEASON, IN TAKA (36 SACKS)", { x: 8.75, y: 5.3, w: 3.9, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: C.accent1 });
   text(s4, [
-    { text: "We never lend or hold money: banks do", options: { bullet: { indent: 14 }, breakLine: true } },
-    { text: "No paid placement in the advice", options: { bullet: { indent: 14 }, breakLine: true } },
-    { text: "Ranges and the bad case, never promises", options: { bullet: { indent: 14 } } },
-  ], { x: 8.75, y: 5.68, w: 3.85, h: 1.0, fontSize: 13.5, color: C.background1, paraSpaceAfter: 3 });
+    { text: "৳25,020 in hand today: ", options: { bold: true, color: C.accent1 } },
+    { text: "the cash he needed", options: { color: C.background1, breakLine: true } },
+    { text: "Net profit ৳12,940 ", options: { bold: true, color: C.accent1 } },
+    { text: "on average, not ৳5,610", options: { color: C.background1, breakLine: true } },
+    { text: "Bad case said aloud: ", options: { bold: true, color: C.accent1 } },
+    { text: "−৳4,970 (1 in 10)", options: { color: C.background1 } },
+  ], { x: 8.75, y: 5.66, w: 3.9, h: 1.0, fontSize: 13.5, paraSpaceAfter: 3 });
   s4.addNotes(NOTES[4]);
 
   // ------------------------------------------------------------ 5. AI and technical rationale + live demo

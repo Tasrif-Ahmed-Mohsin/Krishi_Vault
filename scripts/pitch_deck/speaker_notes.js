@@ -1,58 +1,62 @@
-// Speaker notes: what to say on each slide (about 770 words: 5 minutes 20 at 145 words a minute, plus the 34 s clip and a 50 s demo),
-// then likely questions. Rehearse to 6:40.
+// Speaker notes: what to say on each slide (about 780 words: 5 minutes 20 at 145 words a minute, plus the 34 s clip and a 50 s demo),
+// then likely questions. Rehearse to 6:45; if over, cut the demo to 40 s.
 // Speakers A, B, C: put names in. Hand-overs after slide 3 (A to B) and slide 7 (B to C); A closes.
 // Rules on stage: "statistical outlook", never "AI forecast"; "demo partners"; the year with any 2016 figure.
 
 module.exports = {
-  1: `[0:00-0:45 · Speaker A]
-DO: The slide opens and the clip plays by itself (34 s, English subtitles). Say nothing and do not click while it plays: a click jumps to slide 2. When it ends, the caption fades in. Test the sound on the venue laptop.
+  1: `[0:00-0:55 · Speaker A]
+DO: The slide opens and the clip plays by itself (34 s, English subtitles). Say nothing and do not click while it plays: a click jumps to slide 2. When it ends, the caption fades in, then seven cards (four news reports, two studies, our promise), one by one. Start speaking as the first card appears. Test the sound on the venue laptop.
 
-SAY (after the clip):
+SAY (after the clip, as the cards come in):
 "He grows the crop. Someone else gets paid for waiting.
-And he can't read a text message, but he takes every call.
-We are KrishiVault: we make sure the farmer can wait, with one phone call."
+And he is not alone. February 2025: farmers selling at half their cost. October: prices crash, and unsold sacks pass to the cold storage. This July: rents up again.
+Research has said it since 2014: high rent, an uncertain price, no cash.
+We are KrishiVault, and we make sure the farmer can wait."
 
-IF THE VIDEO FAILS: hold up a button phone. "This is the only device the farmer in our story owns. Everything we show you today works on it." Then click to the next slide.
+IF THE VIDEO FAILS: hold up a button phone. "This is the only device the farmer in our story owns. Everything we show you today works on it." Click once: the cards still appear.
+
+THE CARDS (all opened and checked on 16 October 2026):
+- The Business Standard, 13 Feb 2025, "Farmers strain under losses, selling potatoes at half the production cost": farm gate ৳7-9 a kg; cost ৳17.26 (Department of Agricultural Marketing).
+- bdnews24, 23 Apr 2025, "Surplus potatoes, empty pockets": record area, cold storages full; farmers allege middlemen bought storage booking slips in advance (a manager denied local farmers were displaced).
+- The Daily Star, 15 Oct 2025, "Potato farmers left in the lurch as prices crash": ৳8 a kg wholesale; DAE cost in the north ৳14.5-16; after 15 November unsold stock passes to the cold-storage owners.
+- Dhaka Tribune, 1 Jul 2026, "Potato farmers protest cold storage rent hike in Rangpur": rent raised to ৳450 a 50-kg sack; potatoes at ৳14-15 a kg against a ৳25-26 cost.
+- BRAC University value-chain study (Bogura, Munshiganj; 2016 fieldwork): farmer ৳480.38, retailer ৳818.50 per 40 kg. Study-period prices; the gap also pays transport, labour and losses, so never call it all trader profit.
+- Hajong, Moniruzzaman, Mia, Rahman (2014), "Storage System of Potato in Bangladesh", Universal Journal of Agricultural Research 2(1): Rangpur, 10 cold storages, 20 traders, 30 farmers; farmers cannot use cold storage because of high charges, an uncertain future price and financial insolvency; prices lowest at harvest, peak in December.
 
 ABOUT THE CLIP: our own field interview, recorded 14 October 2026 (cut from presentation material/IMG_4781.MOV; cuts and subtitles in scripts/pitch_deck/hook_cuts.json). He grows potatoes, maize and rice; uses a button phone and cannot read SMS; sells at the haat and "never makes the money we should"; "some years profit, some years loss". Do not name him without his consent.`,
 
-  2: `[0:45-1:20 · Speaker A]
+  2: `[0:55-1:35 · Speaker A]
 SAY:
-"Every March, a potato farmer in Bogura asks one question: store or sell, and until when?
-After a normal crop, the price nearly doubles: 35 taka a kilo in February 2024, 67 and a half by November.
-But farmers sell 64 percent of their crop right at harvest, and traders end up with almost everything in cold storage.
-The rise is real. It goes to whoever can afford to wait.
-And after a big crop, like 2025, it never comes at all."
-
-POINT AT: the green line (2024) climbing, the red line (2025) flat.
+"Every March, a potato farmer asks one question: store or sell, and until when?
+After a normal crop the shop price nearly doubles. Yet farmers sell 64 percent at harvest, and traders buy almost all that goes into cold storage.
+Three traps hold him. Cash: loans and the trader's advance fall due the week he harvests. Flat rent: 300 taka a sack for one month or nine, so fear makes him pay for nine and sell after two. And a blind bet: 2024 doubled, 2025 never rose. Nobody tells him which year it is.
+A price alert does not pay today's debt."
 
 IF ASKED:
-- "The study is from 2016?" Yes, and we say so. Today's prices and production are our own data (WFP 2024-26, BBS 2024-25); the field check updates the rest.
-- "Why retail prices?" WFP publishes retail; farm-gate moves with it. Real farm-gate history is on our data list.`,
+- "The study is from 2016?" Yes, and we say so. Today's prices and production are our own data (WFP 2024-26, BBS 2024-25), and the 2025 news shows the same pattern.
+- "Why retail prices?" WFP publishes retail; farm-gate moves with it. Real farm-gate history is on our data list.
+- "The news says ৳450 a sack, you say ৳300?" ৳300 for an 84-kg sack is the plan's figure; rents differ by district and sack size and are rising. Every cost is editable in the engine, and the field check sets this season's.`,
 
-  3: `[1:20-2:00 · Speaker A]
+  3: `[1:35-2:10 · Speaker A]
 SAY:
-"Why does he sell at the bottom? Three traps.
-Cash: his loans and the trader's advance, dadon, fall due the week he harvests.
-Flat rent: about 300 taka a sack, for one month or nine. Fear makes him sell after two, having paid for nine.
-A blind bet: is this a 2024 or a 2025? Nobody tells him. Storing 36 sacks in 2025 lost up to 25 thousand taka.
-A price alert does not pay today's debt. Traders have the cash, the sums and the information. He has none of the three."
+"So what is KrishiVault? A voice-first service for potato farmers. It tells him how many sacks to sell now and how many to store, until when, and lets a bank lend against the stored sacks, so he can afford to wait.
+Every trap gets an answer: cash without selling, the sums sack by sack, an outlook with a range, and a voice call, because he can't read an SMS.
+Farmers never pay. Cold storages, banks and buyers do."
+HAND OVER: "B will walk you through one season."
 
 IF ASKED:
-- "Why don't existing apps solve this?" They give information. Information without cash changes nothing at harvest.
-- "Where is ৳300 from?" Our field notes and the team plan; some cold storages charge ৳250. Every cost is editable in the engine.`,
+- "Isn't this just another agri app?" No app: a voice call, USSD and SMS on any phone, and the cash through a bank. An app gives information; information without cash changes nothing at harvest.
+- "Do you give loans?" No. The bank decides and pays; we verify, value and connect, and never hold money.`,
 
-  4: `[2:00-2:40 · Speaker B]
+  4: `[2:10-2:40 · Speaker B]
 SAY:
-"KrishiVault gives the farmer what the trader has, in one loop.
-He calls with two numbers: sacks harvested and cash needed.
-The engine answers in taka: sell 19 sacks now, which covers his 25 thousand, and store 17 until December. Net profit about 13 thousand instead of five and a half.
-The cold storage issues a digital receipt in his name. A bank lends against it, so he can wait.
-When the price is right, an alert by call or SMS says how many sacks to sell, and to whom. The sale repays the storage, then the bank, then him.
-We never lend or hold money. Banks do."
+"One farmer, one season. He calls with two numbers: 36 sacks, and 25 thousand taka needed this week.
+The engine answers: sell 19 now, which covers his 25 thousand; store 17 until December. Net profit about 13 thousand, not five and a half.
+The cold storage issues a receipt in his name; a bank lends against it.
+When the price is right, an alert says how many to sell and to whom. The sale repays the storage, then the bank, then him."
 
 IF ASKED:
-- "Do you give loans?" No. The bank decides and pays; we verify, value and connect.
+- "Where do these numbers come from?" The engine, with the plan's costs (৳300 rent, 8.65% weight loss) and a ৳14 a kg growing cost (DAE Bogura 2024-25); the farmer's own figures replace them.
 - "Won't partner fees bias the advice?" No paid placement: buyers are ranked by money left in the farmer's hand.`,
 
   5: `[2:40-4:05 · Speaker B · about 35 s talk, then a 50 s demo]
@@ -62,7 +66,6 @@ AI where language and uncertainty live; fixed rules where money lives.
 AI listens: Google's Bangla speech and our own dialect parser. Gemini only fills gaps, and every number must have been said.
 The decision is statistics and exact sums: 2,000 simulated price paths driven by the crop size, then rent, weight loss and interest.
 AI speaks under a number lock: change one figure and the answer is thrown out.
-No deep learning yet: two seasons of prices would overfit.
 It's live. Let me show you."
 
 DEMO (click koryu.ninja, about 50 s):
@@ -74,6 +77,7 @@ FALLBACK: the screen recording in a second tab; if anything stalls 5 s, switch w
 Back to the slides with Alt+Tab.
 
 IF ASKED:
+- "Why not deep learning?" Two seasons of clean prices: XGBoost or LSTM would overfit. They come once 15 years of DAM prices are loaded and they beat today's outlook on past seasons.
 - "Which AI exactly?" Google speech-to-text and text-to-speech (Bangla), Gemini Flash for understanding and rewording; the outlook is a statistical simulation; the decision is deterministic.
 - "Can the AI get a number wrong?" It cannot reach the farmer: numbers must have been said on the way in, are read back for a keypad yes, and the number lock checks every figure on the way out.
 - "Is it a chatbot?" No, a guided call: it asks only what it needs, reads it back, answers in taka with the risk.`,

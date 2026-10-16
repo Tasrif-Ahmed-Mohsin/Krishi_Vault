@@ -47,7 +47,7 @@ This file is the short version.
   - `tests/`: pytest.
 - `reference/mati_kohon_code/`: Mati Kohon code that was ported. **Do not import it.**
 - `docs/`: the plan documents, `ai_architecture.html` (AI and voice, now and after the pilot), `readiness_check.html`, `presentation_plan.md` (the 7-minute pitch and Q&A plan, a copy of the team's pitch-plan doc), the field check guide for farmers and cold storages (`farmer_interview_guide.html` and its PDF; to-do 3).
-- `presentation material/KrishiVault_FutureMakers_Pitch.pptx`: the Round 2 pitch deck, 10 slides for 7 minutes plus 3 of Q&A (16 October 2026): the farmer video opens it, the AI slide links to the live prototype (`https://koryu.ninja/`), the speech and likely questions are in the speaker notes. Built by `scripts/pitch_deck/` (`build_deck.js`, `speaker_notes.js`, `finish_deck.ps1`); the speech is also in `docs/presentation_script.md`. Every figure on it comes from the engine or the data; update it when they change.
+- `presentation material/KrishiVault_FutureMakers_Pitch_v2.pptx`: the Round 2 pitch deck, 10 slides for 7 minutes plus 3 of Q&A (16 October 2026; `..._Pitch.pptx` is the first version): the farmer video opens it, then checked news and research cards; slide 3 says what KrishiVault is; the AI slide links to the live prototype (`https://koryu.ninja/`); the speech, the sources and likely questions are in the speaker notes. Built by `scripts/pitch_deck/` (`build_deck.js`, `speaker_notes.js`, `finish_deck.ps1`); the speech is also in `docs/presentation_script.md`. Every figure on it comes from the engine or the data; update it when they change.
 
 ## Running it
 
