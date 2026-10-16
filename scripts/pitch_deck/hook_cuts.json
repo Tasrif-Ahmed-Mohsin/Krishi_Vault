@@ -1,0 +1,20 @@
+{
+  "source": "presentation material/IMG_4781.MOV (field interview, 14 October 2026)",
+  "note": "Times are in the source video. Subtitles are our English translation of the farmer's dialect: a Bangla speaker should check them. Q = our interviewer (shown in italics), A = the farmer.",
+  "label": "Field interview · October 2026",
+  "segments": [[0.0, 5.2], [16.95, 28.72], [31.4, 41.05], [42.85, 50.25]],
+  "subtitles": [
+    [0.0, 1.7, "Uncle, what do you grow?", "Q"],
+    [2.05, 5.1, "Potatoes, maize and rice.", "A"],
+    [17.0, 20.7, "Do you use a mobile? A smartphone or a button phone?", "Q"],
+    [20.75, 22.8, "No, I use this button phone.", "A"],
+    [23.4, 25.45, "When an SMS comes, can you read it?", "Q"],
+    [25.5, 28.7, "No, no, I can't. I only talk on calls.", "A"],
+    [31.45, 36.4, "Last year you grew potatoes. Who did you sell them to?", "Q"],
+    [36.5, 41.0, "At the haat. We sell, but we never make the money we should.", "A"],
+    [42.85, 45.2, "It's like this every year.", "A"],
+    [45.22, 47.1, "Some years there's a profit.", "A"],
+    [47.1, 49.45, "Some years profit, some years loss.", "A"],
+    [49.46, 50.25, "It just evens out.", "A"]
+  ]
+}

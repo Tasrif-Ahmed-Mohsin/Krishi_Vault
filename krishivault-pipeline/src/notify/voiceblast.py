@@ -98,6 +98,15 @@ def bd_mobile(raw: Any) -> Optional[str]:
     return digits if re.fullmatch(r"01[3-9]\d{8}", digits) else None
 
 
+def _is_login_page(html: str) -> bool:
+    """Return True if the HTML looks like the VoiceBlast login form."""
+    h = html.lower()
+    return (
+        "<form" in h and ("password" in h or "login" in h)
+        and "dashboard" not in h
+    )
+
+
 class VoiceBlastClient:
     """Session-based client for SysTech VoiceBlast voice calls."""
 
@@ -118,29 +127,48 @@ class VoiceBlastClient:
         self.default_audio_id = int(def_id) if str(def_id).isdigit() else 1106
         self.live = live if live is not None else (os.getenv("VOICEBLAST_LIVE", "0") == "1")
 
-
         self.session = requests.Session()
         self._logged_in = False
 
     def login(self) -> bool:
-        """Authenticate session with VoiceBlast portal."""
+        """
+        Authenticate session with VoiceBlast portal.
+
+        After the POST we fetch /customer/dashboard to confirm we really landed on
+        the dashboard and are not still looking at the login form.  Any redirect to
+        the login page or a login-form body means the credentials were rejected.
+        """
         if not (self.username and self.password):
             logger.warning("VoiceBlast username or password not configured.")
             return False
+        self._logged_in = False  # reset before each attempt
         try:
             res = self.session.post(
                 f"{self.base_url}/login",
                 data={"username": self.username, "password": self.password},
                 timeout=12,
+                allow_redirects=True,
             )
-            if "dashboard" in res.url or res.status_code in (200, 302):
-                self._logged_in = True
-                logger.info(f"VoiceBlast authenticated successfully as '{self.username}'.")
-                return True
-            logger.error(f"VoiceBlast login failed: {res.status_code}")
-            return False
+            # Confirm we are on the dashboard, not still on the login page
+            check = self.session.get(f"{self.base_url}/customer/dashboard", timeout=10)
+            if _is_login_page(check.text):
+                logger.error(
+                    "VoiceBlast login failed: credentials rejected (dashboard returned login form). "
+                    f"HTTP {res.status_code} after POST, then {check.status_code} on dashboard."
+                )
+                return False
+            # Quick sanity: look for something that only appears when logged in
+            if "dashboard" not in check.url.lower() and "dashboard" not in check.text.lower():
+                logger.error(
+                    f"VoiceBlast login uncertain: dashboard URL is '{check.url}', "
+                    "no 'dashboard' keyword found in body. Treating as failed."
+                )
+                return False
+            self._logged_in = True
+            logger.info(f"VoiceBlast authenticated successfully as '{self.username}'.")
+            return True
         except Exception as exc:
-            logger.error(f"VoiceBlast connection error: {exc}")
+            logger.error(f"VoiceBlast connection error during login: {exc}")
             return False
 
     def _ensure_session(self) -> bool:
@@ -149,15 +177,79 @@ class VoiceBlastClient:
             return True
         return self.login()
 
+    def _handle_response(self, res: requests.Response, context: str) -> Optional[dict]:
+        """
+        Parse a JSON response safely.  If we get a login page or non-JSON body,
+        reset _logged_in and return None with a descriptive log message.
+        Returns the parsed dict on success, or None on failure.
+        """
+        # Detect session expiry / redirect back to login
+        if _is_login_page(res.text):
+            logger.warning(
+                f"VoiceBlast session expired ({context}): response was the login page "
+                f"(HTTP {res.status_code}). Resetting session."
+            )
+            self._logged_in = False
+            return None
+        if res.status_code in (401, 403):
+            logger.warning(
+                f"VoiceBlast auth error ({context}): HTTP {res.status_code}. Resetting session."
+            )
+            self._logged_in = False
+            return None
+        try:
+            return res.json()
+        except Exception:
+            body_preview = res.text[:200].replace("\n", " ")
+            logger.error(
+                f"VoiceBlast non-JSON response ({context}): HTTP {res.status_code}, "
+                f"body: {body_preview!r}"
+            )
+            return None
+
+    def _request_with_retry(self, method: str, url: str, **kwargs) -> Optional[requests.Response]:
+        """
+        Make a request; if the response looks like a login page or a 401/403,
+        re-login once and retry once.
+        """
+        try:
+            res = getattr(self.session, method)(url, **kwargs)
+        except Exception as exc:
+            logger.error(f"VoiceBlast network error ({method.upper()} {url}): {exc}")
+            return None
+
+        if _is_login_page(res.text) or res.status_code in (401, 403):
+            logger.info("VoiceBlast session lost; re-logging in and retrying once...")
+            self._logged_in = False
+            if not self.login():
+                return res  # return the failed response so caller can surface the error
+            try:
+                res = getattr(self.session, method)(url, **kwargs)
+            except Exception as exc:
+                logger.error(f"VoiceBlast retry network error: {exc}")
+                return None
+        return res
+
     def get_balance(self) -> Optional[str]:
         """Fetch current prepaid balance."""
         if not self._ensure_session():
             return None
         try:
-            res = self.session.get(f"{self.base_url}/customer/dashboard", timeout=10)
+            res = self._request_with_retry("get", f"{self.base_url}/customer/dashboard", timeout=10)
+            if res is None:
+                return None
             soup = BeautifulSoup(res.text, "html.parser")
             pill = soup.find(class_="balance-pill")
-            return pill.text.strip() if pill else None
+            if pill:
+                return pill.text.strip()
+            # Some layouts show balance in a different element; try a broader search
+            for tag in soup.find_all(string=re.compile(r"balance|Balance|৳", re.I)):
+                parent = tag.parent
+                if parent:
+                    txt = parent.get_text(strip=True)
+                    if re.search(r"[\d৳]", txt):
+                        return txt[:60]
+            return None
         except Exception as exc:
             logger.warning(f"Failed to fetch VoiceBlast balance: {exc}")
             return None
@@ -167,7 +259,9 @@ class VoiceBlastClient:
         if not self._ensure_session():
             return []
         try:
-            res = self.session.get(f"{self.base_url}/customer/demo-history", timeout=10)
+            res = self._request_with_retry("get", f"{self.base_url}/customer/demo-history", timeout=10)
+            if res is None:
+                return []
             soup = BeautifulSoup(res.text, "html.parser")
             table = soup.find("table")
             if not table:
@@ -201,18 +295,34 @@ class VoiceBlastClient:
         fn = filename or path.name
         try:
             with open(path, "rb") as f:
-                res = self.session.post(
+                res = self._request_with_retry(
+                    "post",
                     f"{self.base_url}/customer/library/upload",
                     files={"file": (fn, f, "audio/wav")},
                     data={"file_type": "audio"},
                     timeout=30,
                 )
-            data = res.json()
-            if not data.get("success"):
+            if res is None:
+                return None
+            data = self._handle_response(res, "upload_audio")
+            if data is None:
+                # session expired mid-upload; retry after re-login
+                if self.login():
+                    with open(path, "rb") as f:
+                        res2 = self.session.post(
+                            f"{self.base_url}/customer/library/upload",
+                            files={"file": (fn, f, "audio/wav")},
+                            data={"file_type": "audio"},
+                            timeout=30,
+                        )
+                    data = self._handle_response(res2, "upload_audio_retry")
+            if not data or not data.get("success"):
                 logger.error(f"VoiceBlast audio upload failed: {data}")
                 return None
 
-            lib_res = self.session.get(f"{self.base_url}/customer/library", timeout=10)
+            lib_res = self._request_with_retry("get", f"{self.base_url}/customer/library", timeout=10)
+            if lib_res is None:
+                return self.default_audio_id
             soup = BeautifulSoup(lib_res.text, "html.parser")
             for card in soup.find_all(class_="file-card"):
                 card_text = card.text.strip()
@@ -273,12 +383,22 @@ class VoiceBlastClient:
 
         try:
             logger.info(f"Dialing {mobile} via VoiceBlast caller ID {cid} (Audio ID: {aid})...")
-            res = self.session.post(
+            res = self._request_with_retry(
+                "post",
                 f"{self.base_url}/customer/campaigns/demo-call",
                 json=payload,
                 timeout=15,
             )
-            data = res.json()
+            if res is None:
+                return {"success": False, "error": "No response from VoiceBlast (network error)"}
+
+            data = self._handle_response(res, "send_call")
+            if data is None:
+                return {
+                    "success": False,
+                    "error": f"VoiceBlast returned a non-JSON or login-page response (HTTP {res.status_code}). "
+                             "Session may have expired or credentials may be wrong.",
+                }
             if data.get("success"):
                 logger.info(f"Voice call successfully initiated to {mobile}!")
                 return {
@@ -292,7 +412,7 @@ class VoiceBlastClient:
             return {"success": False, "error": data.get("error", "Call request failed")}
         except Exception as exc:
             logger.error(f"Error executing voice call: {exc}")
-            return {"success": False, "error": f"Connection error: {type(exc).__name__}"}
+            return {"success": False, "error": f"Connection error: {type(exc).__name__}: {exc}"}
 
 
 # ============================================================ Official REST Broadcast API (103.174.214.170)
@@ -318,7 +438,6 @@ class BroadcastApiClient:
         self.password = password or os.getenv("BROADCAST_PASS", "")
         self.caller_id = caller_id or os.getenv("BROADCAST_CALLER_ID", "")
         self.live = live if live is not None else (os.getenv("BROADCAST_LIVE", "0") == "1")
-
 
     def _headers(self) -> Dict[str, str]:
         return {"user": self.username, "pass": self.password}
@@ -425,4 +544,3 @@ def get_broadcast_api_client() -> BroadcastApiClient:
     if _broadcast_api_instance is None:
         _broadcast_api_instance = BroadcastApiClient()
     return _broadcast_api_instance
-
