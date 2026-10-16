@@ -2,9 +2,8 @@
 // Every figure comes from the KrishiVault engine (krishivault-pipeline) or a source named on the slide.
 //
 // Run (needs: npm install pptxgenjs react react-dom react-icons sharp):
-//   python make_backgrounds.py <dir>          (grid-paper backgrounds: bg_light.jpg, bg_dark.jpg)
-//   node build_deck.js <out.pptx> <hook.mp4> <poster.jpg> <close.jpg> <bg dir> <pptx-skill-dir>
-// Then finish_deck.ps1 sets the video to play on entry, fades in the cards, tilts the clippings (PowerPoint COM).
+//   node build_deck.js <out.pptx> <hook.mp4> <poster.jpg> <close.jpg> <pptx-skill-dir>
+// Then scripts/pitch_deck/finish_deck.ps1 sets the video to play on entry (PowerPoint COM).
 
 const fs = require("fs");
 const path = require("path");
@@ -14,34 +13,32 @@ const RDS = require("react-dom/server");
 const sharp = require("sharp");
 const lu = require("react-icons/lu");
 
-const [OUT, VIDEO, POSTER, CLOSE_BG, BG_DIR, SKILL] = process.argv.slice(2);
+const [OUT, VIDEO, POSTER, CLOSE_BG, SKILL] = process.argv.slice(2);
 const { applyTheme } = require(path.join(SKILL, "scripts", "apply_theme.js"));
 
 // ---------------------------------------------------------------- theme
-// sage grid paper, forest ink, mustard and terracotta accents
 const THEME = {
-  name: "KrishiVault Field Notebook",
+  name: "KrishiVault Harvest",
   headFontFace: "Georgia",
   bodyFontFace: "Calibri",
   colors: {
-    dk1: "1A2B21", // text
-    lt1: "FFFFFF", // paper cards
-    dk2: "1B4332", // forest ink: titles, outlines, dark cards
-    lt2: "CFDDB2", // sage paper
-    accent1: "F2B035", // mustard
-    accent2: "2D7A4B", // leaf green: gains
-    accent3: "C24E32", // terracotta: losses, traps
-    accent4: "9C6B3F", // potato brown
-    accent5: "2E7FB8", // telco blue
-    accent6: "56665C", // muted
-    hlink: "F2B035",
-    folHlink: "F2B035",
+    dk1: "12241B", // text
+    lt1: "FFFFFF",
+    dk2: "0F3323", // forest: dark slides, titles
+    lt2: "F1F5EF", // pale sage: light slides
+    accent1: "E8A317", // harvest gold
+    accent2: "2E7D4F", // leaf green: gains
+    accent3: "B5402B", // brick: losses
+    accent4: "8A6743", // potato brown
+    accent5: "1F78B4", // telco blue
+    accent6: "66766D", // muted
+    hlink: "E8A317",
+    folHlink: "E8A317",
   },
 };
 const HEX = THEME.colors;
-const MARK = "F7D46B"; // highlighter behind key words
-const TINT = "EEF4E2"; // pale sage inside cards
 const BN = "Nirmala UI"; // Bangla script
+const MARK = "F2B635"; // yellow highlighter behind key words (dark text on it)
 
 const pres = new pptxgen();
 pres.layout = "LAYOUT_WIDE"; // 13.333 x 7.5 in
@@ -55,8 +52,7 @@ const W = 13.333, H = 7.5, M = 0.6;
 const RECT = pres.shapes.RECTANGLE;
 
 // ---------------------------------------------------------------- helpers
-// a hard, offset shadow: cards look like paper stuck on the grid
-const hard = (off = 4, hex = HEX.dk2, o = 1) => ({ type: "outer", blur: 0, offset: off, angle: 45, color: hex, opacity: o });
+const shadow = (o = 0.14) => ({ type: "outer", blur: 7, offset: 2, angle: 90, color: "000000", opacity: o });
 const icons = {};
 async function icon(name, hex, px = 256) {
   const key = `${name}-${hex}`;
@@ -68,94 +64,90 @@ async function icon(name, hex, px = 256) {
   return icons[key];
 }
 const img64 = (p) => "image/jpeg;base64," + fs.readFileSync(p).toString("base64");
-const BG_LIGHT = img64(path.join(BG_DIR, "bg_light.jpg"));
-const BG_DARK = img64(path.join(BG_DIR, "bg_dark.jpg"));
 
 function text(slide, t, o) {
   slide.addText(t, { isTextBox: true, margin: 0, valign: "top", ...o });
 }
-// paper card: white, forest outline, hard shadow. Dark cards get a mustard shadow.
 function card(slide, x, y, w, h, o = {}) {
   slide.addShape(RECT, {
     x, y, w, h,
-    fill: { color: o.fill || C.background1 },
-    line: o.line === false ? { type: "none" } : { color: o.lineColor || C.text2, width: o.lineWidth || 1.25, ...(o.dash ? { dashType: "dash" } : {}) },
-    shadow: o.shadow === false ? undefined : hard(o.shadowOff ?? 4, o.shadowHex ?? HEX.dk2, o.shadowO ?? 1),
+    fill: { color: o.fill || C.background1, ...(o.transparency != null ? { transparency: o.transparency } : {}) },
+    line: o.line === false ? { type: "none" } : { color: o.lineColor || "D9E2D6", width: 0.75 },
+    shadow: o.shadow === false ? undefined : shadow(o.shadowOpacity),
     objectName: o.name,
   });
 }
-const darkCard = (slide, x, y, w, h, name) => card(slide, x, y, w, h, { fill: C.text2, shadowHex: HEX.accent1, name });
-// a square icon tile (sharp corners, like a stamp)
+// a square icon tile: the deck's motif (sharp corners, like a stamped receipt)
 async function tile(slide, x, y, s, iconName, o = {}) {
   slide.addShape(RECT, {
-    x, y, w: s, h: s, fill: { color: o.fill || C.accent1 }, line: { color: C.text2, width: 1 },
-    shadow: hard(2.5, o.shadowHex ?? HEX.dk2), objectName: o.name || `${iconName} tile`,
+    x, y, w: s, h: s, fill: { color: o.fill || C.accent1 }, line: { type: "none" },
+    shadow: shadow(0.18), objectName: o.name || `${iconName} tile`,
   });
   const pad = s * 0.22;
   slide.addImage({ data: await icon(iconName, o.iconHex || HEX.dk2), x: x + pad, y: y + pad, w: s - 2 * pad, h: s - 2 * pad, altText: o.alt || iconName });
 }
-// title with a highlighter stroke behind its key words: [before, marked, after]
-function header(slide, kicker, [before, marked, after = ""], dark = false) {
+// title with the key words highlighted: [before, marked, after]
+function header(slide, kicker, [before, marked, after = ""]) {
   slide.addText(kicker, { placeholder: "kicker" });
   slide.addText([
     ...(before ? [{ text: before }] : []),
-    { text: marked, options: { highlight: dark ? HEX.accent1 : MARK, ...(dark ? { color: C.text2 } : {}) } },
+    { text: marked, options: { highlight: MARK, color: C.text2 } },
     ...(after ? [{ text: after }] : []),
   ], { placeholder: "title" });
 }
+const marked = (t, extra = {}) => ({ text: t, options: { highlight: MARK, color: C.text2, ...extra } });
 
 // ---------------------------------------------------------------- layouts
-pres.defineSlideMaster({ title: "KV Video", background: { color: C.text2 }, objects: [] });
-pres.defineSlideMaster({ title: "KV Dark Board", background: { data: BG_DARK }, objects: [] });
-// content layouts: a small square, the kicker, the title, footer and slide number
-function masterWithHeader(title, bg, square, kickerColor, titleColor, footColor) {
+pres.defineSlideMaster({
+  title: "KV Dark Full",
+  background: { color: C.text2 },
+  objects: [],
+});
+// content layouts: kicker and title placeholders, footer and slide number
+function masterWithHeader(title, bg, kickerColor, titleColor, footColor) {
   pres.defineSlideMaster({
     title,
-    background: { data: bg },
+    background: { color: bg },
     margin: [0.5, M, 0.6, M],
     objects: [
-      { rect: { x: M, y: 0.47, w: 0.17, h: 0.17, fill: { color: square }, line: { color: titleColor, width: 0.75 } } },
-      { text: { text: "KrishiVault  ·  কৃষিভল্ট", options: { x: M, y: 6.86, w: 6, h: 0.24, fontSize: 10, color: footColor, margin: 0 } } },
-      { placeholder: { options: { name: "kicker", type: "body", x: M + 0.3, y: 0.42, w: W - 2 * M - 0.3, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: kickerColor, margin: 0, valign: "top", align: "left" }, text: "" } },
-      { placeholder: { options: { name: "title", type: "title", x: M, y: 0.76, w: W - 2 * M, h: 0.95, fontFace: THEME.headFontFace, fontSize: 30, bold: true, color: titleColor, margin: 0, valign: "top", align: "left" }, text: "" } },
+      { text: { text: "KrishiVault  ·  কৃষিভল্ট", options: { x: M, y: 7.0, w: 6, h: 0.3, fontSize: 10, color: footColor, margin: 0 } } },
+      { placeholder: { options: { name: "kicker", type: "body", x: M, y: 0.42, w: W - 2 * M, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: kickerColor, margin: 0, valign: "top", align: "left" }, text: "" } },
+      { placeholder: { options: { name: "title", type: "title", x: M, y: 0.74, w: W - 2 * M, h: 1.0, fontFace: THEME.headFontFace, fontSize: 30, bold: true, color: titleColor, margin: 0, valign: "top", align: "left" }, text: "" } },
     ],
-    slideNumber: { x: W - M - 0.6, y: 6.86, w: 0.6, h: 0.24, fontSize: 10, color: footColor, align: "right" },
+    slideNumber: { x: W - M - 0.6, y: 7.0, w: 0.6, h: 0.3, fontSize: 10, color: footColor, align: "right" },
   });
 }
-masterWithHeader("KV Content Light", BG_LIGHT, C.accent3, C.text2, C.text2, C.accent6);
-masterWithHeader("KV Content Dark", BG_DARK, C.accent1, C.accent1, C.background1, "B9CDBF");
+masterWithHeader("KV Content Light", C.background2, C.accent2, C.text2, C.accent6);
+masterWithHeader("KV Content Dark", C.text2, C.accent1, C.background1, "A9BDB0");
 
 // ================================================================= slides
 async function build() {
-  // ------------------------------------------------------------ 1. hook: the farmer, then the clippings
+  // ------------------------------------------------------------ 1. hook: the farmer, then the evidence
   pres.addSection({ title: "Hook" });
-  const s1 = pres.addSlide({ masterName: "KV Video", sectionTitle: "Hook" });
+  const s1 = pres.addSlide({ masterName: "KV Dark Full", sectionTitle: "Hook" });
   s1.addMedia({ type: "video", path: VIDEO, cover: img64(POSTER), x: 0, y: 0, w: W, h: H, objectName: "Farmer video" });
-  // everything below appears after the clip ends (finish_deck.ps1 fades it in, groups and tilts each "Ev N" clipping)
-  s1.addImage({ data: BG_LIGHT, x: 0, y: 0, w: W, h: H, altText: "Grid paper", objectName: "Hook overlay" });
-  s1.addShape(RECT, { x: M, y: 0.55, w: 0.17, h: 0.17, fill: { color: C.accent3 }, line: { color: C.text2, width: 0.75 }, objectName: "Hook square" });
-  text(s1, "HE IS NOT ALONE  ·  THE SAME STORY, SEASON AFTER SEASON", { x: M + 0.3, y: 0.5, w: W - 2 * M, h: 0.3, fontSize: 13, bold: true, charSpacing: 3, color: C.text2, objectName: "Hook kicker" });
+  // everything below appears after the clip ends (finish_deck.ps1 adds the fades and groups the "Ev N" shapes)
+  s1.addShape(RECT, { x: 0, y: 0, w: W, h: H, fill: { color: C.text2, transparency: 10 }, line: { type: "none" }, objectName: "Hook overlay" });
+  text(s1, "HE IS NOT ALONE  ·  THE SAME STORY, SEASON AFTER SEASON", { x: M, y: 0.5, w: W - 2 * M, h: 0.3, fontSize: 13, bold: true, charSpacing: 3, color: C.accent1, objectName: "Hook kicker" });
   text(s1, [
-    { text: "He grows the crop. " },
-    { text: "Someone else gets paid for waiting.", options: { highlight: MARK } },
-  ], { x: M, y: 0.86, w: W - 2 * M, h: 0.62, fontFace: THEME.headFontFace, fontSize: 28, bold: true, color: C.text2, objectName: "Hook caption" });
+    { text: "He grows the crop. ", options: { color: C.background1 } },
+    marked("Someone else gets paid for waiting."),
+  ], { x: M, y: 0.86, w: W - 2 * M, h: 0.62, fontFace: THEME.headFontFace, fontSize: 28, bold: true, objectName: "Hook caption" });
   const news = [
     ["FEB 2025  ·  BUSINESS STANDARD", "Farmers strain under losses, selling potatoes at half the production cost", "৳7–9 a kg at the farm gate, against a ৳17.26 cost."],
     ["APR 2025  ·  BDNEWS24", "Surplus potatoes, empty pockets", "Cold storages full; farmers say middlemen bought the booking slips in advance."],
     ["OCT 2025  ·  THE DAILY STAR", "Potato farmers left in the lurch as prices crash", "৳8 a kg wholesale, half the cost. Unsold sacks pass to the cold storage after 15 November."],
     ["JUL 2026  ·  DHAKA TRIBUNE", "Potato farmers protest cold storage rent hike in Rangpur", "Rent up to ৳450 a sack while potatoes sell at ৳14–15 a kg, against a ৳25–26 cost."],
   ];
-  const tape = (slide, cx, y, n) => slide.addShape(RECT, { x: cx - 0.55, y: y - 0.13, w: 1.1, h: 0.27, fill: { color: C.accent1, transparency: 25 }, line: { type: "none" }, rotate: n % 2 ? 3 : -3, objectName: `Ev ${n} tape` });
-  const nw = (W - 2 * M - 3 * 0.22) / 4, ny = 1.8, nh = 2.62;
+  const nw = (W - 2 * M - 3 * 0.2) / 4, ny = 1.75, nh = 2.7;
   for (let i = 0; i < 4; i++) {
-    const x = M + i * (nw + 0.22), n = i + 1;
-    s1.addShape(RECT, { x, y: ny, w: nw, h: nh, fill: { color: C.background1 }, line: { color: C.text2, width: 1.25 }, shadow: hard(4), objectName: `Ev ${n} card` });
-    text(s1, news[i][0], { x: x + 0.2, y: ny + 0.22, w: nw - 0.4, h: 0.26, fontSize: 10.5, bold: true, charSpacing: 0.5, color: C.accent3, objectName: `Ev ${n} source` });
-    text(s1, news[i][1], { x: x + 0.2, y: ny + 0.52, w: nw - 0.4, h: 1.15, fontFace: THEME.headFontFace, fontSize: 15, bold: true, color: C.text2, objectName: `Ev ${n} headline` });
-    text(s1, news[i][2], { x: x + 0.2, y: ny + 1.72, w: nw - 0.4, h: 0.8, fontSize: 12.5, color: C.text1, objectName: `Ev ${n} fact` });
-    tape(s1, x + nw / 2, ny, n);
+    const x = M + i * (nw + 0.2);
+    s1.addShape(RECT, { x, y: ny, w: nw, h: nh, fill: { color: C.background1 }, line: { color: "D9E2D6", width: 0.75 }, shadow: shadow(0.35), objectName: `Ev ${i + 1} card` });
+    text(s1, news[i][0], { x: x + 0.2, y: ny + 0.18, w: nw - 0.4, h: 0.26, fontSize: 10.5, bold: true, charSpacing: 0.5, color: C.accent3, objectName: `Ev ${i + 1} source` });
+    text(s1, news[i][1], { x: x + 0.2, y: ny + 0.5, w: nw - 0.4, h: 1.15, fontFace: THEME.headFontFace, fontSize: 15, bold: true, color: C.text2, objectName: `Ev ${i + 1} headline` });
+    text(s1, news[i][2], { x: x + 0.2, y: ny + 1.72, w: nw - 0.4, h: 0.85, fontSize: 12.5, color: C.text1, objectName: `Ev ${i + 1} fact` });
   }
-  const ry = ny + nh + 0.3, rh2 = H - 0.55 - ry, rw = 4.5;
+  const ry = ny + nh + 0.2, rh2 = H - 0.5 - ry, rw = 4.55;
   const research = [
     ["RESEARCH  ·  BRAC UNIVERSITY  ·  2016 FIELDWORK", [
       { text: "Farmer ৳480 ", options: { color: C.accent3 } }, { text: "→ retailer ৳819", options: { color: C.text2 } }], "for the same 40 kg in Bogura and Munshiganj, with several traders in between. Study-period prices, not today's."],
@@ -163,17 +155,14 @@ async function build() {
       { text: "Why farmers can't store", options: { color: C.text2 } }], "High cold-storage charges, an uncertain future price and no money. Prices bottom at harvest and peak in December."],
   ];
   for (let i = 0; i < 2; i++) {
-    const x = M + i * (rw + 0.25), n = i + 5;
-    s1.addShape(RECT, { x, y: ry, w: rw, h: rh2, fill: { color: C.background1 }, line: { color: C.text2, width: 1.25 }, shadow: hard(4), objectName: `Ev ${n} card` });
-    s1.addShape(RECT, { x: x + 0.22, y: ry + 0.2, w: 0.9, h: 0.27, fill: { color: C.accent2 }, line: { type: "none" }, objectName: `Ev ${n} badge` });
-    text(s1, "STUDY", { x: x + 0.22, y: ry + 0.2, w: 0.9, h: 0.27, fontSize: 10.5, bold: true, charSpacing: 2, color: C.background1, align: "center", valign: "middle", objectName: `Ev ${n} badge text` });
-    text(s1, research[i][0].replace("RESEARCH  ·  ", ""), { x: x + 1.25, y: ry + 0.21, w: rw - 1.45, h: 0.26, fontSize: 10.5, bold: true, charSpacing: 0.5, color: C.accent2, valign: "middle", objectName: `Ev ${n} source` });
-    text(s1, research[i][1], { x: x + 0.22, y: ry + 0.6, w: rw - 0.44, h: 0.5, fontFace: THEME.headFontFace, fontSize: 19, bold: true, objectName: `Ev ${n} headline` });
-    text(s1, research[i][2], { x: x + 0.22, y: ry + 1.15, w: rw - 0.44, h: rh2 - 1.2, fontSize: 14, color: C.text1, objectName: `Ev ${n} fact` });
-    tape(s1, x + rw / 2, ry, n);
+    const x = M + i * (rw + 0.2), n = i + 5;
+    s1.addShape(RECT, { x, y: ry, w: rw, h: rh2, fill: { color: "E6EEE5" }, line: { color: "CFDACB", width: 0.75 }, shadow: shadow(0.35), objectName: `Ev ${n} card` });
+    text(s1, research[i][0], { x: x + 0.22, y: ry + 0.16, w: rw - 0.44, h: 0.26, fontSize: 10.5, bold: true, charSpacing: 0.5, color: C.accent2, objectName: `Ev ${n} source` });
+    text(s1, research[i][1], { x: x + 0.22, y: ry + 0.5, w: rw - 0.44, h: 0.5, fontFace: THEME.headFontFace, fontSize: 19, bold: true, objectName: `Ev ${n} headline` });
+    text(s1, research[i][2], { x: x + 0.22, y: ry + 1.1, w: rw - 0.44, h: rh2 - 1.2, fontSize: 15, color: C.text1, objectName: `Ev ${n} fact` });
   }
-  const pxx = M + 2 * (rw + 0.25), pww = W - M - pxx;
-  s1.addShape(RECT, { x: pxx, y: ry, w: pww, h: rh2, fill: { color: C.accent1 }, line: { color: C.text2, width: 1.25 }, shadow: hard(4), objectName: "Ev 7 card" });
+  const pxx = M + 2 * (rw + 0.2), pww = W - M - pxx;
+  s1.addShape(RECT, { x: pxx, y: ry, w: pww, h: rh2, fill: { color: C.accent1 }, line: { type: "none" }, shadow: shadow(0.35), objectName: "Ev 7 card" });
   text(s1, "KrishiVault makes sure the farmer can wait.", { x: pxx + 0.25, y: ry, w: pww - 0.45, h: rh2, fontFace: THEME.headFontFace, fontSize: 19, bold: true, color: C.text2, valign: "middle", objectName: "Ev 7 promise" });
   s1.addNotes(NOTES[1]);
 
@@ -187,11 +176,11 @@ async function build() {
     ["≈ 2×", "shop price after a normal crop: ৳35 in Feb, ৳67.50 by Nov 2024 ²", C.accent2],
     ["৳20–25", "all through 2025, after a big crop: storing lost money ²", C.accent3],
   ];
-  const stw = (W - 2 * M - 3 * 0.22) / 4, sty = 1.8, sth = 1.3;
+  const stw = (W - 2 * M - 3 * 0.2) / 4, sty = 1.8, sth = 1.3;
   for (let i = 0; i < 4; i++) {
-    const x = M + i * (stw + 0.22);
+    const x = M + i * (stw + 0.2);
     card(s2, x, sty, stw, sth, { name: `Stat card ${i + 1}` });
-    text(s2, stats[i][0], { x: x + 0.22, y: sty + 0.12, w: stw - 0.4, h: 0.55, fontFace: THEME.headFontFace, fontSize: 26, bold: true, color: stats[i][2], valign: "middle" });
+    text(s2, stats[i][0], { x: x + 0.22, y: sty + 0.12, w: stw - 0.4, h: 0.55, fontFace: THEME.headFontFace, fontSize: 26, bold: true, color: stats[i][2], valign: "middle", fit: "shrink" });
     text(s2, stats[i][1], { x: x + 0.22, y: sty + 0.68, w: stw - 0.4, h: 0.56, fontSize: 12, color: C.text1 });
   }
   const traps = [
@@ -199,32 +188,34 @@ async function build() {
     ["LuWarehouse", "The flat-rent trap", "About ৳300 a sack for 1 month or 9. Afraid of a fall, he sells after 1 to 3 months, having paid for 9.", "৳300 a sack, 1 month or 9"],
     ["LuChartLine", "The blind-bet trap", "Crop size sets the price: 2024 doubled, 2025 stayed flat. Nobody tells him which kind of year it is.", "−৳25,280 storing 36 sacks in 2025"],
   ];
-  const tw3 = (W - 2 * M - 2 * 0.22) / 3, ty3 = 3.32, th3 = 2.2;
+  const tw3 = (W - 2 * M - 2 * 0.2) / 3, ty3 = 3.3, th3 = 2.2;
   for (let i = 0; i < 3; i++) {
-    const x = M + i * (tw3 + 0.22);
+    const x = M + i * (tw3 + 0.2);
     card(s2, x, ty3, tw3, th3, { name: `Trap card ${i + 1}` });
     await tile(s2, x + 0.25, ty3 + 0.2, 0.55, traps[i][0], { fill: C.accent1 });
-    text(s2, traps[i][1], { x: x + 0.98, y: ty3 + 0.2, w: tw3 - 1.18, h: 0.55, fontFace: THEME.headFontFace, fontSize: 18, bold: true, color: C.text2, valign: "middle" });
+    text(s2, traps[i][1], { x: x + 0.95, y: ty3 + 0.2, w: tw3 - 1.15, h: 0.55, fontFace: THEME.headFontFace, fontSize: 18, bold: true, color: C.text2, valign: "middle" });
     text(s2, traps[i][2], { x: x + 0.25, y: ty3 + 0.88, w: tw3 - 0.5, h: 0.78, fontSize: 13, color: C.text1 });
-    s2.addShape(RECT, { x: x + 0.25, y: ty3 + 1.7, w: tw3 - 0.5, h: 0.36, fill: { color: i === 2 ? "F7E1DA" : "DDEEDF" }, line: { type: "none" }, objectName: `Trap figure ${i + 1}` });
+    s2.addShape(RECT, { x: x + 0.25, y: ty3 + 1.7, w: tw3 - 0.5, h: 0.36, fill: { color: i === 2 ? C.accent3 : C.accent2, transparency: 88 }, line: { type: "none" }, objectName: `Trap figure ${i + 1}` });
     text(s2, traps[i][3], { x: x + 0.38, y: ty3 + 1.7, w: tw3 - 0.7, h: 0.36, fontSize: 13.5, bold: true, color: i === 2 ? C.accent3 : C.accent2, valign: "middle" });
   }
-  darkCard(s2, M, 5.75, W - 2 * M, 0.75, "Insight band");
+  card(s2, M, 5.7, W - 2 * M, 0.8, { fill: C.text2, line: false, name: "Insight band" });
   text(s2, [
-    { text: "A price alert does not pay today's debt. ", options: { bold: true, color: C.accent1 } },
+    marked("A price alert does not pay today's debt.", { bold: true }),
+    { text: " " },
     { text: "Traders have the cash, the sums and the information to wait. The farmer has none.", options: { color: C.background1 } },
-  ], { x: M + 0.3, y: 5.75, w: W - 2 * M - 0.6, h: 0.75, fontSize: 16, valign: "middle" });
+  ], { x: M + 0.3, y: 5.7, w: W - 2 * M - 0.6, h: 0.8, fontSize: 16, valign: "middle" });
   text(s2, "¹ Value-chain study, Kahaloo (Bogura) and Munshiganj, 2016 fieldwork.   ² WFP retail prices (HDX); the 2025 loss is our engine's replay. Production: BBS 2024-25.",
-    { x: M, y: 6.57, w: W - 2 * M, h: 0.24, fontSize: 10, color: C.accent6 });
+    { x: M, y: 6.6, w: W - 2 * M, h: 0.26, fontSize: 10, color: C.accent6 });
   s2.addNotes(NOTES[2]);
 
   // ------------------------------------------------------------ 3. what KrishiVault is
   pres.addSection({ title: "Solution" });
   const s3 = pres.addSlide({ masterName: "KV Content Light", sectionTitle: "Solution" });
   header(s3, "WHAT KRISHIVAULT IS  ·  KNOW · CALCULATE · DECIDE · ACT", ["One service that ", "answers each trap"]);
-  darkCard(s3, M, 1.75, W - 2 * M, 1.05, "Definition band");
+  card(s3, M, 1.75, W - 2 * M, 1.05, { fill: C.text2, line: false, name: "Definition band" });
   text(s3, [
-    { text: "KrishiVault is a voice-first service for potato farmers. ", options: { color: C.accent1 } },
+    marked("KrishiVault is a voice-first service for potato farmers."),
+    { text: " " },
     { text: "It tells him how many sacks to sell now and how many to store, until when, and lets a bank lend against the stored sacks, so he can afford to wait.", options: { color: C.background1 } },
   ], { x: M + 0.35, y: 1.75, w: W - 2 * M - 0.7, h: 1.05, fontFace: THEME.headFontFace, fontSize: 17, bold: true, valign: "middle" });
   const answers = [
@@ -233,21 +224,21 @@ async function build() {
     ["The blind-bet trap", "Can't tell a 2024 from a 2025", "An outlook with a range", "Driven by crop size; in a glut year it says \"sell now\"."],
     ["He can't read an SMS", "From our field interview", "A Bangla voice call", "Two numbers on any button phone; USSD and SMS as well."],
   ];
-  const lx = M, lw3 = 2.75, aw3 = 4.6, gx = 0.45, ay = 3.02, ah = 0.72;
+  const lx = M, lw3 = 2.75, aw3 = 4.65, gx = 0.45, ay = 3.0, ah = 0.74;
   text(s3, "THE TRAP", { x: lx, y: ay - 0.02, w: lw3, h: 0.26, fontSize: 11.5, bold: true, charSpacing: 2, color: C.accent3 });
   text(s3, "KRISHIVAULT'S ANSWER", { x: lx + lw3 + gx, y: ay - 0.02, w: aw3, h: 0.26, fontSize: 11.5, bold: true, charSpacing: 2, color: C.accent2 });
   for (let i = 0; i < 4; i++) {
-    const y = ay + 0.32 + i * (ah + 0.12);
-    s3.addShape(RECT, { x: lx, y, w: lw3, h: ah, fill: { color: "F7E1DA" }, line: { color: C.accent3, width: 1, dashType: "dash" }, objectName: `Trap ${i + 1}` });
+    const y = ay + 0.32 + i * (ah + 0.1);
+    s3.addShape(RECT, { x: lx, y, w: lw3, h: ah, fill: { color: C.accent3, transparency: 90 }, line: { type: "none" }, objectName: `Trap ${i + 1}` });
     text(s3, [{ text: answers[i][0], options: { bold: true, color: C.accent3, breakLine: true } }, { text: answers[i][1], options: { color: C.text1 } }],
       { x: lx + 0.2, y, w: lw3 - 0.3, h: ah, fontSize: 13, valign: "middle" });
-    s3.addImage({ data: await icon("LuArrowRight", HEX.dk2), x: lx + lw3 + gx / 2 - 0.14, y: y + ah / 2 - 0.14, w: 0.28, h: 0.28, altText: "answered by" });
-    card(s3, lx + lw3 + gx, y, aw3, ah, { name: `Answer ${i + 1}`, shadowOff: 3 });
+    s3.addImage({ data: await icon("LuArrowRight", HEX.accent2), x: lx + lw3 + gx / 2 - 0.13, y: y + ah / 2 - 0.13, w: 0.26, h: 0.26, altText: "answered by" });
+    card(s3, lx + lw3 + gx, y, aw3, ah, { name: `Answer ${i + 1}`, shadowOpacity: 0.1 });
     text(s3, [{ text: answers[i][2], options: { bold: true, color: C.text2, breakLine: true } }, { text: answers[i][3], options: { color: C.text1 } }],
       { x: lx + lw3 + gx + 0.2, y, w: aw3 - 0.35, h: ah, fontSize: 13, valign: "middle" });
   }
-  const fx = lx + lw3 + gx + aw3 + 0.35, fw = W - M - fx, fh = 4 * ah + 3 * 0.12 + 0.32;
-  card(s3, fx, ay, fw, fh, { fill: C.accent1, name: "Facts card" });
+  const fx = lx + lw3 + gx + aw3 + 0.3, fw = W - M - fx;
+  card(s3, fx, ay, fw, 4 * ah + 3 * 0.1 + 0.32, { name: "Facts card" });
   const facts = [
     ["FOR", "Smallholder potato farmers. First in Kahaloo, Bogura."],
     ["THROUGH", "Grameenphone voice line, USSD and SMS. Cold storages and banks use the web."],
@@ -255,13 +246,13 @@ async function build() {
     ["NEVER", "Lends or holds money, or sells a place in the advice."],
   ];
   for (let i = 0; i < 4; i++) {
-    const y = ay + 0.16 + i * 0.84;
-    text(s3, facts[i][0], { x: fx + 0.25, y, w: fw - 0.45, h: 0.24, fontSize: 11, bold: true, charSpacing: 2, color: C.text2 });
+    const y = ay + 0.16 + i * 0.83;
+    text(s3, facts[i][0], { x: fx + 0.25, y, w: fw - 0.45, h: 0.24, fontSize: 11, bold: true, charSpacing: 2, color: i === 3 ? C.accent3 : C.accent2 });
     text(s3, facts[i][1], { x: fx + 0.25, y: y + 0.25, w: fw - 0.45, h: 0.58, fontSize: 13, color: C.text1 });
   }
   s3.addNotes(NOTES[3]);
 
-  // ------------------------------------------------------------ 4. how it works: the loop
+  // ------------------------------------------------------------ 4. solution: the loop
   const s4 = pres.addSlide({ masterName: "KV Content Light", sectionTitle: "Solution" });
   header(s4, "HOW IT WORKS  ·  ONE FARMER, ONE SEASON", ["One call turns a harvest into ", "a plan, and the cash to wait"]);
   const steps = [
@@ -271,15 +262,16 @@ async function build() {
     ["LuLandmark", "4  Cash", "A bank lends against the receipt and holds the sacks. No forced sale today."],
     ["LuBellRing", "5  Sell", "A price alert, by call or SMS, says how many sacks to sell and to whom. The sale pays storage, bank, then him."],
   ];
-  const sw = 2.24, sg = 0.23;
+  const sw = 2.25, sg = 0.22;
   for (let i = 0; i < 5; i++) {
     const x = M + i * (sw + sg);
-    card(s4, x, 1.9, sw, 3.0, { fill: i === 1 ? "FFF4D6" : C.background1, name: `Step ${i + 1}` });
-    await tile(s4, x + 0.25, 2.15, 0.66, steps[i][0], { fill: i === 1 ? C.accent1 : C.text2, iconHex: i === 1 ? HEX.dk2 : HEX.accent1 });
-    text(s4, steps[i][1], { x: x + 0.25, y: 2.97, w: sw - 0.4, h: 0.42, fontFace: THEME.headFontFace, fontSize: 19, bold: true, color: C.text2 });
-    text(s4, steps[i][2], { x: x + 0.25, y: 3.42, w: sw - 0.42, h: 1.4, fontSize: 13.5, color: C.text1 });
-    if (i < 4) s4.addImage({ data: await icon("LuChevronRight", HEX.dk2), x: x + sw + 0.02, y: 3.25, w: 0.2, h: 0.2, altText: "next" });
+    card(s4, x, 1.95, sw, 3.0, { name: `Step ${i + 1}` });
+    await tile(s4, x + 0.25, 2.2, 0.66, steps[i][0], { fill: i === 1 ? C.accent1 : C.text2, iconHex: i === 1 ? HEX.dk2 : HEX.accent1 });
+    text(s4, steps[i][1], { x: x + 0.25, y: 3.0, w: sw - 0.4, h: 0.42, fontFace: THEME.headFontFace, fontSize: 19, bold: true, color: C.text2 });
+    text(s4, steps[i][2], { x: x + 0.25, y: 3.45, w: sw - 0.42, h: 1.4, fontSize: 13.5, color: C.text1 });
+    if (i < 4) s4.addImage({ data: await icon("LuChevronRight", HEX.accent6), x: x + sw - 0.02, y: 3.28, w: 0.26, h: 0.26, altText: "next" });
   }
+  // the seven parts and the rules
   card(s4, M, 5.15, 7.6, 1.6, { name: "Seven parts card" });
   text(s4, "SEVEN PARTS, ONE LOOP", { x: M + 0.3, y: 5.3, w: 7, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: C.accent2 });
   const parts = ["Price and crop outlook", "Store-or-sell engine", "Crop-backed loans", "Buyer matching", "Group storage and selling", "Export intelligence", "Profit calculator"];
@@ -287,11 +279,11 @@ async function build() {
   for (let i = 0; i < parts.length; i++) {
     const pw = parts[i].length * 0.07 + 0.32; // Calibri 12.5 pt, with padding
     if (px + pw > M + 7.3) { px = M + 0.3; py += 0.47; }
-    s4.addShape(RECT, { x: px, y: py, w: pw, h: 0.36, fill: { color: TINT }, line: { color: C.text2, width: 0.75, dashType: "dash" }, objectName: `Part ${i + 1}` });
+    s4.addShape(RECT, { x: px, y: py, w: pw, h: 0.36, fill: { color: C.background2 }, line: { color: "CFDACB", width: 0.75 }, objectName: `Part ${i + 1}` });
     text(s4, parts[i], { x: px, y: py, w: pw, h: 0.36, fontSize: 12.5, color: C.text1, align: "center", valign: "middle" });
     px += pw + 0.12;
   }
-  darkCard(s4, 8.45, 5.15, W - M - 8.45, 1.6, "Result card");
+  card(s4, 8.45, 5.15, W - M - 8.45, 1.6, { fill: C.text2, line: false, name: "Result card" });
   text(s4, "HIS SEASON, IN TAKA (36 SACKS)", { x: 8.75, y: 5.3, w: 3.9, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: C.accent1 });
   text(s4, [
     { text: "৳25,020 in hand today: ", options: { bold: true, color: C.accent1 } },
@@ -305,7 +297,7 @@ async function build() {
 
   // ------------------------------------------------------------ 5. AI and technical rationale + live demo
   const s5 = pres.addSlide({ masterName: "KV Content Dark", sectionTitle: "Solution" });
-  header(s5, "AI AND TECHNICAL RATIONALE  ·  LIVE DEMO", ["AI listens and speaks Bangla. ", "Exact sums decide."], true);
+  header(s5, "AI AND TECHNICAL RATIONALE  ·  LIVE DEMO", ["AI listens and speaks Bangla. ", "Exact sums decide."]);
   const lanes = [
     ["LuAudioLines", "UNDERSTAND", "AI", [
       "Google Bangla speech-to-text",
@@ -326,26 +318,28 @@ async function build() {
   const lg = 0.42, lw = (W - 2 * M - 2 * lg) / 3;
   for (let i = 0; i < 3; i++) {
     const x = M + i * (lw + lg);
-    card(s5, x, 1.9, lw, 2.95, { fill: i === 1 ? "FFF4D6" : C.background1, lineColor: C.text2, shadowHex: HEX.accent1, name: `${lanes[i][1]} lane` });
-    await tile(s5, x + 0.25, 2.13, 0.62, lanes[i][0], { fill: i === 1 ? C.accent1 : C.text2, iconHex: i === 1 ? HEX.dk2 : HEX.accent1 });
-    text(s5, lanes[i][1], { x: x + 1.05, y: 2.13, w: 2.4, h: 0.34, fontSize: 17, bold: true, charSpacing: 2, color: i === 1 ? C.accent3 : C.text2 });
-    text(s5, lanes[i][2], { x: x + 1.05, y: 2.47, w: 2.45, h: 0.3, fontSize: 13, italic: true, color: C.accent6 });
+    card(s5, x, 1.95, lw, 2.95, { fill: "163F2C", lineColor: "2C5A43", shadowOpacity: 0.35, name: `${lanes[i][1]} lane` });
+    await tile(s5, x + 0.25, 2.18, 0.62, lanes[i][0], { fill: i === 1 ? C.accent1 : C.background1, iconHex: HEX.dk2 });
+    text(s5, lanes[i][1], { x: x + 1.05, y: 2.18, w: 2.4, h: 0.34, fontSize: 17, bold: true, charSpacing: 2, color: i === 1 ? C.accent1 : C.background1 });
+    text(s5, lanes[i][2], { x: x + 1.05, y: 2.52, w: 2.45, h: 0.3, fontSize: 13, italic: true, color: "A9BDB0" });
     text(s5, lanes[i][3].map((t, k) => ({ text: t, options: { bullet: { indent: 14 }, breakLine: k < 2 } })),
-      { x: x + 0.25, y: 3.0, w: lw - 0.45, h: 1.75, fontSize: 14, color: C.text1, paraSpaceAfter: 5 });
-    if (i < 2) s5.addImage({ data: await icon("LuArrowRight", HEX.accent1), x: x + lw + 0.08, y: 3.2, w: 0.28, h: 0.28, altText: "then" });
+      { x: x + 0.25, y: 3.05, w: lw - 0.45, h: 1.75, fontSize: 14, color: "E6EEE8", paraSpaceAfter: 5 });
+    if (i < 2) s5.addImage({ data: await icon("LuArrowRight", HEX.accent1), x: x + lw + 0.07, y: 3.25, w: 0.28, h: 0.28, altText: "then" });
   }
+  // why this design
   text(s5, "WHY THIS DESIGN", { x: M, y: 5.12, w: 6, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: C.accent1 });
   text(s5, [
     { text: "He can't read an SMS: ", options: { bold: true, color: C.background1 } },
-    { text: "voice first, in his dialect; the keypad always works.", options: { color: "DCE7DF", breakLine: true } },
+    { text: "voice first, in his dialect; the keypad always works.", options: { color: "D7E3DA", breakLine: true } },
     { text: "Money must be exact: ", options: { bold: true, color: C.background1 } },
-    { text: "a language model never sets a taka figure.", options: { color: "DCE7DF", breakLine: true } },
+    { text: "a language model never sets a taka figure.", options: { color: "D7E3DA", breakLine: true } },
     { text: "The future is uncertain: ", options: { bold: true, color: C.background1 } },
-    { text: "ranges from simulated paths, not one price.", options: { color: "DCE7DF", breakLine: true } },
+    { text: "ranges from simulated paths, not one price.", options: { color: "D7E3DA", breakLine: true } },
     { text: "Price data is thin: ", options: { bold: true, color: C.background1 } },
-    { text: "ML (XGBoost, LSTM) only once 15 years of DAM prices are backtested.", options: { color: "DCE7DF" } },
-  ], { x: M, y: 5.45, w: 7.4, h: 1.42, fontSize: 14, paraSpaceAfter: 3 });
-  card(s5, 8.3, 5.05, W - M - 8.3, 1.72, { fill: C.accent1, lineColor: C.text2, shadowHex: "0B1F16", name: "Live demo card" });
+    { text: "ML (XGBoost, LSTM) only once 15 years of DAM prices are backtested.", options: { color: "D7E3DA" } },
+  ], { x: M, y: 5.45, w: 7.4, h: 1.45, fontSize: 14, paraSpaceAfter: 3 });
+  // live now
+  card(s5, 8.3, 5.05, W - M - 8.3, 1.75, { fill: C.accent1, line: false, shadowOpacity: 0.35, name: "Live demo card" });
   text(s5, "LIVE NOW  ·  CLICK TO OPEN", { x: 8.55, y: 5.18, w: 4, h: 0.28, fontSize: 11.5, bold: true, charSpacing: 2, color: C.text2 });
   // the link is set on the shapes by finish_deck.ps1 (a text hyperlink would take the theme's link colour)
   text(s5, "koryu.ninja", { x: 8.55, y: 5.45, w: 4, h: 0.55, fontFace: THEME.headFontFace, fontSize: 28, bold: true, color: C.text2, objectName: "Demo link" });
@@ -356,45 +350,48 @@ async function build() {
   pres.addSection({ title: "Proof" });
   const s6 = pres.addSlide({ masterName: "KV Content Light", sectionTitle: "Proof" });
   header(s6, "PROOF  ·  FAIR REPLAYS, NO HINDSIGHT", ["Tested on ", "two real seasons", " it had never seen"]);
-  card(s6, M, 1.9, 4.55, 4.45, { name: "2024 replay card" });
-  text(s6, "MARCH 2024  ·  NORMAL CROP", { x: M + 0.3, y: 2.07, w: 4, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: C.accent2 });
-  text(s6, "“Sell 11 sacks, store 25 until December”", { x: M + 0.3, y: 2.4, w: 4.0, h: 0.62, fontFace: THEME.headFontFace, fontSize: 17, bold: true, color: C.text2 });
+  // 2024
+  card(s6, M, 1.95, 4.55, 4.45, { name: "2024 replay card" });
+  text(s6, "MARCH 2024  ·  NORMAL CROP", { x: M + 0.3, y: 2.12, w: 4, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: C.accent2 });
+  text(s6, "“Sell 11 sacks, store 25 until December”", { x: M + 0.3, y: 2.45, w: 4.0, h: 0.62, fontFace: THEME.headFontFace, fontSize: 17, bold: true, color: C.text2 });
   s6.addChart(pres.charts.BAR, [{ name: "Net profit on 36 sacks", labels: ["Sold all at harvest", "With KrishiVault"], values: [11740, 29450] }], {
-    x: M + 0.1, y: 3.07, w: 2.85, h: 3.15, barDir: "col", objectName: "2024 net profit chart",
+    x: M + 0.1, y: 3.12, w: 2.85, h: 3.15, barDir: "col", objectName: "2024 net profit chart",
     chartColors: [HEX.accent6, HEX.accent2], invertedColors: [HEX.accent6, HEX.accent2], varyColors: true,
     showValue: true, dataLabelPosition: "outEnd", dataLabelFormatCode: "#,##0", dataLabelFontSize: 13, dataLabelColor: HEX.dk1, dataLabelFontFace: "+mn-lt", dataLabelFontBold: true,
     catAxisLabelColor: HEX.accent6, catAxisLabelFontSize: 11, catAxisLabelFontFace: "+mn-lt",
     valAxisHidden: true, valGridLine: { style: "none" }, catGridLine: { style: "none" }, valAxisMaxVal: 36000, valAxisMinVal: 0,
     showLegend: false, barGapWidthPct: 70,
   });
-  text(s6, "2.5×", { x: M + 2.95, y: 3.3, w: 1.5, h: 0.8, fontFace: THEME.headFontFace, fontSize: 44, bold: true, color: C.accent2, align: "center" });
-  text(s6, "net profit, after the ৳14 a kg growing cost", { x: M + 2.95, y: 4.1, w: 1.5, h: 1.0, fontSize: 12.5, color: C.text1, align: "center" });
-  const x2 = M + 4.55 + 0.27;
-  card(s6, x2, 1.9, 4.0, 4.45, { name: "2025 replay card" });
-  text(s6, "MARCH 2025  ·  BIG CROP", { x: x2 + 0.3, y: 2.07, w: 3.5, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: C.accent3 });
-  text(s6, "“Sell now.”", { x: x2 + 0.3, y: 2.4, w: 3.4, h: 0.62, fontFace: THEME.headFontFace, fontSize: 17, bold: true, color: C.text2 });
-  text(s6, "Storing all 36 sacks would have lost up to", { x: x2 + 0.3, y: 3.15, w: 3.4, h: 0.35, fontSize: 14, color: C.text1 });
-  text(s6, "৳25,280", { x: x2 + 0.3, y: 3.5, w: 3.4, h: 0.8, fontFace: THEME.headFontFace, fontSize: 40, bold: true, color: C.accent3 });
-  text(s6, "and at least ৳17,110, whichever month he sold. The advice kept that loss out of his pocket.", { x: x2 + 0.3, y: 4.35, w: 3.4, h: 0.8, fontSize: 14, color: C.text1 });
-  card(s6, x2 + 0.3, 5.25, 3.4, 0.85, { fill: "FFF4D6", shadow: false, lineWidth: 1, dash: true, name: "Trust note" });
-  text(s6, "An advisor that says “don't store” when storing loses is one a farmer can trust.", { x: x2 + 0.45, y: 5.25, w: 3.15, h: 0.85, fontSize: 12.5, italic: true, color: C.text2, valign: "middle" });
-  const x3 = x2 + 4.0 + 0.27;
-  darkCard(s6, x3, 1.9, W - M - x3, 4.45, "Backtest card");
-  text(s6, "PRICE OUTLOOK BACKTEST", { x: x3 + 0.28, y: 2.07, w: 3, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: C.accent1 });
+  text(s6, "2.5×", { x: M + 2.95, y: 3.35, w: 1.5, h: 0.8, fontFace: THEME.headFontFace, fontSize: 44, bold: true, color: C.accent2, align: "center" });
+  text(s6, "net profit, after the ৳14 a kg growing cost", { x: M + 2.95, y: 4.15, w: 1.5, h: 1.0, fontSize: 12.5, color: C.text1, align: "center" });
+  // 2025
+  const x2 = M + 4.55 + 0.25;
+  card(s6, x2, 1.95, 4.0, 4.45, { name: "2025 replay card" });
+  text(s6, "MARCH 2025  ·  BIG CROP", { x: x2 + 0.3, y: 2.12, w: 3.5, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: C.accent3 });
+  text(s6, "“Sell now.”", { x: x2 + 0.3, y: 2.45, w: 3.4, h: 0.62, fontFace: THEME.headFontFace, fontSize: 17, bold: true, color: C.text2 });
+  text(s6, "Storing all 36 sacks would have lost up to", { x: x2 + 0.3, y: 3.2, w: 3.4, h: 0.35, fontSize: 14, color: C.text1 });
+  text(s6, "৳25,280", { x: x2 + 0.3, y: 3.55, w: 3.4, h: 0.8, fontFace: THEME.headFontFace, fontSize: 40, bold: true, color: C.accent3 });
+  text(s6, "and at least ৳17,110, whichever month he sold. The advice kept that loss out of his pocket.", { x: x2 + 0.3, y: 4.4, w: 3.4, h: 0.8, fontSize: 14, color: C.text1 });
+  card(s6, x2 + 0.3, 5.3, 3.4, 0.85, { fill: C.background2, shadow: false, lineColor: "D9E2D6", name: "Trust note" });
+  text(s6, "An advisor that says “don't store” when storing loses is one a farmer can trust.", { x: x2 + 0.45, y: 5.3, w: 3.15, h: 0.85, fontSize: 12.5, italic: true, color: C.text2, valign: "middle" });
+  // backtest
+  const x3 = x2 + 4.0 + 0.25;
+  card(s6, x3, 1.95, W - M - x3, 4.45, { fill: C.text2, line: false, name: "Backtest card" });
+  text(s6, "PRICE OUTLOOK BACKTEST", { x: x3 + 0.28, y: 2.12, w: 3, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: C.accent1 });
   const bt = [["11%", "average price miss, against 52% for the usual seasonal pattern"], ["92%", "of months inside its 8-in-10 range"], ["2 of 2", "store-or-sell calls right"]];
   for (let i = 0; i < 3; i++) {
-    const y = 2.5 + i * 1.22;
+    const y = 2.55 + i * 1.22;
     text(s6, bt[i][0], { x: x3 + 0.28, y, w: 2.9, h: 0.6, fontFace: THEME.headFontFace, fontSize: 30, bold: true, color: C.accent1 });
-    text(s6, bt[i][1], { x: x3 + 0.28, y: y + 0.58, w: 2.9, h: 0.6, fontSize: 12.5, color: "E6EEE8" });
+    text(s6, bt[i][1], { x: x3 + 0.28, y: y + 0.58, w: 2.95, h: 0.6, fontSize: 12.5, color: "E6EEE8" });
   }
   text(s6, "Engine replays: 36 sacks, ৳300 rent, 8.65% weight loss, ৳14/kg growing cost (DAE Bogura 2024-25), WFP retail prices. Two seasons is a first test, not proof: next, 15 years of DAM prices.",
-    { x: M, y: 6.43, w: W - 2 * M, h: 0.4, fontSize: 10.5, color: C.accent6 });
+    { x: M, y: 6.48, w: W - 2 * M, h: 0.45, fontSize: 10.5, color: C.accent6 });
   s6.addNotes(NOTES[6]);
 
   // ------------------------------------------------------------ 7. differentiation and moat
   const s7 = pres.addSlide({ masterName: "KV Content Light", sectionTitle: "Proof" });
   header(s7, "WHY KRISHIVAULT  ·  DIFFERENTIATION AND DEFENSIBILITY", ["Others solve one piece. ", "KrishiVault closes the loop."]);
-  const yes = await icon("LuCircleCheck", HEX.accent2, 128), no = await icon("LuCircleX", "AEB9B1", 128), part = await icon("LuCircleMinus", HEX.accent4, 128);
+  const yes = await icon("LuCircleCheck", HEX.accent2, 128), no = await icon("LuCircleX", "B9C4BC", 128), part = await icon("LuCircleMinus", HEX.accent4, 128);
   const cols = ["Traders", "Price apps", "Banks, MFIs", "KrishiVault"];
   const rows = [
     ["Cash at harvest without selling", [part, "buys at the low"], [no, ""], [no, "wants land"], [yes, "loan on the receipt"]],
@@ -403,17 +400,17 @@ async function build() {
     ["Verified stock in cold storage", [part, "holds 97.6%"], [no, ""], [no, "can't check it"], [yes, "digital receipt"]],
     ["Works on a button phone, in Bangla", [yes, "in person"], [no, "smartphone"], [no, "branch visit"], [yes, "voice, USSD, SMS"]],
   ];
-  const tx = M, ty = 1.9, c0 = 2.75, cw = 1.27, kvw = 1.55, rh = 0.75;
-  const tw = c0 + 3 * cw + kvw, th = 0.5 + rows.length * rh + 0.08;
-  card(s7, tx, ty, tw, th, { name: "Comparison card" });
-  s7.addShape(RECT, { x: tx + c0 + 3 * cw, y: ty, w: kvw, h: th, fill: { color: "FFF1C9" }, line: { color: C.text2, width: 1.25 }, objectName: "KrishiVault column" });
+  const tx = M, ty = 1.95, c0 = 2.75, cw = 1.27, kvw = 1.55, rh = 0.77;
+  const tw = c0 + 3 * cw + kvw;
+  card(s7, tx, ty, tw, 0.5 + rows.length * rh + 0.08, { name: "Comparison card" });
+  s7.addShape(RECT, { x: tx + c0 + 3 * cw, y: ty, w: kvw, h: 0.5 + rows.length * rh + 0.08, fill: { color: C.accent1, transparency: 82 }, line: { type: "none" }, objectName: "KrishiVault column" });
   for (let j = 0; j < 4; j++) {
     const x = tx + c0 + j * cw;
     text(s7, cols[j], { x, y: ty + 0.1, w: j === 3 ? kvw : cw, h: 0.34, fontSize: 13, bold: true, align: "center", color: j === 3 ? C.text2 : C.accent6, valign: "middle" });
   }
   for (let r = 0; r < rows.length; r++) {
     const y = ty + 0.5 + r * rh;
-    if (r > 0) s7.addShape(pres.shapes.LINE, { x: tx + 0.2, y, w: c0 + 3 * cw - 0.3, h: 0, line: { color: "D5DECF", width: 0.75, dashType: "dash" } });
+    if (r > 0) s7.addShape(pres.shapes.LINE, { x: tx + 0.2, y, w: tw - 0.4, h: 0, line: { color: "E3E9E0", width: 0.75 } });
     text(s7, rows[r][0], { x: tx + 0.25, y, w: c0 - 0.35, h: rh, fontSize: 13.5, bold: true, color: C.text1, valign: "middle" });
     for (let j = 0; j < 4; j++) {
       const [ic, note] = rows[r][j + 1];
@@ -422,8 +419,9 @@ async function build() {
       if (note) text(s7, note, { x: x + 0.04, y: y + 0.38, w: w - 0.08, h: 0.32, fontSize: 10.5, align: "center", color: j === 3 ? C.text2 : C.accent6, bold: j === 3 });
     }
   }
-  const mx = tx + tw + 0.35, mw = W - M - mx;
-  text(s7, "WHY IT IS HARD TO COPY", { x: mx, y: 1.92, w: mw, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: C.text2 });
+  // moat
+  const mx = tx + tw + 0.3, mw = W - M - mx;
+  text(s7, "WHY IT IS HARD TO COPY", { x: mx, y: 1.97, w: mw, h: 0.3, fontSize: 12, bold: true, charSpacing: 2, color: C.accent2 });
   const moat = [
     ["LuRoute", "The loop is the product", "Sums, receipt, loan, alert, split at sale. One piece alone does not break the trap."],
     ["LuHandshake", "Both sides are paid to stay", "Cold storages fill space; banks get stock they can check."],
@@ -431,66 +429,87 @@ async function build() {
     ["LuDatabase", "Data that compounds", "Every consented call adds district data nobody else has."],
   ];
   for (let i = 0; i < 4; i++) {
-    const y = 2.35 + i * 1.02;
-    await tile(s7, mx, y + 0.05, 0.5, moat[i][0], { fill: i % 2 ? C.accent1 : C.text2, iconHex: i % 2 ? HEX.dk2 : HEX.accent1 });
+    const y = 2.4 + i * 1.02;
+    await tile(s7, mx, y + 0.05, 0.5, moat[i][0], { fill: C.text2, iconHex: HEX.accent1 });
     text(s7, moat[i][1], { x: mx + 0.68, y, w: mw - 0.68, h: 0.32, fontSize: 15, bold: true, color: C.text2 });
     text(s7, moat[i][2], { x: mx + 0.68, y: y + 0.33, w: mw - 0.68, h: 0.62, fontSize: 12.5, color: C.text1 });
   }
-  card(s7, M, 6.42, W - 2 * M, 0.38, { fill: "FFF4D6", shadow: false, lineWidth: 1, dash: true, name: "India note" });
   text(s7, "Warehouse-receipt lending already lets farmers wait in India (Arya.ag). Bangladesh has the cold storages; KrishiVault adds the sums, the receipt and the phone.",
-    { x: M + 0.2, y: 6.42, w: W - 2 * M - 0.4, h: 0.38, fontSize: 12.5, italic: true, color: C.text2, valign: "middle" });
+    { x: M, y: 6.5, w: W - 2 * M, h: 0.4, fontSize: 12.5, italic: true, color: C.accent6 });
   s7.addNotes(NOTES[7]);
 
   // ------------------------------------------------------------ 8. execution, scale, business
   pres.addSection({ title: "Execution and impact" });
   const s8 = pres.addSlide({ masterName: "KV Content Light", sectionTitle: "Execution and impact" });
-  header(s8, "EXECUTION  ·  SCALE  ·  BUSINESS MODEL", ["Pilot in Kahaloo next harvest. ", "Break even in year two."]);
+  header(s8, "EXECUTION  ·  SCALE  ·  BUSINESS MODEL", ["", "Potato first, in Kahaloo.", " Break even in year two."]);
   const phases = [
-    ["PHASE 1  ·  MONTHS 1–4", "Kahaloo, Bogura", "50–100 farmers, 1–2 cold storages, 1 lender. First 100 tonnes of crop-backed loans."],
-    ["PHASE 2  ·  MONTHS 5–12", "Bogura + Munshiganj", "1,000+ farmers, 10 cold storages, group storage and buyer lots."],
-    ["PHASE 3  ·  YEAR 2 ON", "National", "Rangpur, Dinajpur, Cumilla, Thakurgaon. Onion and maize; export market."],
+    ["PHASE 1  ·  MONTHS 1–4", "Kahaloo, Bogura", "Potato. 50–100 farmers, 1–2 cold storages, 1 lender. First 100 tonnes of crop-backed loans."],
+    ["PHASE 2  ·  MONTHS 5–12", "Bogura + Munshiganj", "Potato. 1,000+ farmers, 10 cold storages, group storage and buyer lots."],
+    ["PHASE 3  ·  YEAR 2 ON", "National", "Rangpur, Dinajpur, Cumilla, Thakurgaon. Onion and maize join; export market."],
   ];
-  const phw = (W - 2 * M - 2 * 0.25) / 3;
+  const phw = 3.91, phy = 1.85, phh = 1.4;
   for (let i = 0; i < 3; i++) {
-    const x = M + i * (phw + 0.25);
-    if (i === 0) darkCard(s8, x, 1.9, phw, 1.6, "Phase 1");
-    else card(s8, x, 1.9, phw, 1.6, { name: `Phase ${i + 1}` });
-    text(s8, phases[i][0], { x: x + 0.28, y: 2.03, w: phw - 0.5, h: 0.28, fontSize: 11.5, bold: true, charSpacing: 2, color: i === 0 ? C.accent1 : C.accent2 });
-    text(s8, phases[i][1], { x: x + 0.28, y: 2.33, w: phw - 0.5, h: 0.4, fontFace: THEME.headFontFace, fontSize: 19, bold: true, color: i === 0 ? C.background1 : C.text2 });
-    text(s8, phases[i][2], { x: x + 0.28, y: 2.75, w: phw - 0.5, h: 0.7, fontSize: 13, color: i === 0 ? "E6EEE8" : C.text1 });
-    if (i < 2) s8.addImage({ data: await icon("LuChevronRight", HEX.dk2), x: x + phw + 0.04, y: 2.6, w: 0.18, h: 0.18, altText: "then" });
+    const x = M + i * (phw + 0.2);
+    card(s8, x, phy, phw, phh, { fill: i === 0 ? C.text2 : C.background1, line: i !== 0, name: `Phase ${i + 1}` });
+    text(s8, phases[i][0], { x: x + 0.28, y: phy + 0.12, w: phw - 0.5, h: 0.28, fontSize: 11.5, bold: true, charSpacing: 2, color: i === 0 ? C.accent1 : C.accent2 });
+    text(s8, phases[i][1], { x: x + 0.28, y: phy + 0.4, w: phw - 0.5, h: 0.4, fontFace: THEME.headFontFace, fontSize: 19, bold: true, color: i === 0 ? C.background1 : C.text2 });
+    text(s8, phases[i][2], { x: x + 0.28, y: phy + 0.8, w: phw - 0.5, h: 0.56, fontSize: 12.5, color: i === 0 ? "E6EEE8" : C.text1 });
+    if (i < 2) s8.addImage({ data: await icon("LuChevronRight", HEX.accent6), x: x + phw - 0.02, y: phy + 0.58, w: 0.24, h: 0.24, altText: "then" });
   }
-  card(s8, M, 3.75, 4.3, 3.0, { name: "Who pays card" });
-  text(s8, "WHO PAYS: NEVER THE FARMER", { x: M + 0.28, y: 3.9, w: 4, h: 0.28, fontSize: 12, bold: true, charSpacing: 2, color: C.accent2 });
+  // the crop path: potato first, then the same engine for other stored crops
+  const cpy = phy + phh + 0.18, cph = 0.76;
+  card(s8, M, cpy, W - 2 * M, cph, { name: "Crop path card" });
+  text(s8, [{ text: "START WITH POTATO,", options: { breakLine: true } }, { text: "THEN EXPAND" }],
+    { x: M + 0.28, y: cpy, w: 2.1, h: cph, fontSize: 11.5, bold: true, charSpacing: 1, color: C.accent2, valign: "middle" });
+  const crops = [
+    ["Potato  ·  now", "the biggest stored crop", true],
+    ["Onion  ·  next", "same engine, new season", false],
+    ["Maize  ·  later", "in the national phase", false],
+    ["Any stored crop", "new costs, the same sums", false],
+  ];
+  const chx0 = M + 2.35, chw = (W - M - 0.2 - chx0 - 3 * 0.3) / 4;
+  for (let i = 0; i < 4; i++) {
+    const x = chx0 + i * (chw + 0.3);
+    s8.addShape(RECT, { x, y: cpy + 0.1, w: chw, h: cph - 0.2, fill: { color: crops[i][2] ? MARK : C.background2 }, line: { type: "none" }, objectName: `Crop ${i + 1}` });
+    text(s8, [{ text: crops[i][0], options: { bold: true, color: C.text2, breakLine: true } }, { text: crops[i][1], options: { color: C.text1 } }],
+      { x: x + 0.15, y: cpy + 0.1, w: chw - 0.25, h: cph - 0.2, fontSize: 12, valign: "middle" });
+    if (i < 3) s8.addImage({ data: await icon("LuArrowRight", HEX.accent2), x: x + chw + 0.04, y: cpy + cph / 2 - 0.11, w: 0.22, h: 0.22, altText: "then" });
+  }
+  // who pays
+  const by = cpy + cph + 0.2, bh = 6.78 - by;
+  card(s8, M, by, 4.35, bh, { name: "Who pays card" });
+  text(s8, "WHO PAYS: NEVER THE FARMER", { x: M + 0.28, y: by + 0.13, w: 4, h: 0.28, fontSize: 12, bold: true, charSpacing: 2, color: C.accent2 });
   const fees = [["Cold storage", "4% of rent", "৳12 / sack"], ["Bank or MFI", "1.5% of loan", "৳4.50 / sack"], ["Buyer", "1% sourcing fee", "≈৳12 / sack"], ["Grameenphone", "call revenue share", "≈৳30 / farmer"], ["Govt, media", "glut and stock data", "subscription"]];
   for (let i = 0; i < fees.length; i++) {
-    const y = 4.3 + i * 0.47;
-    text(s8, fees[i][0], { x: M + 0.28, y, w: 1.3, h: 0.4, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
-    text(s8, fees[i][1], { x: M + 1.58, y, w: 1.45, h: 0.4, fontSize: 12, color: C.accent6, valign: "middle" });
-    text(s8, fees[i][2], { x: M + 2.9, y, w: 1.2, h: 0.4, fontSize: 13, bold: true, color: C.text2, align: "right", valign: "middle" });
+    const y = by + 0.47 + i * 0.36;
+    text(s8, fees[i][0], { x: M + 0.28, y, w: 1.3, h: 0.34, fontSize: 13, bold: true, color: C.text1, valign: "middle" });
+    text(s8, fees[i][1], { x: M + 1.58, y, w: 1.45, h: 0.34, fontSize: 12, color: C.accent6, valign: "middle" });
+    text(s8, fees[i][2], { x: M + 2.95, y, w: 1.2, h: 0.34, fontSize: 13, bold: true, color: C.text2, align: "right", valign: "middle" });
   }
-  const cx = M + 4.3 + 0.27;
-  card(s8, cx, 3.75, 4.3, 3.0, { name: "Projection card" });
-  text(s8, "PROJECTION, ৳ LAKH", { x: cx + 0.28, y: 3.9, w: 3.8, h: 0.28, fontSize: 12, bold: true, charSpacing: 2, color: C.accent2 });
+  // projection chart
+  const cx = M + 4.35 + 0.25;
+  card(s8, cx, by, 4.3, bh, { name: "Projection card" });
+  text(s8, "PROJECTION, ৳ LAKH", { x: cx + 0.28, y: by + 0.13, w: 3.8, h: 0.28, fontSize: 12, bold: true, charSpacing: 2, color: C.accent2 });
   s8.addChart(pres.charts.BAR, [
     { name: "Revenue", labels: ["Year 1", "Year 2", "Year 3"], values: [17.24, 126.3, 492.2] },
     { name: "Operating cost", labels: ["Year 1", "Year 2", "Year 3"], values: [18.5, 58, 145] },
   ], {
-    x: cx + 0.1, y: 4.2, w: 4.1, h: 2.45, barDir: "col", barGrouping: "clustered", objectName: "Projection chart",
-    chartColors: [HEX.accent2, HEX.accent1], showValue: true, dataLabelPosition: "outEnd", dataLabelFormatCode: "#,##0", dataLabelFontSize: 10.5, dataLabelColor: HEX.dk1, dataLabelFontFace: "+mn-lt",
+    x: cx + 0.1, y: by + 0.4, w: 4.1, h: bh - 0.48, barDir: "col", barGrouping: "clustered", objectName: "Projection chart",
+    chartColors: [HEX.accent2, HEX.accent6], showValue: true, dataLabelPosition: "outEnd", dataLabelFormatCode: "#,##0", dataLabelFontSize: 10.5, dataLabelColor: HEX.dk1, dataLabelFontFace: "+mn-lt",
     catAxisLabelColor: HEX.accent6, catAxisLabelFontSize: 11, catAxisLabelFontFace: "+mn-lt", valAxisHidden: true,
     valGridLine: { style: "none" }, catGridLine: { style: "none" }, valAxisMaxVal: 580, valAxisMinVal: 0,
     showLegend: true, legendPos: "t", legendFontSize: 11, legendColor: HEX.dk1, legendFontFace: "+mn-lt", barGapWidthPct: 60,
   });
-  const ax = cx + 4.3 + 0.27, aw = W - M - ax;
-  darkCard(s8, ax, 3.75, aw, 3.0, "Ask card");
-  text(s8, "TO START", { x: ax + 0.28, y: 3.9, w: aw - 0.5, h: 0.28, fontSize: 12, bold: true, charSpacing: 2, color: C.accent1 });
-  text(s8, "৳20 lakh", { x: ax + 0.28, y: 4.2, w: aw - 0.5, h: 0.7, fontFace: THEME.headFontFace, fontSize: 34, bold: true, color: C.accent1 });
+  // the ask
+  const ax = cx + 4.3 + 0.25, aw = W - M - ax;
+  card(s8, ax, by, aw, bh, { fill: C.text2, line: false, name: "Ask card" });
+  text(s8, "TO START", { x: ax + 0.28, y: by + 0.13, w: aw - 0.5, h: 0.28, fontSize: 12, bold: true, charSpacing: 2, color: C.accent1 });
+  text(s8, "৳20 lakh", { x: ax + 0.28, y: by + 0.4, w: aw - 0.5, h: 0.65, fontFace: THEME.headFontFace, fontSize: 32, bold: true, color: C.accent1 });
   text(s8, [
     { text: "Year 1: 2,000 farmers, 5 cold storages", options: { bullet: { indent: 14 }, breakLine: true } },
     { text: "Break-even: month 14–16", options: { bullet: { indent: 14 }, breakLine: true } },
     { text: "No storage to build, no money lent", options: { bullet: { indent: 14 } } },
-  ], { x: ax + 0.28, y: 4.95, w: aw - 0.4, h: 1.75, fontSize: 13, color: C.background1, paraSpaceAfter: 6 });
+  ], { x: ax + 0.28, y: by + 1.08, w: aw - 0.4, h: bh - 1.15, fontSize: 13, color: C.background1, paraSpaceAfter: 5 });
   s8.addNotes(NOTES[8]);
 
   // ------------------------------------------------------------ 9. impact
@@ -502,50 +521,44 @@ async function build() {
     ["LuSprout", "FOOD AND RESILIENCE", "Less waste", "curing reminders, generator-backed storage, and no storing into a glut year"],
     ["LuLandmark", "GOVERNMENT", "Stock it can see", "a glut warning from crop data, receipts with a name, district figures from farmers who agree"],
   ];
-  const iw = (W - 2 * M - 3 * 0.22) / 4;
+  const iw = 2.88, ig = 0.2;
   for (let i = 0; i < 4; i++) {
-    const x = M + i * (iw + 0.22);
-    card(s9, x, 1.9, iw, 3.6, { fill: i === 1 ? "FFF4D6" : C.background1, name: `Impact ${i + 1}` });
-    await tile(s9, x + 0.28, 2.15, 0.62, impact[i][0], { fill: i === 1 ? C.accent1 : C.text2, iconHex: i === 1 ? HEX.dk2 : HEX.accent1 });
-    text(s9, impact[i][1], { x: x + 0.28, y: 2.95, w: iw - 0.45, h: 0.28, fontSize: 11.5, bold: true, charSpacing: 2, color: C.accent2 });
-    text(s9, impact[i][2], { x: x + 0.28, y: 3.25, w: iw - 0.45, h: 0.62, fontFace: THEME.headFontFace, fontSize: i < 2 ? 30 : 22, bold: true, color: i === 1 ? C.accent3 : C.text2, valign: "middle" });
-    text(s9, impact[i][3], { x: x + 0.28, y: 3.95, w: iw - 0.48, h: 1.45, fontSize: 14.5, color: C.text1 });
+    const x = M + i * (iw + ig);
+    card(s9, x, 1.95, iw, 3.55, { name: `Impact ${i + 1}` });
+    await tile(s9, x + 0.28, 2.22, 0.62, impact[i][0], { fill: i === 1 ? C.accent1 : C.text2, iconHex: i === 1 ? HEX.dk2 : HEX.accent1 });
+    text(s9, impact[i][1], { x: x + 0.28, y: 3.0, w: iw - 0.45, h: 0.28, fontSize: 11.5, bold: true, charSpacing: 2, color: C.accent2 });
+    text(s9, impact[i][2], { x: x + 0.28, y: 3.3, w: iw - 0.45, h: 0.62, fontFace: THEME.headFontFace, fontSize: i < 2 ? 30 : 22, bold: true, color: C.text2, valign: "middle", fit: "shrink" });
+    text(s9, impact[i][3], { x: x + 0.28, y: 4.0, w: iw - 0.48, h: 1.42, fontSize: 14.5, color: C.text1 });
   }
-  darkCard(s9, M, 5.75, W - 2 * M, 1.0, "Inclusion band");
-  await tile(s9, M + 0.28, 5.95, 0.6, "LuSmartphone", { fill: C.accent1 });
+  card(s9, M, 5.7, W - 2 * M, 1.05, { fill: C.text2, line: false, name: "Inclusion band" });
+  await tile(s9, M + 0.28, 5.92, 0.6, "LuSmartphone", { fill: C.accent1 });
   text(s9, [
-    { text: "Built for farmers like the one in our video, who can't read an SMS: ", options: { bold: true, color: C.accent1 } },
+    marked("Built for farmers like the one in our video, who can't read an SMS:", { bold: true }),
+    { text: " " },
     { text: "a voice call in his own dialect, a two-number USSD menu. Any button phone, no internet.", options: { color: C.background1 } },
-  ], { x: M + 1.1, y: 5.75, w: W - 2 * M - 1.4, h: 1.0, fontSize: 16, valign: "middle" });
+  ], { x: M + 1.1, y: 5.7, w: W - 2 * M - 1.4, h: 1.05, fontSize: 16, valign: "middle" });
   s9.addNotes(NOTES[9]);
 
   // ------------------------------------------------------------ 10. close
   pres.addSection({ title: "Close" });
-  const s10 = pres.addSlide({ masterName: "KV Dark Board", sectionTitle: "Close" });
-  // a pinned photo of the farmer (finish_deck.ps1 groups the "Polaroid" shapes and tilts them)
-  const fx10 = 0.85, fy10 = 0.85, fw10 = 4.45, fh10 = 5.85;
-  s10.addShape(RECT, { x: fx10, y: fy10, w: fw10, h: fh10, fill: { color: "FBFAF4" }, line: { type: "none" }, shadow: hard(6, "07140E", 0.55), objectName: "Polaroid frame" });
-  s10.addImage({ data: img64(CLOSE_BG), x: fx10 + 0.22, y: fy10 + 0.22, w: fw10 - 0.44, h: fh10 - 1.05, sizing: { type: "cover", w: fw10 - 0.44, h: fh10 - 1.05 }, altText: "The farmer from our field video", objectName: "Polaroid photo" });
-  text(s10, "Our field interview, October 2026", { x: fx10 + 0.22, y: fy10 + fh10 - 0.72, w: fw10 - 0.44, h: 0.4, fontSize: 14, italic: true, color: C.text2, align: "center", valign: "middle", objectName: "Polaroid caption" });
-  s10.addShape(RECT, { x: fx10 + fw10 / 2 - 0.7, y: fy10 - 0.16, w: 1.4, h: 0.34, fill: { color: C.accent1, transparency: 20 }, line: { type: "none" }, rotate: 4, objectName: "Polaroid tape" });
-  const tx10 = 6.05, tw10 = W - tx10 - M;
-  s10.addShape(RECT, { x: tx10, y: 0.8, w: 0.17, h: 0.17, fill: { color: C.accent1 }, line: { color: C.background1, width: 0.75 }, objectName: "Close square" });
-  text(s10, "NEXT MARCH", { x: tx10 + 0.3, y: 0.75, w: tw10, h: 0.32, fontSize: 13, bold: true, charSpacing: 3, color: C.accent1 });
-  text(s10, [
-    { text: "He will ask the same question. This time he gets " },
-    { text: "the sums, the cash to wait, and a receipt with his own name on it.", options: { highlight: HEX.accent1, color: C.text2 } },
-  ], { x: tx10, y: 1.18, w: tw10, h: 2.45, fontFace: THEME.headFontFace, fontSize: 27, bold: true, color: C.background1 });
+  const s10 = pres.addSlide({ masterName: "KV Dark Full", sectionTitle: "Close" });
+  const pw10 = 5.33; // the farmer, on the left, looking toward the message
+  s10.addImage({ data: img64(CLOSE_BG), x: 0, y: 0, w: pw10, h: H, altText: "The farmer from our field video", objectName: "Farmer still" });
+  const tx10 = pw10 + 0.65, tw10 = W - tx10 - M;
+  text(s10, "NEXT MARCH", { x: tx10, y: 0.75, w: tw10, h: 0.32, fontSize: 13, bold: true, charSpacing: 3, color: C.accent1 });
+  text(s10, [{ text: "He will ask the same question. This time he gets " }, marked("the sums, the cash to wait, and a receipt with his own name on it.")],
+    { x: tx10, y: 1.18, w: tw10, h: 2.45, fontFace: THEME.headFontFace, fontSize: 28, bold: true, color: C.background1 });
   text(s10, [{ text: "আলু রাখবেন না বেচবেন, কবে বেচবেন:", options: { breakLine: true } }, { text: "হিসাব করে বলে কৃষিভল্ট।" }],
-    { x: tx10, y: 3.72, w: tw10, h: 0.95, fontFace: BN, fontSize: 20, bold: true, color: C.accent1, lineSpacingMultiple: 0.95 });
-  text(s10, "Store or sell, and until when: KrishiVault does the sums.", { x: tx10, y: 4.68, w: tw10, h: 0.4, fontSize: 15, italic: true, color: "DCE7DF" });
-  card(s10, tx10, 5.25, tw10, 1.3, { fill: C.accent1, lineColor: C.background1, shadowHex: "07140E", shadowO: 0.6, name: "Ask card" });
-  text(s10, "OUR ASK", { x: tx10 + 0.3, y: 5.4, w: 3, h: 0.28, fontSize: 12, bold: true, charSpacing: 3, color: C.text2 });
+    { x: tx10, y: 3.62, w: tw10, h: 0.95, fontFace: BN, fontSize: 20, bold: true, color: C.accent1, lineSpacingMultiple: 0.95 });
+  text(s10, "Store or sell, and until when: KrishiVault does the sums.", { x: tx10, y: 4.6, w: tw10, h: 0.4, fontSize: 15, italic: true, color: "D7E3DA" });
+  card(s10, tx10, 5.2, tw10, 1.3, { fill: C.accent1, line: false, shadowOpacity: 0.35, name: "Ask card" });
+  text(s10, "OUR ASK", { x: tx10 + 0.3, y: 5.35, w: 3, h: 0.28, fontSize: 12, bold: true, charSpacing: 3, color: C.text2 });
   text(s10, "Help us open the first cold storage and the first lender in Kahaloo, on Grameenphone's voice line.",
-    { x: tx10 + 0.3, y: 5.7, w: tw10 - 0.55, h: 0.75, fontSize: 16, bold: true, color: C.text2 });
+    { x: tx10 + 0.3, y: 5.65, w: tw10 - 0.55, h: 0.75, fontSize: 16, bold: true, color: C.text2 });
   text(s10, [
-    { text: "Try it: ", options: { color: "B9CDBF" } },
+    { text: "Try it: ", options: { color: "A9BDB0" } },
     { text: "koryu.ninja", options: { color: C.accent1, bold: true, underline: { style: "sng" } } },
-  ], { x: tx10, y: 6.78, w: 4, h: 0.32, fontSize: 14, color: C.background1, objectName: "Close link" });
+  ], { x: tx10, y: 6.8, w: 4, h: 0.35, fontSize: 14, color: C.background1, objectName: "Close link" });
   s10.addNotes(NOTES[10]);
 
   await pres.writeFile({ fileName: OUT });

@@ -1,8 +1,8 @@
 # KrishiVault: slides and speech (7 minutes)
 
-The deck: `presentation material/KrishiVault_FutureMakers_Pitch_v3.pptx` (10 slides, GP FutureMakers 2026, Round 2). This file is a copy of its speaker notes, built from `scripts/pitch_deck/speaker_notes.js`: edit that file and rebuild the deck, then refresh this one.
+The deck: `presentation material/KrishiVault_FutureMakers_Pitch_v4.pptx` (10 slides, GP FutureMakers 2026, Round 2). This file is a copy of its speaker notes, built from `scripts/pitch_deck/speaker_notes.js`: edit that file and rebuild the deck, then refresh this one.
 
-3 speakers (A, B, C: put names in). About 780 spoken words at 145 a minute, plus the 34-second farmer clip and a 50-second live demo: about 6:45. The run of show, the evidence and the full Q&A playbook are in `docs/presentation_plan.md`.
+3 speakers (A, B, C: put names in). About 790 spoken words at 145 a minute, plus the 34-second farmer clip and a 50-second live demo: about 6:45. The run of show, the evidence and the full Q&A playbook are in `docs/presentation_plan.md`.
 
 Rules on stage: say "statistical outlook", never "AI forecast"; say "demo partners"; say the year with any 2016 figure; never "we destroy the syndicate".
 
@@ -142,17 +142,19 @@ Receipt lending already lets farmers wait in India. Bangladesh already has the c
 
 ---
 
-## Slide 8: Execution, scale, business model
+## Slide 8: Execution: potato first, then expand; the business model
 
 [5:10-5:45 · Speaker C]
 **SAY:**
 
-"Next harvest we start in Kahaloo, Bogura: 50 to 100 farmers, one or two cold storages, one lender. Then Bogura and Munshiganj, then the country, with onion next.
+"We start with potato, the biggest stored crop with the clearest trap, in Kahaloo, Bogura: 50 to 100 farmers, one or two cold storages, one lender. Then Bogura and Munshiganj, then the country.
+After potato, the same engine takes onion, then maize and any stored crop: only the costs and prices change.
 Farmers never pay a fee. Partners pay only when they gain: 4 percent of the rent from cold storages, one and a half from banks, 1 from buyers, and a share of the voice line with Grameenphone.
 20 lakh taka runs the first year. We project break-even around month 15, and the pilot tests it."
 
 **IF ASKED:**
 - "Who are your partners?" The prototype uses demo partners, labelled. BKB, BRAC, PKSF, Himadri and PRAN are organizations we will approach, not partners yet.
+- "Why potato first?" It is the biggest stored crop (11.6 million tonnes, BBS 2024-25), with the clearest storage trap, and Bogura alone grows 10% of it. Onion is next: home storage of 2 to 3 months and a different season, but the same sums. Our production data already covers all 64 districts.
 - "What could kill this?" Partners refusing the fees. The pilot measures it: price received against neighbours, loans used instead of early sales, and repayment.
 
 ---

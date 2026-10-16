@@ -105,12 +105,14 @@ IF ASKED:
 
   8: `[5:10-5:45 · Speaker C]
 SAY:
-"Next harvest we start in Kahaloo, Bogura: 50 to 100 farmers, one or two cold storages, one lender. Then Bogura and Munshiganj, then the country, with onion next.
+"We start with potato, the biggest stored crop with the clearest trap, in Kahaloo, Bogura: 50 to 100 farmers, one or two cold storages, one lender. Then Bogura and Munshiganj, then the country.
+After potato, the same engine takes onion, then maize and any stored crop: only the costs and prices change.
 Farmers never pay a fee. Partners pay only when they gain: 4 percent of the rent from cold storages, one and a half from banks, 1 from buyers, and a share of the voice line with Grameenphone.
 20 lakh taka runs the first year. We project break-even around month 15, and the pilot tests it."
 
 IF ASKED:
 - "Who are your partners?" The prototype uses demo partners, labelled. BKB, BRAC, PKSF, Himadri and PRAN are organizations we will approach, not partners yet.
+- "Why potato first?" It is the biggest stored crop (11.6 million tonnes, BBS 2024-25), with the clearest storage trap, and Bogura alone grows 10% of it. Onion is next: home storage of 2 to 3 months and a different season, but the same sums. Our production data already covers all 64 districts.
 - "What could kill this?" Partners refusing the fees. The pilot measures it: price received against neighbours, loans used instead of early sales, and repayment.`,
 
   9: `[5:45-6:15 · Speaker C]
