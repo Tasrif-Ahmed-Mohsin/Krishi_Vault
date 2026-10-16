@@ -1,6 +1,6 @@
 # KrishiVault: slides and speech (7 minutes)
 
-The deck: `presentation material/KrishiVault_FutureMakers_Pitch_v2.pptx` (10 slides, GP FutureMakers 2026, Round 2). This file is a copy of its speaker notes, built from `scripts/pitch_deck/speaker_notes.js`: edit that file and rebuild the deck, then refresh this one.
+The deck: `presentation material/KrishiVault_FutureMakers_Pitch_v3.pptx` (10 slides, GP FutureMakers 2026, Round 2). This file is a copy of its speaker notes, built from `scripts/pitch_deck/speaker_notes.js`: edit that file and rebuild the deck, then refresh this one.
 
 3 speakers (A, B, C: put names in). About 780 spoken words at 145 a minute, plus the 34-second farmer clip and a 50-second live demo: about 6:45. The run of show, the evidence and the full Q&A playbook are in `docs/presentation_plan.md`.
 

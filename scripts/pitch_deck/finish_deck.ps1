@@ -1,5 +1,6 @@
 # Finishes the KrishiVault pitch deck in PowerPoint itself (COM), then renders every slide to PNG.
-# 1. Slide 1: the farmer video plays on entry; after it ends the caption and the evidence cards fade in.
+# 1. Slide 1: the farmer video plays on entry; after it ends the caption and the clippings fade in, tilted.
+#    Slide 10: the farmer's photo is grouped and tilted like a pinned polaroid.
 # 2. Saves the deck, then exports slide PNGs for checking.
 # Usage: powershell -File finish_deck.ps1 -Deck <deck.pptx> -PngDir <folder> -VideoSeconds <clip length>
 param([Parameter(Mandatory)][string]$Deck, [Parameter(Mandatory)][string]$PngDir, [double]$VideoSeconds = 30)
@@ -27,21 +28,33 @@ try {
     $video.AnimationSettings.PlaySettings.HideWhileNotPlaying = 0
     $video.AnimationSettings.PlaySettings.StopAfterSlides = 1
 
-    # after the clip: the overlay and the caption fade in, then the evidence cards one by one
-    # ("with previous" (2) and delays measured from the slide's start, when the clip starts)
-    foreach ($name in @("Hook overlay", "Hook kicker", "Hook caption")) {
+    # after the clip: the grid paper and the caption fade in, then the clippings one by one,
+    # each grouped and tilted a little ("with previous" (2), delays measured from the slide's start)
+    foreach ($name in @("Hook overlay", "Hook square", "Hook kicker", "Hook caption")) {
         $fx = $seq.AddEffect($s1.Shapes.Item($name), 10, 0, 2)
         $fx.Timing.Duration = 0.6
         $fx.Timing.TriggerDelayTime = $VideoSeconds + 0.3
     }
+    $tilts = @(-1.6, 1.3, -1.0, 1.7, -1.2, 1.0, -1.8)
     for ($n = 1; $n -le 7; $n++) {
         $names = @()
         foreach ($sh in $s1.Shapes) { if ($sh.Name -like "Ev $n *") { $names += $sh.Name } }
         $group = $s1.Shapes.Range([string[]]$names).Group()
         $group.Name = "Evidence $n"
+        $group.Rotation = $tilts[$n - 1]
         $fx = $seq.AddEffect($group, 10, 0, 2)
         $fx.Timing.Duration = 0.5
         $fx.Timing.TriggerDelayTime = $VideoSeconds + 1.0 + 0.35 * ($n - 1)
+    }
+
+    # the closing slide: the farmer's photo, pinned and slightly tilted
+    $s10 = $pres.Slides.Item($pres.Slides.Count)
+    $names = @()
+    foreach ($sh in $s10.Shapes) { if ($sh.Name -like "Polaroid *") { $names += $sh.Name } }
+    if ($names.Count -gt 0) {
+        $polaroid = $s10.Shapes.Range([string[]]$names).Group()
+        $polaroid.Name = "Polaroid"
+        $polaroid.Rotation = -2.5
     }
 
     # links to the live prototype: a click action on the shapes keeps their own text colour
