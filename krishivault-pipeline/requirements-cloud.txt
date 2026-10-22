@@ -19,6 +19,8 @@ lxml>=4.9.0
 # AI and voice
 google-genai>=1.0.0
 google-cloud-texttospeech>=2.14.0
+gTTS>=2.5.0
+miniaudio>=1.59
 
 # Utilities and tests
 python-dotenv>=1.0.0

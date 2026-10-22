@@ -13,13 +13,18 @@ SMS is a dry run unless SMS_LIVE=1 and the REVE keys are set. Phone calls are pr
 
 from __future__ import annotations
 
+import os
 import sys
+import time
+import threading
+from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Literal, Optional
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -30,7 +35,7 @@ from src.engine import (alerts, business_model, export_intel, farmer_signals, fi
 from src.engine.facts import MAUND_KG, SACK_KG, SOURCES, StorageTerms
 from src.engine.storage_plan import FarmerLot, StoragePlanner
 from src.models import backtest as price_backtest, price_outlook, production_forecast
-from src.notify import sms as sms_client, voiceblast as voiceblast_client
+from src.notify import sms as sms_client, voiceblast as voiceblast_client, call_audio
 from src.notify.voiceblast import get_voiceblast_client, get_broadcast_api_client
 from src.voice import ussd
 from src.voice.conversation import Conversation, advice_sms, curing_sms, receipt_sms
@@ -55,6 +60,73 @@ tts_service = BengaliVoiceSynthesizer()
 gemini_client = GeminiClient()
 planner = StoragePlanner()
 conversation = Conversation(gemini=gemini_client, planner=planner)
+
+# ------------------------------------------------------------------ Abuse protection
+_call_limit_lock = threading.Lock()
+_ip_call_timestamps: dict[str, list[float]] = defaultdict(list)
+_daily_call_date: str = ""
+_daily_call_count: int = 0
+
+
+def reset_call_limits() -> None:
+    """Reset rate limiter and daily cap state (used in tests)."""
+    global _daily_call_date, _daily_call_count
+    with _call_limit_lock:
+        _ip_call_timestamps.clear()
+        _daily_call_date = ""
+        _daily_call_count = 0
+
+
+def check_and_record_dial(client_ip: str, clean_phone: str) -> None:
+    """Enforce allow-list, daily call cap, and per-IP rate limits."""
+    global _daily_call_date, _daily_call_count
+    now = time.time()
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    # 1. Allow-list check
+    allowed_env = os.getenv("CALL_ALLOWED_NUMBERS", "").strip()
+    if allowed_env:
+        raw_allowed = [p.strip() for p in allowed_env.split(",") if p.strip()]
+        allowed_set = set()
+        for p in raw_allowed:
+            clean_p = voiceblast_client.bd_mobile(p)
+            if clean_p:
+                allowed_set.add(clean_p)
+            else:
+                allowed_set.add(p)
+        if clean_phone not in allowed_set:
+            raise HTTPException(
+                status_code=403,
+                detail="Outbound calls are currently restricted to authorized test numbers.",
+            )
+
+    with _call_limit_lock:
+        # 2. Daily cap check
+        daily_cap = int(os.getenv("CALL_DAILY_CAP", "30"))
+        if _daily_call_date != today:
+            _daily_call_date = today
+            _daily_call_count = 0
+
+        if _daily_call_count >= daily_cap:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Daily outbound call limit ({daily_cap}) reached. Please try again tomorrow.",
+            )
+
+        # 3. Per-IP rate limit (3 calls per 10 minutes = 600s)
+        window = 600.0
+        max_per_ip = 3
+        timestamps = [ts for ts in _ip_call_timestamps[client_ip] if now - ts < window]
+        if len(timestamps) >= max_per_ip:
+            raise HTTPException(
+                status_code=429,
+                detail="Too many calls requested from your IP. Limit is 3 calls per 10 minutes.",
+            )
+
+        # Record this dial
+        timestamps.append(now)
+        _ip_call_timestamps[client_ip] = timestamps
+        _daily_call_count += 1
 
 
 # ============================================================ pages and status
@@ -604,14 +676,15 @@ def call_status():
             balance = bc.get_balance()
         except Exception:
             pass
-    if not balance and vb.live:
+    elif vb.live:
         try:
             balance = vb.get_balance()
         except Exception:
             pass
 
     is_live = bc.live or vb.live
-    caller_id = bc.caller_id or vb.caller_id
+    caller_id = bc.caller_id if bc.live else (vb.caller_id or bc.caller_id)
+    route = "broadcast" if bc.live else ("voiceblast" if vb.live else "dry_run")
 
     return {
         "gemini": {"on": gemini_client.available, "model": gemini_client.model_used},
@@ -619,6 +692,7 @@ def call_status():
         "sms": {"configured": sms_cfg["configured"], "live": sms_cfg["live"]},
         "voiceblast": {
             "live": is_live,
+            "route": route,
             "caller_id": caller_id,
             "balance": balance or ("Active" if is_live else "dry_run"),
             "default_audio_id": vb.default_audio_id,
@@ -628,7 +702,7 @@ def call_status():
 
 
 @app.post("/api/call/dial")
-def call_dial(req: VoiceDialRequest):
+def call_dial(req: VoiceDialRequest, request: Request):
     """Trigger a real outbound voice phone call to a Bangladeshi mobile via VoiceBlast/Broadcast API."""
     vb = get_voiceblast_client()
     bc = get_broadcast_api_client()
@@ -637,49 +711,37 @@ def call_dial(req: VoiceDialRequest):
     if not clean_phone:
         raise HTTPException(status_code=400, detail="Phone number must be a valid Bangladeshi mobile (01XXXXXXXXX)")
 
-    # Prepare speech audio file if dynamic text is requested or for broadcast API
-    tmp_dir = BASE / "data" / "audio_out"
-    tmp_dir.mkdir(parents=True, exist_ok=True)
-    tmp_file = tmp_dir / f"advice_{clean_phone[-6:]}.wav"
+    # Client IP resolution for rate limiting
+    client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    if not client_ip:
+        client_ip = request.client.host if request.client else "127.0.0.1"
+
+    # Enforce abuse protections (allow-list, daily cap, per-IP rate limit)
+    check_and_record_dial(client_ip, clean_phone)
 
     text_to_speak = (req.text or "").strip()
     if not text_to_speak:
         text_to_speak = "কৃষিভল্ট আলু সংরক্ষণ ও বাজারজাতকরণ সেবায় আপনাকে স্বাগতম। আপনার এলাকার আলুর বাজার ও হিমাগার তথ্য জানতে সাথেই থাকুন।"
 
-    if tts_service.ready:
-        try:
-            from google.cloud import texttospeech
-            s_input = texttospeech.SynthesisInput(text=text_to_speak[:4800])
-            voice = texttospeech.VoiceSelectionParams(
-                language_code="bn-BD", ssml_gender=texttospeech.SsmlVoiceGender.FEMALE
-            )
-            audio_cfg = texttospeech.AudioConfig(
-                audio_encoding=texttospeech.AudioEncoding.LINEAR16, sample_rate_hertz=8000
-            )
-            speech_resp = tts_service.client.synthesize_speech(
-                input=s_input, voice=voice, audio_config=audio_cfg, timeout=15
-            )
-            g711_wav = voiceblast_client.make_g711_wav(speech_resp.audio_content[44:])
-            with open(tmp_file, "wb") as f:
-                f.write(g711_wav)
-        except Exception as exc:
-            from loguru import logger
-            logger.warning(f"Could not synthesize dynamic voice advisory: {exc}")
-
-    # Primary for cloud deployments: Broadcast REST API (SysTech official, globally reachable)
-    if bc.live and tmp_file.exists():
-        res = bc.send_broadcast(clean_phone, audio_file_path=tmp_file, caller_id=req.caller_id)
+    # 1. Primary for cloud deployments ONLY when BROADCAST_LIVE=1: Broadcast REST API
+    if bc.live:
+        wav_path = call_audio.prepare(text_to_speak, tts_service)
+        if not wav_path or not wav_path.exists():
+            raise HTTPException(status_code=500, detail="Failed to synthesize advice audio for broadcast")
+        res = bc.send_broadcast(clean_phone, audio_file_path=wav_path, caller_id=req.caller_id)
         if res.get("success"):
             return res
         from loguru import logger
-        logger.warning(f"Broadcast API failed, trying VoiceBlast session: {res.get('error')}")
+        logger.warning(f"Broadcast API failed: {res.get('error')}")
+        raise HTTPException(status_code=400, detail=res.get("error", "Broadcast call dispatch failed"))
 
-    # Secondary: VoiceBlast session portal (if accessible)
+    # 2. Main telephony route: VoiceBlast session portal with cached audio ID
     audio_id = req.audio_file_id
-    if not audio_id and tmp_file.exists() and vb.live:
-        uploaded_id = vb.upload_audio(tmp_file, filename=tmp_file.name)
-        if uploaded_id:
-            audio_id = uploaded_id
+    if not audio_id:
+        if text_to_speak:
+            audio_id = call_audio.voiceblast_audio_id(text_to_speak, vb, tts_service)
+        if not audio_id:
+            audio_id = vb.default_audio_id
 
     res = vb.send_call(clean_phone, audio_file_id=audio_id, caller_id=req.caller_id)
     if not res.get("success"):
@@ -690,8 +752,11 @@ def call_dial(req: VoiceDialRequest):
 
 @app.get("/api/call/history")
 def call_history():
-    """Fetch recent outbound phone call logs from VoiceBlast."""
+    """Fetch recent outbound phone call logs from VoiceBlast (or Broadcast if active)."""
+    bc = get_broadcast_api_client()
     vb = get_voiceblast_client()
+    if bc.live:
+        return {"history": bc.get_history(limit=10), "balance": bc.get_balance()}
     return {"history": vb.get_history(limit=10), "balance": vb.get_balance()}
 
 
@@ -701,10 +766,19 @@ def call_turn(req: CallTurnRequest):
         raise HTTPException(status_code=400, detail="kind must be start, speech or keypad")
     if req.kind != "start" and not (req.state and req.state.get("step")):
         raise HTTPException(status_code=400, detail="Start a call first (kind=start)")
-    return conversation.turn(req.state, {
+    reply = conversation.turn(req.state, {
         "kind": req.kind, "text": req.text, "digits": req.digits, "district": req.district,
         "month": req.month, "year": req.year, "phone": req.phone,
     })
+
+    say = reply.get("say", "")
+    if say and call_audio.is_advice(say):
+        vb = get_voiceblast_client()
+        bc = get_broadcast_api_client()
+        if vb.live or bc.live:
+            call_audio.prewarm(say, vb, tts_service)
+
+    return reply
 
 
 @app.post("/api/voice/speak")
