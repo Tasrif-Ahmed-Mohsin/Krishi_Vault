@@ -23,7 +23,7 @@ The weak points are not in the idea but in **running it live** (a public site th
 | The pre-loaded demo call on `/call` was a frozen snapshot with an old signature | "SMS me" failed on it, and "Call me" could not read its advice | The page shows the snapshot at once, then gets the same answer freshly signed from the server (about 1 second) |
 | The first answer after a restart waited **15.7 seconds** for Gemini (the full model timed out, then the lite one answered) | Silence on a phone call; a judge's first try is the slow one | Gemini gets at most 5 seconds, then the template answer is used (same numbers); the faster lite model is tried first |
 | Price-window alerts promised money for the **weighed** kg, ignoring 8.65% storage loss | The SMS overstated the money by about 9% | The alert now counts the kg left after the months in store, the same as the sale |
-| The dashboard had drifted to rounded corners | The project's design rule is sharp corners | Corners sharp again; the bevel stays |
+| The three screens looked dated and different from each other; nine tabs wrapped onto two rows; long intros | First impressions for judges; "too cluttered, old-fashioned" (the team) | One clean, modern look from `static/kv.css`: a shared header that switches between Dashboard, Call and USSD, the pages on one row of tabs, rounded cards, big numbers, one-line intros |
 | Old labels: "Today: October 2026", "phone calls are a preview only" | Wrong on 15 November, and calls can now be live | "In store: October 2026"; the footer and `/api/status` say what is really switched on |
 | Two different `SaleIn` classes in `main.py` | A trap for the next change | Renamed `ProfitSaleIn` |
 

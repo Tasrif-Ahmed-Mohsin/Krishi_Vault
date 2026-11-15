@@ -75,7 +75,7 @@ Secrets come from environment variables (names in `krishivault-pipeline/.env.exa
 - **Farmer figures only with consent:** nothing a farmer says is counted for government figures unless they agree (press 8; a ticked box); no names or numbers; districts under 5 farmers hidden.
 - **Honest claims:** cold storages, banks, buyers, groups, receipts and export prices are clearly fictional demo data, never real partners; organizations the plan names (BKB, BRAC, PRAN, Himadri and others) are targets, not partners. Check `docs/HANDOFF.md`, section 10, and `docs/readiness_check.html` before claiming anything works.
 - **Write plainly:** teammates are not computer-science students; docs, screens and slides use plain language.
-- **Web design:** sharp corners, a subtle bevel and emboss, no floating top navigation bar.
+- **Web design (the user's choice, 15 November 2026):** clean and modern, one look for all three screens from `krishivault-pipeline/static/kv.css`: light surfaces, one green accent, rounded cards, big numbers, short page intros, the dashboard's pages on one row of tabs. The header scrolls away with the page: no floating top navigation bar. (This replaces the earlier "sharp corners and bevel" rule.)
 
 ## Sister project: Mati Kohon
 
