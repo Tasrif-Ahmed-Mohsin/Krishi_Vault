@@ -31,7 +31,7 @@ import time
 from typing import Optional
 
 from src import demo_data, events
-from src.engine import farmer_signals, financing, group_storage, receipts
+from src.engine import farmer_signals, financing, group_storage, hold_plan, receipts
 from src.engine.facts import CURING_WEEKS, MAUND_KG, SACK_KG, MONTHS_BN, StorageTerms
 from src.engine.storage_plan import FarmerLot, StoragePlanner, months_left
 from src.models.price_outlook import SEASON_CURVE, outlook as price_outlook
@@ -248,8 +248,10 @@ def advice_sms(plan: dict) -> str:
     text = f"কৃষিভল্ট: {fmt_num(sacks, 0)} বস্তা আলু। পরামর্শ: {rec['title_bn']}। "
     if rec["key"] == "sell_now":
         return text + f"খরচ বাদে প্রায় {fmt_taka(chosen['money_mean'])} টাকা।"
+    hold = hold_plan.build(plan)       # the line that guards against selling in fear after a month or two
+    not_before = (f"{hold['not_before_bn']} মাসের আগে বেচবেন না। " if hold and hold["losing_months"] else "")
     return text + (f"গড়ে প্রায় {fmt_taka(chosen['money_mean'])} টাকা (খারাপ হলে {fmt_taka(chosen['money_low'])})। "
-                   f"এখন সব বেচলে {fmt_taka(opts['sell_now']['money_mean'])} টাকা। নিশ্চিত নয়।")
+                   f"এখন সব বেচলে {fmt_taka(opts['sell_now']['money_mean'])} টাকা। {not_before}নিশ্চিত নয়।")
 
 
 def _cash_met(lot: FarmerLot, cash_now: float) -> str:

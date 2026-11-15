@@ -6,7 +6,8 @@ for one farmer, with the same engine and the same demo partners, so a visitor se
 end to end in one click:
 
 1. The harvest call: the store-or-sell answer (sell some now for the cash need, store the rest).
-2. The digital receipt: a verified demo cold storage records the stored sacks.
+2. The digital receipt: a verified demo cold storage records the stored sacks; with it, the hold plan
+   ("do not sell before", and the price that makes an earlier sale pay).
 3. The bank loan: the application with the receipt; the cold storage confirms it; the bank
    approves (demo): the payout, and the hold on the receipt.
 4. The price-window alert in the month the advice named.
@@ -19,7 +20,7 @@ partner screens show them. Nothing is sent: the SMS texts are shown, never sent.
 
 from __future__ import annotations
 
-from src.engine import alerts, financing, receipts
+from src.engine import alerts, financing, hold_plan, receipts
 from src.engine.facts import MAUND_KG, MONTHS_EN
 from src.engine.storage_plan import FarmerLot, StoragePlanner
 from src.voice.bangla_numbers import group_bd
@@ -67,15 +68,22 @@ def run(maunds: float = 80, price_today: float = 16, cash_needed_tk: float = 25_
                 "stopped": "The engine says sell now, so nothing goes into cold storage and no loan is needed. "
                            "In a big-crop year that is the honest answer."}
 
-    # 2. The receipt from a verified demo cold storage
+    # 2. The receipt from a verified demo cold storage, and the hold plan against selling in fear
     r = receipts.issue(cold_storage_id, farmer_name, None, store, month=month, year=year)
+    hold = hold_plan.build(plan)
+    receipt_lines = [f"Rent ৳{r['rent_per_sack']:g} a sack for the season, paid from the sale",
+                     "Only partner cold storages with a backup generator and separate seed and table "
+                     "chambers can issue receipts (the plan's rule)"]
+    if hold:
+        early = ", ".join(f"{c['month_en']} ৳{c['sell_only_above']:g}" for c in hold["checkpoints"])
+        receipt_lines.append(f"With it, a hold plan: sell in {hold['sell_month_en']}"
+                             + (f"; not before {hold['not_before_en']} (earlier months lose money on average)"
+                                if hold["losing_months"] else "")
+                             + (f"; an earlier sale pays only above {early} a kg" if early else ""))
     steps.append({"step": 2, "who": f"{r['cold_storage']['name']} (DEMO)", "screen": "cold_storage",
                   "title": "The cold storage weighs the sacks and issues a digital receipt",
                   "headline": f"Receipt {r['no']}: {store} sacks, {group_bd(r['kg'])} kg",
-                  "lines": [f"Rent ৳{r['rent_per_sack']:g} a sack for the season, paid from the sale",
-                            "Only partner cold storages with a backup generator and separate seed and table "
-                            "chambers can issue receipts (the plan's rule)"],
-                  "sms_bn": r["sms"]})
+                  "lines": receipt_lines, "sms_bn": r["sms"], "hold_sms_bn": hold["sms"] if hold else None})
 
     # 3. The bank lends against the receipt; KrishiVault verifies and values, the bank decides
     months = max(1, min(9, int(chosen.get("months") or 6)))

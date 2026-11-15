@@ -38,7 +38,7 @@ one screen.
 
 1. **Redeploy koryu.ninja** from this branch once merged, with `-w 1` (`docs/AZURE_VM_DEPLOYMENT.md`).
 2. **Lock the call line** in the server's `.env`: `CALL_ALLOWED_NUMBERS=` the team's and judges' numbers,
-   `CALL_DAILY_CAP=10`. Check the VoiceBlast balance.
+   `CALL_DAILY_CAP=10`, and `SMS_ALLOWED_NUMBERS=` the same numbers (the site sends live SMS to any number typed on the dashboard otherwise). Check the VoiceBlast balance.
 3. **Rehearse on the live site, not a laptop:** open `/call`, press "Call me" to a teammate's phone, and
    listen to the whole answer once (the reworded Bangla is checked for numbers, not meaning).
 4. **Run the loop on the live site** and keep the Partner screens tab open for the Q&A.

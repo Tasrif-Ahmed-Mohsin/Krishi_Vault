@@ -5,6 +5,7 @@ Start every session by reading `docs/HANDOFF.md`: the plan, the prototype scope,
 - `docs/DATA_SOURCES.md`: every data file, what uses it, and what is still to collect.
 - `docs/SCREENS.md`: the dashboard and the call preview, how to open them, real against demo.
 - `docs/START_CLOUD_SESSION.md` and `docs/CLOUD_SETUP.md`: starting a cloud session and adding keys.
+- `docs/CONCEPT.md`: the concept brainstormed (15 November 2026): "the right to wait", root causes against features, and what to build next.
 - `docs/PRODUCT_REVIEW.md`: the review of 15 November 2026 (live-site fixes, what to do before the next round, the plan figures judges will test).
 
 This file is the short version.
@@ -39,7 +40,7 @@ This file is the short version.
 - `krishivault-pipeline/`: the Python backend (FastAPI).
   - `src/main.py`: the API; serves `static/index.html` (the dashboard, `/`) and `static/call.html` (the call preview, `/call`).
   - `src/models/production_forecast.py` (BBS trend, crop gap, district supply) and `price_outlook.py` (crop-size price outlook, simulated ranges, regional index, model card).
-  - `src/engine/`: `storage_plan.py` (the store-or-sell engine), `demo_loop.py` (the whole loop in one click), `facts.py` (sack, rent, 8.65% loss and cost defaults with sources), `market_access.py`, `financing.py`, `receipts.py` (digital receipts, the bank's hold, the split at sale), `alerts.py` (price-window SMS), `farmer_signals.py` (the government screen), `group_storage.py` (incl. group selling), `export_intel.py`, `profit.py`, `business_model.py`. `src/contacts.py` keeps phone numbers for later SMS, never shown.
+  - `src/engine/`: `storage_plan.py` (the store-or-sell engine), `demo_loop.py` (the whole loop in one click), `dadon.py` (what a trader's advance really costs), `hold_plan.py` ("do not sell before", against selling in fear), `facts.py` (sack, rent, 8.65% loss and cost defaults with sources), `market_access.py`, `financing.py`, `receipts.py` (digital receipts, the bank's hold, the split at sale), `alerts.py` (price-window alerts, by SMS or voice call), `farmer_signals.py` (the government screen), `group_storage.py` (incl. group selling), `export_intel.py`, `profit.py`, `business_model.py`. `src/contacts.py` keeps phone numbers for later SMS, never shown.
   - `src/voice/`: `conversation.py` (the call: menu, questions, read-back, answer, action, helper; signed SMS and actions), `ussd.py` (the USSD menu, gateway format), `understanding.py`, `intent_parser.py`, `bangla_numbers.py`, `number_lock.py`, `gemini.py`, `tts_generator.py`.
   - `src/notify/`: `sms.py` (REVE), `voiceblast.py` and `call_audio.py` (outbound calls), `awaj.py` (kept for later); dry run by default.
   - `src/demo_data.py` + `data/demo/demo_partners.json`: made-up partners. `src/events.py`: requests for partner screens (`data/runtime/`, not committed).

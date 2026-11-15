@@ -30,8 +30,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from src import contacts, demo_data, events as event_log
-from src.engine import (alerts, business_model, demo_loop, export_intel, farmer_signals, financing,
-                        group_storage, market_access, profit, receipts)
+from src.engine import (alerts, business_model, dadon, demo_loop, export_intel, farmer_signals, financing,
+                        group_storage, hold_plan, market_access, profit, receipts)
 from src.engine.facts import MAUND_KG, SACK_KG, SOURCES, StorageTerms
 from src.engine.storage_plan import FarmerLot, StoragePlanner
 from src.models import backtest as price_backtest, price_outlook, production_forecast
@@ -284,6 +284,7 @@ class PlanIn(BaseModel):
 def storage_plan(req: PlanIn):
     lot = req.lot()
     plan = planner.plan(lot)
+    plan["hold_plan"] = hold_plan.build(plan)     # "do not sell before", and the price that makes it pay
     if req.count_me:     # only with the farmer's agreement; nothing with a name or number is kept
         farmer_signals.record(req.district, lot.decision_month, lot.decision_year, lot.sacks, lot.cash_needed_tk,
                               lot.cash_days, lot.stored, plan["recommendation"]["key"], "dashboard")
@@ -427,6 +428,26 @@ class ApplyIn(LoanIn):
     receipt_no: str = Field(..., min_length=1, max_length=40)
 
 
+class DadonIn(BaseModel):
+    advance_tk: float = Field(..., gt=0, le=10_000_000)
+    months: float = Field(..., gt=0, le=12)
+    promised_maunds: float = Field(..., gt=0, le=100_000)
+    trader_price: float = Field(..., gt=0, le=500)
+    market_price: float = Field(..., gt=0, le=500)
+    extra_tk: float = Field(0, ge=0, le=10_000_000)
+    bank_id: str = "bank-a"
+
+
+@app.post("/api/finance/dadon")
+def finance_dadon(req: DadonIn):
+    """What a trader's advance repaid in potatoes below the market price really costs, beside a bank loan."""
+    try:
+        return dadon.true_cost(req.advance_tk, req.months, req.promised_maunds * MAUND_KG, req.trader_price,
+                               req.market_price, req.extra_tk, req.bank_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Unknown bank")
+
+
 @app.post("/api/finance/apply")
 def finance_apply(req: ApplyIn):
     try:
@@ -494,13 +515,18 @@ class AlertsIn(BaseModel):
     year: int = Field(2026, ge=2013, le=2035)
     price_today: float = Field(..., gt=0, le=500)
     send: bool = False
+    channel: Literal["sms", "voice"] = "sms"     # voice: an outbound call, for farmers who cannot read an SMS
 
 
 @app.post("/api/alerts/price-window")
-def price_window_alerts(req: AlertsIn):
-    """For every receipt in store: sell now (how many, to which buyer) or hold (until when); SMS on request."""
+def price_window_alerts(req: AlertsIn, request: Request):
+    """For every receipt in store: sell now (how many, to which buyer) or hold (until when); SMS or a call on request."""
     found = alerts.price_window(req.month, req.year, req.price_today)
-    return alerts.send(found, sms_client.send_sms) if req.send else found
+    if not req.send:
+        return found
+    if req.channel == "voice":
+        return alerts.call(found, lambda phone, text: place_call(phone, text, request))
+    return alerts.send(found, sms_client.send_sms)
 
 
 # ============================================================ group storage
@@ -635,6 +661,15 @@ def sms_advice(req: AdviceSmsIn):
     return {"text": text, **sms_client.send_sms(req.phone, text)}
 
 
+@app.post("/api/sms/hold-plan")
+def sms_hold_plan(req: AdviceSmsIn):
+    """The hold plan by SMS: the month to sell, "do not sell before", and the price that makes an early sale pay."""
+    hold = hold_plan.build(planner.plan(req.lot()))
+    if not hold:
+        raise HTTPException(status_code=400, detail="The advice is to sell everything now: there is nothing to hold.")
+    return {"text": hold["sms"], **sms_client.send_sms(req.phone, hold["sms"])}
+
+
 class PhoneIn(BaseModel):
     phone: str = Field(..., max_length=200)
 
@@ -731,9 +766,6 @@ def call_dial(req: VoiceDialRequest, request: Request):
     A real outbound call to a Bangladeshi mobile (VoiceBlast, or the Broadcast API) that speaks the
     answer of this call preview, signed by the server like the SMS; without one, a fixed welcome.
     """
-    vb = get_voiceblast_client()
-    bc = get_broadcast_api_client()
-
     clean_phone = voiceblast_client.bd_mobile(req.phone)
     if not clean_phone:
         raise HTTPException(status_code=400, detail="Phone number must be a valid Bangladeshi mobile (01XXXXXXXXX)")
@@ -745,26 +777,42 @@ def call_dial(req: VoiceDialRequest, request: Request):
 
     # Abuse protection (allow-list, daily cap, per-IP rate limit) before anything is spent
     check_and_record_dial(client_ip(request), clean_phone)
-
-    # 1. The Broadcast REST API, only when BROADCAST_LIVE=1
-    if bc.live:
-        wav_path = call_audio.prepare(text_to_speak, tts_service)
-        if not wav_path or not wav_path.exists():
-            raise HTTPException(status_code=500, detail="Failed to synthesize advice audio for broadcast")
-        res = bc.send_broadcast(clean_phone, audio_file_path=wav_path, caller_id=None)
-        if res.get("success"):
-            return res
-        from loguru import logger
-        logger.warning(f"Broadcast API failed: {res.get('error')}")
-        raise HTTPException(status_code=400, detail=res.get("error", "Broadcast call dispatch failed"))
-
-    # 2. VoiceBlast with the cached audio ID (pre-warmed when the answer was given); a dry run spends nothing
-    audio_id = (call_audio.voiceblast_audio_id(text_to_speak, vb, tts_service) if vb.live else None) \
-        or vb.default_audio_id
-    res = vb.send_call(clean_phone, audio_file_id=audio_id, caller_id=None)
+    res = dispatch_call(clean_phone, text_to_speak)
     if not res.get("success"):
-        raise HTTPException(status_code=400, detail=res.get("error", "Call dispatch failed"))
+        raise HTTPException(status_code=res.pop("status", 400), detail=res.get("error", "Call dispatch failed"))
     return res
+
+
+def dispatch_call(clean_phone: str, text: str) -> dict:
+    """Ring one number and read `text`, which this server built: the Broadcast API when live, else VoiceBlast."""
+    vb = get_voiceblast_client()
+    bc = get_broadcast_api_client()
+    if bc.live:
+        wav_path = call_audio.prepare(text, tts_service)
+        if not wav_path or not wav_path.exists():
+            return {"success": False, "status": 500, "error": "Failed to synthesize advice audio for broadcast"}
+        res = bc.send_broadcast(clean_phone, audio_file_path=wav_path, caller_id=None)
+        if not res.get("success"):
+            from loguru import logger
+            logger.warning(f"Broadcast API failed: {res.get('error')}")
+        return res
+    # VoiceBlast with the cached audio ID (pre-warmed when the answer was given); a dry run spends nothing
+    audio_id = (call_audio.voiceblast_audio_id(text, vb, tts_service) if vb.live else None) or vb.default_audio_id
+    return vb.send_call(clean_phone, audio_file_id=audio_id, caller_id=None)
+
+
+def place_call(phone_input: Optional[str], text: str, request: Request) -> dict:
+    """One call for a batch (the price-window alerts): within the same limits; problems come back, not raised."""
+    clean = next(iter(sms_client.parse_bd_mobiles(phone_input or "")), None)
+    if not clean:
+        return {"error": "no Bangladeshi mobile number"}
+    try:
+        check_and_record_dial(client_ip(request), clean)
+    except HTTPException as e:
+        return {"error": e.detail}
+    res = dispatch_call(clean, text)
+    res.pop("status", None)
+    return {**res, "phone": event_log.mask_phone(clean)}
 
 
 @app.get("/api/call/history")

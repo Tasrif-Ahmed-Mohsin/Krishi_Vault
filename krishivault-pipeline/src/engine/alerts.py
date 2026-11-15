@@ -77,6 +77,23 @@ def price_window(month: int, year: int, price_today: float, receipt_no: Optional
     return out
 
 
+def voice_text(a: dict) -> str:
+    """The alert as speech for an outbound call: the same words and numbers as the SMS."""
+    return a["sms"].replace("কৃষিভল্ট: ", "").replace(" (ডেমো)", " এটি ডেমো বার্তা।")
+
+
+def call(alerts: list[dict], dial) -> list[dict]:
+    """
+    The alerts as voice calls, for farmers who cannot read an SMS (like the farmer in the field video, who
+    uses a button phone and cannot read one). `dial(phone, text)` places one call within the server's call
+    limits; a dry run unless the call line is switched on.
+    """
+    for a in alerts:
+        phone = contacts.get(f"receipt:{a['receipt']}")
+        a["call_result"] = dial(phone, voice_text(a)) if phone else {"error": "no phone number on the receipt"}
+    return alerts
+
+
 def send(alerts: list[dict], send_sms) -> list[dict]:
     """Send each alert by SMS to the number the farmer gave at the cold storage (dry run unless SMS_LIVE=1)."""
     for a in alerts:

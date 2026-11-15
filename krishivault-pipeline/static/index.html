@@ -664,6 +664,21 @@
     <div><div class="panel"><h2>Lenders compared <span class="bn">ঋণদাতা</span></h2><div class="panel-body" id="loanOut">…</div></div>
       <div class="panel" style="margin-top:14px"><h2>What the bank sees <span class="bn">ব্যাংকের জন্য তথ্য</span></h2><div class="panel-body" id="loanPack">Pick a lender above.</div></div></div>
   </div>
+  <div class="panel" style="margin-top:14px"><h2>What the trader's advance really costs <span class="bn">দাদনের আসল খরচ</span></h2><div class="panel-body">
+    <p class="small" style="margin-top:0">Before the harvest a faria or bepari lends cash (dadon) and is repaid in potatoes at harvest, below the market price. No interest is named, so the farmer never sees the cost. Pure arithmetic, no forecast.</p>
+    <div class="grid side">
+      <div class="form">
+        <div><label class="f" for="dAdv">Advance taken (৳)</label><input id="dAdv" type="number" min="1" step="1000" value="20000"></div>
+        <div><label class="f" for="dMonths">Months before the harvest sale</label><input id="dMonths" type="number" min="1" max="12" step="1" value="3"></div>
+        <div><label class="f" for="dMaunds">Potatoes promised (maunds)</label><input id="dMaunds" type="number" min="1" step="1" value="80"></div>
+        <div><label class="f" for="dTrader">Trader's price (৳/kg)</label><input id="dTrader" type="number" min="1" step="0.5" value="14"></div>
+        <div><label class="f" for="dMarket">Market price at harvest (৳/kg)</label><input id="dMarket" type="number" min="1" step="0.5" value="16"></div>
+        <div><label class="f" for="dExtra">Interest or fee on top (৳)</label><input id="dExtra" type="number" min="0" step="100" value="0"></div>
+        <div class="wide"><button class="btn primary" id="dGo" type="button">Work out the cost</button></div>
+      </div>
+      <div id="dOut" aria-live="polite">…</div>
+    </div>
+  </div></div>
 </section>
 
 <!-- ============================================================ GROUP -->
@@ -1034,6 +1049,7 @@ async function runLoop() {
         <p class="head">${esc(st.headline)}${st.headline_bn ? ` <span class="bn">${esc(st.headline_bn)}</span>` : ''}</p>
         <ul>${st.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>${split}
         ${st.sms_bn ? `<div class="sms"><small>SMS to the farmer (not sent):</small><br><span class="bn">${esc(st.sms_bn)}</span></div>` : ''}
+        ${st.hold_sms_bn ? `<div class="sms"><small>Hold plan SMS (not sent):</small><br><span class="bn">${esc(st.hold_sms_bn)}</span></div>` : ''}
       </div></li>`;
     }).join('');
     out.innerHTML = `<p class="small">${esc(r.season)}${harvest !== s ? ' (the next harvest)' : ''}. ${esc(r.note)}</p><ol class="loop-steps">${steps}</ol>`
@@ -1158,6 +1174,7 @@ async function runPlan() {
       <div class="small" style="margin-top:6px">${num(inp.quantity_kg)} kg = ${inp.sacks} sacks of ${inp.terms.sack_kg} kg = ${num(inp.maunds, 1)} maunds · price today ৳${num(inp.price_today, 1)}/kg · season ${esc(plan.outlook.season)}, ${plan.months_left} month(s) of storage left${plan.counted ? ' · <b>counted for the district figures</b> (no name or number)' : ''}</div>${replayNote(plan)}</div>
     <div class="options">${optCard(opts.sell_now)}${optCard(opts.store)}${optCard(opts.sell_part)}${optCard(opts.staggered)}</div>
     ${profitPanel(plan)}
+    ${holdPanel(plan)}
     ${plan.months_left ? `<div class="panel"><h2>Gain over selling today, by month of sale <span class="bn">মাসভিত্তিক লাভ/ক্ষতি</span></h2><div class="panel-body"><div class="chart" id="planChart"></div>
       <div class="legend"><span><i style="background:var(--gain)"></i>More than selling today</span><span><i style="background:var(--loss)"></i>Less</span><span>│ 8 in 10 paths</span></div>
       <div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>When</th><th class="n">Price ৳/kg (low – middle – high)</th><th class="n">Money in hand</th><th class="n">vs now</th><th class="n">Beats now</th><th class="n">Pays above</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -1167,7 +1184,7 @@ async function runPlan() {
       </div></div>` : ''}
     <div class="panel" style="margin-top:14px"><h2>Act on it <span class="bn">পরবর্তী ধাপ</span></h2><div class="panel-body">
       <div class="form"><div><label class="f" for="actName">Farmer</label><input id="actName" value="Demo farmer"></div><div><label class="f" for="actPhone">Phone (for SMS)</label><input id="actPhone" placeholder="01XXXXXXXXX (or comma-separated)"></div></div>
-      <div class="row" style="margin-top:8px"><button class="btn primary" id="actSms" type="button">Send this advice by SMS</button>${inp.stored === 'no' ? '<button class="btn" id="actCure" type="button">Send the curing reminder</button>' : ''}
+      <div class="row" style="margin-top:8px"><button class="btn primary" id="actSms" type="button">Send this advice by SMS</button>${plan.hold_plan ? '<button class="btn" id="actHold" type="button">Send the hold plan by SMS</button>' : ''}${inp.stored === 'no' ? '<button class="btn" id="actCure" type="button">Send the curing reminder</button>' : ''}
         ${rec.key !== 'sell_now' && inp.stored === 'no' ? `<button class="btn" id="actBook" type="button">Ask the cold storage for ${rec.key === 'sell_part' ? opts.sell_part.store_sacks : inp.sacks} sacks</button>` : ''}
         <a class="btn" href="#buyers" style="text-decoration:none;text-align:center">Compare buyers</a><a class="btn" href="#loan" style="text-decoration:none;text-align:center">Loan against the sacks</a></div>
       <div id="actOut" class="small" style="margin-top:8px"></div></div></div>
@@ -1181,6 +1198,14 @@ async function runPlan() {
       return;
     }
     try { const r = await api('/api/sms/advice', Object.assign({}, body, {phone}));
+      o.innerHTML = r.error ? `<span class="err">${esc(r.error)}</span>` : `${r.dry_run ? '<span class="tag info">DRY RUN</span> not sent; this is the SMS that would go out:' : '<span class="tag real">SENT</span>'}<pre class="req bn">${esc(r.text)}</pre>`;
+    } catch (e) { o.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+  };
+  const holdBtn = $('#actHold');
+  if (holdBtn) holdBtn.onclick = async () => {
+    const o = $('#actOut'), phone = $('#actPhone').value.trim();
+    if (!phone) { o.innerHTML = `<span class="err">Enter a phone number to send SMS.</span>`; return; }
+    try { const r = await api('/api/sms/hold-plan', Object.assign({}, body, {phone}));
       o.innerHTML = r.error ? `<span class="err">${esc(r.error)}</span>` : `${r.dry_run ? '<span class="tag info">DRY RUN</span> not sent; this is the SMS that would go out:' : '<span class="tag real">SENT</span>'}<pre class="req bn">${esc(r.text)}</pre>`;
     } catch (e) { o.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
   };
@@ -1203,6 +1228,18 @@ async function runPlan() {
   };
 }
 const best = plan => plan.best_month ? plan.best_month.h : -1;
+function holdPanel(plan) {
+  // The hold plan: the farmer's promise against selling in fear after a month or two (the field notes)
+  const h = plan.hold_plan;
+  if (!h) return '';
+  const losing = h.losing_months.map(m => `${esc(m.month_en)} ${tkSigned(m.gain_vs_now)}`).join(', ');
+  const rows = h.checkpoints.map(c => `<tr><td>${esc(c.month_en)}</td><td class="n">৳${num(c.sell_only_above, 1)}</td><td class="n">৳${num(c.price_mid, 1)}</td></tr>`).join('');
+  return `<div class="panel"><h2>Hold plan: against selling in fear <span class="bn">ধরে রাখার পরিকল্পনা</span></h2><div class="panel-body">
+    <p style="margin-top:0">Farmers who store often sell after 1-3 months, afraid the price will fall, having paid the whole season's rent. The plan for these <b>${h.sacks} sacks</b>: sell in <b>${esc(h.sell_month_en)}</b>${h.losing_months.length ? `; <b>not before ${esc(h.not_before_en)}</b> (selling earlier loses on average: ${losing})` : ''}.</p>
+    ${rows ? `<div class="table-wrap"><table><thead><tr><th>If cash forces a sale in</th><th class="n">Sell only above (৳/kg)</th><th class="n">Middle of the outlook</th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}
+    <p class="note">${esc(h.note)}</p>
+    <pre class="req bn">${esc(h.sms)}</pre></div></div>`;
+}
 function profitPanel(plan) {
   // Net profit after the growing cost: the farmer's own, or the pre-loaded local benchmark (the plan's "Calculate")
   const p = plan.net_profit;
@@ -1316,6 +1353,21 @@ async function runOffers() {
 /* ---------------- loan */
 let partnerData = null;
 async function partnersData() { if (!partnerData) partnerData = await api('/api/partners'); return partnerData; }
+async function runDadon() {
+  const out = $('#dOut');
+  try {
+    const r = await api('/api/finance/dadon', {advance_tk: val('#dAdv'), months: val('#dMonths'), promised_maunds: val('#dMaunds'),
+      trader_price: val('#dTrader'), market_price: val('#dMarket'), extra_tk: val('#dExtra') || 0});
+    out.innerHTML = `<div class="tiles">
+        <div class="tile"><div class="label">Hidden cost</div><div class="value ${r.cost > 0 ? 'down' : ''}">${tk(r.cost)}</div><div class="sub">${num(r.promised_kg)} kg × ৳${num(r.discount_per_kg, 2)} below the market${r.extra ? ' + ' + tk(r.extra) + ' on top' : ''}</div></div>
+        <div class="tile"><div class="label">As a yearly interest rate</div><div class="value ${r.rate_year > r.bank.rate_year ? 'down' : ''}">${num(r.rate_year * 100, 0)}%</div><div class="sub">${num(r.rate_period * 100, 1)}% for ${num(r.months, 0)} month(s)</div></div>
+        <div class="tile"><div class="label">The same from ${esc(r.bank.name)}</div><div class="value">${tk(r.bank.cost)}</div><div class="sub">${num(r.bank.rate_year * 100, 0)}% a year + ${num(r.bank.fee_pct, 1)}% fee, against stored sacks <span class="tag demo">DEMO</span></div></div>
+        <div class="tile"><div class="label">Cold-storage advance</div><div class="value">${tk(r.cold_storage.cost)}</div><div class="sub">${num(r.cold_storage.rate_year * 100, 0)}% a year; ৳${num(r.cold_storage.per_sack)} a sack, so ${num(r.cold_storage.sacks_needed)} sacks in store</div></div>
+      </div>
+      <p class="bn" style="margin:10px 0 4px">${esc(r.say_bn)}</p>
+      <p class="note">${esc(r.note)}</p>`;
+  } catch (e) { out.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+}
 async function runLoan() {
   const p = await partnersData();
   if (!$('#aCs').options.length) {
@@ -1335,6 +1387,7 @@ async function runLoan() {
     const first = rows.find(r => r.crop && !r.problems.length) || rows.find(r => r.crop);
     if (first) showPack(first);
   } catch (e) { out.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+  runDadon();
 }
 function showPack(r) {
   $('#aBank').value = r.bank.id;
@@ -1533,13 +1586,16 @@ async function loadPartners() {
     if (role === 'buyer') {
       side.innerHTML = '<p>Buyers see each lot (one farmer\'s or a group\'s) with its quantity and the farmer\'s price today, and answer with an offer. KrishiVault ranks offers by the money left to the farmer (Buyers page) and calls the farmer back. Fees never change the order.</p>';
     } else if (!$('#alGo')) {
-      side.innerHTML = `<p>Step 4 of the plan's loop: for every receipt still in a cold storage, the engine runs again for today and the farmer gets an SMS: <b>sell now</b> (how many sacks, to which buyer) or <b>hold</b> (until when). Field agents also call back farmers who pressed 9.</p>
-        <div class="row"><button class="btn primary" id="alGo" type="button">Check price windows and SMS farmers (dry run)</button></div><div id="alOut" class="small" style="margin-top:8px"></div>`;
-      $('#alGo').onclick = async () => { const s = season(); try {
-        const list = await api('/api/alerts/price-window', {month: s.month, year: s.year, price_today: s.price, send: true});
-        $('#alOut').innerHTML = list.length ? `<p>${esc(list[0].when)}, ৳${num(s.price, 1)}/kg (the season above).</p>` + list.map(a => `<div class="event"><b>${esc(a.receipt)}</b> · ${esc(a.farmer)} · ${a.sacks} sacks: <b>${a.action === 'sell' ? 'sell ' + a.sell_sacks + ' now' + (a.buyer ? ' → ' + esc(a.buyer.name) + ' (' + tk(a.buyer.money_total) + ')' : '') : 'hold until ' + esc(a.hold_until || '')}</b>${a.held_for_bank ? ' · held for the bank' : ''}<div class="bn small">${esc(a.sms)}</div><div class="small">${a.sms_result && a.sms_result.error ? esc(a.sms_result.error) : 'SMS dry run'}</div></div>`).join('')
+      side.innerHTML = `<p>Step 4 of the plan's loop: for every receipt still in a cold storage, the engine runs again for today and the farmer gets an SMS: <b>sell now</b> (how many sacks, to which buyer) or <b>hold</b> (until when). Many farmers cannot read an SMS (the farmer in our field video cannot), so the same alert can go as a <b>voice call</b>, within the server's call limits. Field agents also call back farmers who pressed 9.</p>
+        <div class="row"><button class="btn primary" id="alGo" type="button">Check price windows and SMS farmers</button><button class="btn" id="alCall" type="button">… or call them (voice)</button></div><div id="alOut" class="small" style="margin-top:8px"></div>`;
+      const sent = (r, what) => !r ? '' : r.error ? esc(r.error) : (r.dry_run ? what + ' dry run: nothing sent' : what + ' sent');
+      const runAlerts = channel => async () => { const s = season(); try {
+        const list = await api('/api/alerts/price-window', {month: s.month, year: s.year, price_today: s.price, send: true, channel});
+        $('#alOut').innerHTML = list.length ? `<p>${esc(list[0].when)}, ৳${num(s.price, 1)}/kg (the season above).</p>` + list.map(a => `<div class="event"><b>${esc(a.receipt)}</b> · ${esc(a.farmer)} · ${a.sacks} sacks: <b>${a.action === 'sell' ? 'sell ' + a.sell_sacks + ' now' + (a.buyer ? ' → ' + esc(a.buyer.name) + ' (' + tk(a.buyer.money_total) + ')' : '') : 'hold until ' + esc(a.hold_until || '')}</b>${a.held_for_bank ? ' · held for the bank' : ''}<div class="bn small">${esc(a.sms)}</div><div class="small">${channel === 'voice' ? sent(a.call_result, 'Call') : sent(a.sms_result, 'SMS')}</div></div>`).join('')
           : '<p class="muted">No receipts in store. Issue one on the Cold storage screen first.</p>';
       } catch (e) { $('#alOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
+      $('#alGo').onclick = runAlerts('sms');
+      $('#alCall').onclick = runAlerts('voice');
     }
   }
 }
@@ -1559,6 +1615,7 @@ $('#oAdd').onclick = () => { const p = val('#oPrice'); if (!p) return; ownOffers
 $('#bGo').onclick = runOffers;
 $('#bSend').onclick = async () => { try { const r = await api('/api/market/lot', {kg: val('#bQty'), price_today: val('#bPrice'), farmer_name: $('#bName').value || 'Demo farmer', phone: $('#bPhone').value.trim() || null}); $('#bSendOut').innerHTML = `Sent to the buyers' screen, no. <b>${esc(r.ref)}</b>.`; } catch (e) { $('#bSendOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
 $('#lGo').onclick = runLoan;
+$('#dGo').onclick = runDadon;
 $('#aGo').onclick = async () => { const s = season(); try { const r = await api('/api/finance/apply', {sacks: val('#lSacks'), price_today: val('#lPrice'), month: s.month, year: s.year, months: val('#lMonths'), amount: val('#lAmount') || null, bank_id: $('#aBank').value, farmer_name: $('#aName').value || 'Demo farmer', phone: $('#aPhone').value.trim() || null, cold_storage_id: $('#aCs').value, receipt_no: $('#aReceipt').value.trim() || 'not given'});
   $('#aOut').innerHTML = `Application no. <b>${esc(r.ref)}</b>: ${esc(r.status)}. See Partner screens → Cold storage, then Bank.`; } catch (e) { $('#aOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
 $('#gGo').onclick = runGroupCompare; $('#gPool').onchange = runGroupCompare;
