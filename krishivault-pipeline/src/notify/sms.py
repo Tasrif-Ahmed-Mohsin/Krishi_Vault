@@ -77,6 +77,12 @@ def send_sms(phone: str, text: str) -> dict:
     if len(mobiles) > MAX_RECIPIENTS:
         logger.warning(f"SMS not sent: {len(mobiles)} numbers, more than {MAX_RECIPIENTS}")
         return {"dry_run": not cfg["live"], "error": f"at most {MAX_RECIPIENTS} numbers in one send", "request": request}
+    # On a public server anyone can type a number on the dashboard: SMS_ALLOWED_NUMBERS keeps live sends to
+    # the team's and judges' phones (the same rule as CALL_ALLOWED_NUMBERS for calls)
+    allowed = set(parse_bd_mobiles(os.getenv("SMS_ALLOWED_NUMBERS", "")))
+    if cfg["live"] and allowed and not set(mobiles) <= allowed:
+        logger.warning(f"SMS not sent to {who}: not on SMS_ALLOWED_NUMBERS")
+        return {"dry_run": False, "error": "SMS is restricted to authorized test numbers on this server", "request": request}
     if not cfg["live"]:
         logger.info(f"SMS dry run for {who}")
         return {"dry_run": True, "endpoint": masked, "request": request}

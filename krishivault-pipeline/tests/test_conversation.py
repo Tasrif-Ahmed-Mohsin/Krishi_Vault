@@ -55,8 +55,17 @@ def test_keypad_advice_at_harvest_with_cash_need():
     assert r["say"].endswith(CLOSING)
     assert "বস্তা বেচুন" in r["say"] and "২৫,০০০ টাকার দরকার মিটবে" in r["say"]
     assert {o["key"] for o in r["result"]["options"]} == {"sell_now", "store", "sell_part", "staggered"}
-    assert "উৎপাদন খরচ কেজিতে ১৪ টাকা" in r["say"] and r["result"]["net_profit"]["growing_cost_per_kg"] == 14.0
     assert len(r["result"]["by_month"]) == 10
+    # The decision comes first and short; the full sums wait behind 3
+    assert r["state"]["result_body"].startswith("পরামর্শ: এখন ১৯ বস্তা বেচুন")
+    assert len(r["state"]["result_body"].split()) <= 50 and "দাম খারাপ হলে" in r["state"]["result_body"]
+    assert "3" in r["keys"] and "৩ চাপুন" in r["say"]
+    assert "উৎপাদন খরচ" not in r["say"]
+    d = call.press("3")
+    assert call.step == "result" and d["say"].endswith(CLOSING)
+    assert "উৎপাদন খরচ কেজিতে ১৪ টাকা" in d["say"] and r["result"]["net_profit"]["growing_cost_per_kg"] == 14.0
+    assert "৫৪,৭০০" in d["say"]                         # the average total, on 3
+    assert call.press("1")["say"] == r["say"]          # 1 repeats the short answer
 
 
 def test_big_crop_year_says_sell_now_from_speech():
@@ -76,7 +85,7 @@ def test_numbers_said_come_from_the_engine():
     key = r["result"]["key"]
     assert key in ("store", "sell_part")
     chosen = next(o for o in r["result"]["options"] if o["key"] == key)
-    said = extract_numbers(r["say"])
+    said = extract_numbers(r["say"] + " " + call.press("3")["say"])     # the answer and its full sums
     if key == "store":
         assert "250" in said      # the flat rent
     for field in ("money_mean", "gain_vs_now", "money_low"):
@@ -214,3 +223,11 @@ def test_other_answers_do_not_ask_to_count():
     call.press("2"); call.press("16#")
     r = call.press("1")
     assert "8" not in r["keys"] and "৮ চাপুন" not in r["say"]
+
+
+def test_details_asked_for_in_speech():
+    call = Call(month=3, year=2027)
+    call.press("1"); call.press("80#"); call.press("16#"); call.press("0#")
+    r = call.press("1")
+    d = call.say("পুরো হিসাবটা বলেন")
+    assert call.step == "result" and "উৎপাদন খরচ" in d["say"] and d["say"] != r["say"]

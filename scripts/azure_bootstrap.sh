@@ -67,7 +67,7 @@ User=$SERVICE_USER
 Group=$SERVICE_USER
 WorkingDirectory=$INSTALL_DIR/krishivault-pipeline
 Environment="PATH=$INSTALL_DIR/krishivault-pipeline/venv/bin"
-ExecStart=$INSTALL_DIR/krishivault-pipeline/venv/bin/gunicorn -w 4 -k uvicorn.workers.UvicornWorker src.main:app --bind 127.0.0.1:8000
+ExecStart=$INSTALL_DIR/krishivault-pipeline/venv/bin/gunicorn -w 1 -k uvicorn.workers.UvicornWorker src.main:app --bind 127.0.0.1:8000
 Restart=always
 RestartSec=5
 

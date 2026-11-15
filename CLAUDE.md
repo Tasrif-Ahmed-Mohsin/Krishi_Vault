@@ -5,6 +5,8 @@ Start every session by reading `docs/HANDOFF.md`: the plan, the prototype scope,
 - `docs/DATA_SOURCES.md`: every data file, what uses it, and what is still to collect.
 - `docs/SCREENS.md`: the dashboard and the call preview, how to open them, real against demo.
 - `docs/START_CLOUD_SESSION.md` and `docs/CLOUD_SETUP.md`: starting a cloud session and adding keys.
+- `docs/CONCEPT.md`: the concept brainstormed (15 November 2026): "the right to wait", root causes against features, and what to build next.
+- `docs/PRODUCT_REVIEW.md`: the review of 15 November 2026 (live-site fixes, what to do before the next round, the plan figures judges will test).
 
 This file is the short version.
 
@@ -29,7 +31,7 @@ This file is the short version.
 
 **Not in the current plan:** fertilizer and pesticide supply, the seed and machinery marketplace, weather danger alerts, a phone-number ID with a PIN. Their data stays in `data/reference/mati_kohon/` for later. Do not build them unless the user asks.
 
-**Channels (the plan):** Grameenphone voice line (VAS rate, no other fee for farmers), USSD and SMS; **in the prototype there is no phone line or USSD code**, so the call is previewed in the browser (`/call`) and the USSD menu too (`/ussd`), and **SMS can be sent** (dry run until switched on). The AI and voice architecture, today and after the pilot: `docs/ai_architecture.html`. Helpers, cold storages, banks, buyers and exporters use the web dashboard (`/`).
+**Channels (the plan):** Grameenphone voice line (VAS rate, no other fee for farmers), USSD and SMS; **in the prototype there is no phone line or USSD code**, so the call is previewed in the browser (`/call`) and the USSD menu too (`/ussd`), and **SMS can be sent** (dry run until switched on). **An outbound call** (`/call` → "Call me", VoiceBlast) reads that call's signed answer to a phone (dry run until `VOICEBLAST_LIVE=1`); the page can never choose what the line says. The AI and voice architecture, today and after the pilot: `docs/ai_architecture.html`. Helpers, cold storages, banks, buyers and exporters use the web dashboard (`/`).
 
 **Hero crop:** potato in Bogura; data covers 64 districts. Onion is next.
 
@@ -38,13 +40,13 @@ This file is the short version.
 - `krishivault-pipeline/`: the Python backend (FastAPI).
   - `src/main.py`: the API; serves `static/index.html` (the dashboard, `/`) and `static/call.html` (the call preview, `/call`).
   - `src/models/production_forecast.py` (BBS trend, crop gap, district supply) and `price_outlook.py` (crop-size price outlook, simulated ranges, regional index, model card).
-  - `src/engine/`: `storage_plan.py` (the store-or-sell engine), `facts.py` (sack, rent, 8.65% loss and cost defaults with sources), `market_access.py`, `financing.py`, `receipts.py` (digital receipts, the bank's hold, the split at sale), `alerts.py` (price-window SMS), `farmer_signals.py` (the government screen), `group_storage.py` (incl. group selling), `export_intel.py`, `profit.py`, `business_model.py`. `src/contacts.py` keeps phone numbers for later SMS, never shown.
+  - `src/engine/`: `storage_plan.py` (the store-or-sell engine), `demo_loop.py` (the whole loop in one click), `dadon.py` (what a trader's advance really costs), `hold_plan.py` ("do not sell before", against selling in fear), `facts.py` (sack, rent, 8.65% loss and cost defaults with sources), `market_access.py`, `financing.py`, `receipts.py` (digital receipts, the bank's hold, the split at sale), `alerts.py` (price-window alerts, by SMS or voice call), `farmer_signals.py` (the government screen), `group_storage.py` (incl. group selling), `export_intel.py`, `profit.py`, `business_model.py`. `src/contacts.py` keeps phone numbers for later SMS, never shown.
   - `src/voice/`: `conversation.py` (the call: menu, questions, read-back, answer, action, helper; signed SMS and actions), `ussd.py` (the USSD menu, gateway format), `understanding.py`, `intent_parser.py`, `bangla_numbers.py`, `number_lock.py`, `gemini.py`, `tts_generator.py`.
-  - `src/notify/`: `sms.py` (REVE), `awaj.py` (calls, kept for later); dry run by default.
+  - `src/notify/`: `sms.py` (REVE), `voiceblast.py` and `call_audio.py` (outbound calls), `awaj.py` (kept for later); dry run by default.
   - `src/demo_data.py` + `data/demo/demo_partners.json`: made-up partners. `src/events.py`: requests for partner screens (`data/runtime/`, not committed).
   - `data/`: WFP prices (`processed/potato_prices_wfp.csv`), BBS statistics (`reference/mati_kohon/crop_district_panel.csv`). Optional longer price history: `data/raw/price_history.csv`.
   - `src/scrapers/dam_scraper.py`: **broken**, the DAM site moved to `https://market.dam.gov.bd/`.
-  - `tests/`: pytest.
+  - `tests/`: pytest. `tests/conftest.py` switches every live line off, whatever the local `.env` says.
 - `reference/mati_kohon_code/`: Mati Kohon code that was ported. **Do not import it.**
 - `docs/`: the plan documents, `ai_architecture.html` (AI and voice, now and after the pilot), `readiness_check.html`, `presentation_plan.md` (the 7-minute pitch and Q&A plan, a copy of the team's pitch-plan doc), the field check guide for farmers and cold storages (`farmer_interview_guide.html` and its PDF; to-do 3).
 - `presentation material/KrishiVault_FutureMakers_Pitch_v5.pptx`: the Round 2 pitch deck, 10 slides for 7 minutes plus 3 of Q&A (16 October 2026; `_Pitch.pptx`, `_v2.pptx` and `_v4.pptx` are earlier versions): minimal design with a yellow marker on each title's key words; the farmer video opens it, then a still of him with four newspaper-style clippings (checked sources) on the right; slide 3 says what KrishiVault is; slide 8 starts with potato, then onion, maize and any stored crop; the AI slide links to the live prototype (`https://koryu.ninja/`); the speech, the sources and likely questions are in the speaker notes. Built by `scripts/pitch_deck/` (`make_hook_assets.py`, `build_deck.js`, `speaker_notes.js`, `finish_deck.ps1`); the speech is also in `docs/presentation_script.md`. Every figure on it comes from the engine or the data; update it when they change.
@@ -65,7 +67,7 @@ Secrets come from environment variables (names in `krishivault-pipeline/.env.exa
 
 - **Never commit secrets:** `.env`, `env materials.txt`, any service-account JSON. `.gitignore` covers them; check before every commit.
 - **Work on a feature branch and open a pull request. Never commit to `main`.** The user merges.
-- **Real SMS only when the user says so** for that send. SMS stays in dry-run mode (`SMS_LIVE=0`) by default; calls (`AWAJ_LIVE=0`) are not part of the prototype.
+- **Real SMS and real calls only when the user says so** for that send. SMS and calls stay in dry-run mode (`SMS_LIVE=0`, `VOICEBLAST_LIVE=0`, `BROADCAST_LIVE=0`) by default. A laptop `.env` may have them switched on: start the app with them set to 0 unless a live send is wanted.
 - **Number lock:** every taka figure, quantity and date a farmer hears comes from the engine. Gemini may reword but must never change a number; check it and fall back to the template.
 - **Honest forecasts:** always give a range, never a promise. The price outlook rests on two seasons of WFP prices; say "statistical outlook", not "AI forecast", until it is backtested on a longer history.
 - **No paid placement:** a partner's fee never changes what a farmer is advised; offers are ranked by money in the farmer's hand.
@@ -73,7 +75,7 @@ Secrets come from environment variables (names in `krishivault-pipeline/.env.exa
 - **Farmer figures only with consent:** nothing a farmer says is counted for government figures unless they agree (press 8; a ticked box); no names or numbers; districts under 5 farmers hidden.
 - **Honest claims:** cold storages, banks, buyers, groups, receipts and export prices are clearly fictional demo data, never real partners; organizations the plan names (BKB, BRAC, PRAN, Himadri and others) are targets, not partners. Check `docs/HANDOFF.md`, section 10, and `docs/readiness_check.html` before claiming anything works.
 - **Write plainly:** teammates are not computer-science students; docs, screens and slides use plain language.
-- **Web design:** sharp corners, a subtle bevel and emboss, no floating top navigation bar.
+- **Web design (the user's choice, 15 November 2026):** clean and modern, one look for all three screens from `krishivault-pipeline/static/kv.css`: light surfaces, one green accent, rounded cards, big numbers, short page intros, the dashboard's pages on one row of tabs. The header scrolls away with the page: no floating top navigation bar. (This replaces the earlier "sharp corners and bevel" rule.)
 
 ## Sister project: Mati Kohon
 

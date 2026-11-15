@@ -71,6 +71,15 @@ def call_text(advice: str) -> str:
     return greeting + body + closing
 
 
+def sms_speech(sms: str) -> str:
+    """
+    An SMS read out in a call, for a farmer who cannot read one: the same words and numbers, without the
+    "কৃষিভল্ট:" label (call_text greets as KrishiVault) and with "(ডেমো)" said as a sentence.
+    """
+    text = re.sub(r"^\s*কৃষিভল্ট:?\s*", "", sms)
+    return re.sub(r"\s*\(ডেমো\)।?", " এটি ডেমো বার্তা।", text).strip()
+
+
 def is_advice(say: str) -> bool:
     """
     Return True when the text looks like a store-or-sell advice (contains a

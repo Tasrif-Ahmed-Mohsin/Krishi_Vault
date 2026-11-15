@@ -19,11 +19,12 @@ from typing import Optional
 
 from src import contacts
 from src.engine import market_access, receipts
-from src.engine.facts import MONTHS_EN
+from src.engine.facts import MONTHS_EN, StorageTerms
 from src.engine.storage_plan import FarmerLot, StoragePlanner
 from src.voice.bangla_numbers import fmt_num, fmt_taka
 
 _planner = StoragePlanner()
+_terms = StorageTerms()
 
 
 def _alert_sms(r: dict, sell: int, plan: dict, buyer: Optional[dict]) -> str:
@@ -39,11 +40,11 @@ def _alert_sms(r: dict, sell: int, plan: dict, buyer: Optional[dict]) -> str:
             f"দাম বদলালে আবার জানাব। (ডেমো)")
 
 
-def price_window(month: int, year: int, price_today: float) -> list[dict]:
-    """One alert per receipt still in store: sell now (how many, to whom) or hold (until when)."""
+def price_window(month: int, year: int, price_today: float, receipt_no: Optional[str] = None) -> list[dict]:
+    """One alert per receipt still in store (or only `receipt_no`): sell now (how many, to whom) or hold."""
     out = []
     for r in receipts.all_receipts():
-        if r["status"].startswith("sold"):
+        if r["status"].startswith("sold") or (receipt_no and r["no"] != receipt_no):
             continue
         lot = FarmerLot(quantity_kg=r["kg"], price_today=price_today, decision_month=month, decision_year=year,
                         stored="cold", stored_since_month=r.get("stored_month", 3), district=r["district"])
@@ -55,11 +56,15 @@ def price_window(month: int, year: int, price_today: float) -> list[dict]:
             sell = 0
         buyer = None
         if sell:
-            offers = market_access.compare_offers(sell * r["kg"] / r["sacks"], price_today)
+            # What is left to sell: the weighed kg less the months' weight loss and the rotten ones sorted out
+            months_in = min((month - r.get("stored_month", 3)) % 12, _terms.season_months)
+            kg_left = r["kg"] * _terms.kept_share(months_in)
+            offers = market_access.compare_offers(sell * kg_left / r["sacks"], price_today)
             best = offers["best"]
             if best:
                 buyer = {"id": best["id"], "name": best["name"], "name_bn": _buyer_bn(best),
-                         "money_total": best["money_total"], "demo": best["demo"]}
+                         "money_total": best["money_total"], "net_per_kg": best.get("net_per_kg"),
+                         "demo": best["demo"]}
         out.append({
             "receipt": r["no"], "farmer": r["farmer"], "phone": r["phone"], "sacks": r["sacks"],
             "action": "sell" if sell else "hold", "sell_sacks": sell,
@@ -72,11 +77,35 @@ def price_window(month: int, year: int, price_today: float) -> list[dict]:
     return out
 
 
-def send(alerts: list[dict], send_sms) -> list[dict]:
-    """Send each alert by SMS to the number the farmer gave at the cold storage (dry run unless SMS_LIVE=1)."""
+def voice_text(a: dict) -> str:
+    """The alert as speech for an outbound call: the same words and numbers as the SMS."""
+    from src.notify.call_audio import sms_speech
+    return sms_speech(a["sms"])
+
+
+def call(alerts: list[dict], dial) -> list[dict]:
+    """
+    The alerts as voice calls, for farmers who cannot read an SMS (like the farmer in the field video, who
+    uses a button phone and cannot read one). `dial(phone, text)` places one call within the server's call
+    limits; a dry run unless the call line is switched on.
+    """
     for a in alerts:
         phone = contacts.get(f"receipt:{a['receipt']}")
+        a["call_result"] = dial(phone, voice_text(a)) if phone else {"error": "no phone number on the receipt"}
+    return alerts
+
+
+def send(alerts: list[dict], send_sms, dial=None) -> list[dict]:
+    """
+    Send each alert by SMS to the number the farmer gave at the cold storage (dry run unless SMS_LIVE=1);
+    a farmer who asked for calls ("I cannot read an SMS") also gets it as a call, through `dial`.
+    """
+    for a in alerts:
+        key = f"receipt:{a['receipt']}"
+        phone = contacts.get(key)
         a["sms_result"] = send_sms(phone, a["sms"]) if phone else {"error": "no phone number on the receipt"}
+        if dial and phone and contacts.prefers_voice(key):
+            a["call_result"] = dial(phone, voice_text(a))
     return alerts
 
 

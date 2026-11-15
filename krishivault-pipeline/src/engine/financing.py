@@ -136,7 +136,7 @@ STATUS = ["waiting for the cold storage to confirm the receipt", "receipt confir
 
 def apply(farmer_name: str, phone: Optional[str], district: str, cold_storage_id: str, receipt_no: str,
           sacks: int, price_today: float, decision_month: int, decision_year: int, months: int,
-          bank_id: str, amount: Optional[float] = None) -> dict:
+          bank_id: str, amount: Optional[float] = None, voice: bool = False) -> dict:
     est = loan_estimate(sacks, price_today, decision_month, decision_year, months, bank_id, amount)
     cs = demo_data.cold_storage(cold_storage_id)
     receipt = receipts.get(receipt_no)          # a receipt the cold storage issued on KrishiVault, if any
@@ -146,7 +146,10 @@ def apply(farmer_name: str, phone: Optional[str], district: str, cold_storage_id
     event = events.record("loan_application", f"{sacks} বস্তা জামানতে ঋণের আবেদন, রসিদ {receipt_no}",
                           {"application": app_id, "bank": est["bank"]["name"], "loan": est["loan"]},
                           district=district, phone=phone)
-    contacts.save(f"application:{app_id}", phone or (contacts.get(f"receipt:{receipt['no']}") if receipt else None))
+    # The number and the "call me" choice come from the receipt when the application gives none
+    on_receipt = f"receipt:{receipt['no']}" if receipt else None
+    contacts.save(f"application:{app_id}", phone or (contacts.get(on_receipt) if on_receipt else None),
+                  voice or (contacts.prefers_voice(on_receipt) if on_receipt else False))
     return demo_data.append("loan_applications", {
         "id": app_id, "ref": event["ref"], "farmer": farmer_name, "phone": events.mask_phone(phone),
         "district": district, "cold_storage": {"id": cs["id"], "name": cs["name"]},

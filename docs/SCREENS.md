@@ -19,7 +19,7 @@ For helpers, partners, judges and the team. Pick a **season** at the top; every 
 | Season | What it shows |
 |---|---|
 | Next harvest: March 2027 | A forecast: the crop size is not known, so the price range is wide |
-| Today: October 2026 | Potatoes already in cold storage since March; two months left |
+| In store: October 2026 | Potatoes already in cold storage since March; two months left |
 | Replay March 2025 | The big crop (6% above trend): real prices stayed flat afterwards. A fair replay: only what was known in March 2025, then what really happened |
 | Replay March 2024 | A normal crop: real prices nearly doubled by November. A fair replay: only what was known in March 2024, then what really happened |
 
@@ -27,15 +27,15 @@ For helpers, partners, judges and the team. Pick a **season** at the top; every 
 
 | Page | What it does |
 |---|---|
-| Season overview | The crop, the price outlook with its range, what storing 36 sacks gains or loses month by month, and why farmers lose money in cold storage; in a replay, what really happened and the net profit against selling everything at the harvest |
-| Store or sell | The engine: the farmer's quantity, price, cash need and costs → sell now, sell part and store the rest, or store until a month (already stored); the plan's staggered exit beside it; the chance, the bad case, the price at which storing pays; the net profit after the growing cost (own or the ৳14 benchmark); the glut cap on loans; send the advice by SMS; send the curing reminder; ask the cold storage for space; a box to count the farmer (with consent) in the district figures |
+| Season overview | **The whole loop in one click:** one demo farmer goes from the harvest call to the digital receipt, the bank loan with its hold, the price-window alert and the sale that pays the cold storage, the bank, then the farmer, with the bad-case price beside it (the records then appear on the partner screens; in the 2025 glut replay it stops at "sell now"). Below it: the crop, the price outlook with its range, what storing 36 sacks gains or loses month by month, and why farmers lose money in cold storage; in a replay, what really happened and the net profit against selling everything at the harvest |
+| Store or sell | The engine: the farmer's quantity, price, cash need and costs → sell now, sell part and store the rest, or store until a month (already stored); the plan's staggered exit beside it; the chance, the bad case, the price at which storing pays; the net profit after the growing cost (own or the ৳14 benchmark); **the hold plan** (sell in which month, "not before" the first month that pays on average, and the price that makes an earlier sale pay; by SMS); the glut cap on loans; send the advice by SMS; send the curing reminder (a box sends each also as a call, for a farmer who cannot read an SMS); ask the cold storage for space; a box to count the farmer (with consent) in the district figures |
 | Forecasts | Production by district (BBS) with a range; the price outlook table; WFP prices so far; how the model works and its limits; the backtest (the outlook on past seasons it had not seen, against the usual seasonal shape); regional price levels and the biggest districts |
 | Buyers | Offers ranked by money in the farmer's hand; add the farmer's own offers; send the lot to the buyers' screen |
-| Bank loan | How much 36 sacks can borrow, from which lender, at what risk (valued after the 8.65% weight loss); what the bank sees; who is paid when the potatoes are sold; apply with a receipt number |
+| Bank loan | How much 36 sacks can borrow, from which lender, at what risk (valued after the 8.65% weight loss); what the bank sees; who is paid when the potatoes are sold; apply with a receipt number; **what the trader's advance (dadon) really costs**: the hidden cost of repaying in potatoes below the market, as a yearly rate, beside the demo bank and the cold-storage advance |
 | Group storage and selling | Groups, discount tiers, alone against the group; join; "Sell together": the group's lot shared out to the buyers that pay most per kg, against the haat; send the group lot to buyers |
 | Export | Markets after every cost (demo figures); where to buy (real data) |
 | Profit calculator | Costs and sales of one bigha → profit per kg, per sack, per maund, per harvest |
-| Partner screens | What the cold storage, bank, buyer, field agent and government see: issue a digital storage receipt (SMS; verified partners only), confirm sacks, approve a loan (payout SMS; the receipt is then held for the bank), record the sale and its split, agree a group rate (demo); the field agent's price-window alerts (sell how many to whom, or hold; SMS); the government's glut warning, cold-storage fill with partner checks, requests that found no space, and farmer figures by district |
+| Partner screens | What the cold storage, bank, buyer, field agent and government see: issue a digital storage receipt (SMS; verified partners only; a box records "the farmer cannot read an SMS", after which the receipt, the bank's decision and every price alert also go to him as a call), confirm sacks, approve a loan (payout SMS; the receipt is then held for the bank), record the sale and its split, agree a group rate (demo); the field agent's price-window alerts (sell how many to whom, or hold; by SMS, or by voice call for farmers who cannot read one); the government's glut warning, cold-storage fill with partner checks, requests that found no space, and farmer figures by district |
 
 ## The call preview (`/call`)
 
@@ -44,12 +44,14 @@ A farmer's phone call, played in the browser, because the prototype has no phone
 1. **Greeting and menu:** ১ store or sell, ২ price outlook, ৩ group storage, ৪ loan against stored sacks, ৯ a helper calls back. Or just speak.
 2. **Questions,** only for what was not said: how many maunds (or sacks), today's price, whether the potatoes are already in cold storage (not asked at harvest), cash needed and within how many days. One sentence can answer several: "হামার ৮০ মণ আলু উঠছে, ফড়িয়া ১৬ টেকা দিবার চায়, ২৫ হাজার টেকা নাগবে ৪ দিনের মইধ্যে".
 3. **Read-back** of every number; "ঠিক হলে ১, ভুল হলে ২". A spoken correction ("না, ৯০ মণ") is read back again.
-4. **The answer** in taka, with the chance and the bad case.
+4. **The answer** in taka, decision first (about 20 seconds): how many sacks to sell now and the cash in hand, the rest stored until when, the average gain over selling everything now and the bad case. **Press 3** for the full sums and the net profit after the growing cost.
 5. **One action, press 2:** a cold-storage request, a group join, a loan application, or the lot sent to buyers. It appears on the dashboard's partner screens with a number.
 6. **Press 8 to be counted** (after the store-or-sell answer only): the answers go, without name or number, into the district figures on the government screen. Nothing is counted otherwise.
 7. **Every answer ends with** "১ = আবার শুনুন, ০ = মূল মেনু, ৯ = সহকারী".
 
 **SMS me** sends the receipt (REVE). It is a **dry run** unless the server has `SMS_LIVE=1` and the keys: the screen then shows the exact request that would go out. The SMS text is signed by the server, so the page cannot change what is sent.
+
+**Call me** rings the number and reads this call's answer from the engine (VoiceBlast). It is a **dry run** unless the server has `VOICEBLAST_LIVE=1`. Like the SMS, the answer is signed by the server: the page cannot make the line say anything else, and before an answer the call reads only a fixed welcome. On a public server set `CALL_ALLOWED_NUMBERS` and `CALL_DAILY_CAP` (`krishivault-pipeline/.env.example`).
 
 ### Speaking to it
 
@@ -79,7 +81,7 @@ Set before starting the server (names in `krishivault-pipeline/.env.example`; va
 | Gemini | Tried with the real key (14 October): understanding and rewording, number-checked |
 | Speech, Google voice | Work with keys; not yet tried with real keys here |
 | SMS | Dry run until switched on |
-| Phone calls | Preview only |
+| Phone calls | Outbound "Call me" reads the engine's answer; dry run until `VOICEBLAST_LIVE=1`. No inbound line yet |
 | USSD | Preview only (no short code); the handler speaks the gateway format |
 | Price-window alerts, group selling, the bank's payout | Real code; demo partners; SMS dry run; no money moves |
 
@@ -96,7 +98,7 @@ The plan's text menu for any phone, played on a button phone drawn in the browse
 
 - `krishivault-pipeline/static/index.html` (dashboard), `static/call.html` (call preview).
 - `src/main.py`: the API.
-- `src/engine/`: `storage_plan.py`, `market_access.py`, `financing.py`, `receipts.py` (digital receipts, the bank's hold, the split at sale), `farmer_signals.py` (the government screen), `group_storage.py`, `export_intel.py`, `profit.py`, `business_model.py` (the plan's income and projection), `facts.py`.
+- `src/engine/`: `storage_plan.py`, `demo_loop.py` (the whole loop in one click), `market_access.py`, `financing.py`, `receipts.py` (digital receipts, the bank's hold, the split at sale), `farmer_signals.py` (the government screen), `group_storage.py`, `export_intel.py`, `profit.py`, `business_model.py` (the plan's income and projection), `facts.py`.
 - `src/models/`: `production_forecast.py`, `price_outlook.py`.
 - `src/voice/`: `conversation.py` (the call), `ussd.py` (the USSD menu), `understanding.py`, `intent_parser.py`, `bangla_numbers.py`, `number_lock.py`, `gemini.py`, `tts_generator.py`.
-- `src/notify/sms.py` (REVE), `src/notify/awaj.py` (calls, for later); `src/events.py`, `src/demo_data.py`.
+- `src/notify/sms.py` (REVE), `src/notify/voiceblast.py` and `call_audio.py` (outbound calls and their audio), `src/notify/awaj.py` (kept for later); `src/events.py`, `src/demo_data.py`.
