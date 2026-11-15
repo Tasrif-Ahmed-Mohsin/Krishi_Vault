@@ -216,6 +216,7 @@ The six biggest districts (Rangpur, Dinajpur, Bogura, Joypurhat, Munshiganj, Raj
 | Digital storage receipt, bank hold, payout, split at sale | Built (demo partners) | Partner screens → Cold storage (issue), Bank loan (apply with the number), Bank (approve: payout and SMS; record the sale) |
 | What the trader's advance (dadon) really costs | Built (pure arithmetic; demo bank) | Bank loan page, bottom panel; `/api/finance/dadon` (`src/engine/dadon.py`) |
 | Hold plan | Built | Store or sell page; SMS; with the receipt in the loop; one line in the advice SMS (`src/engine/hold_plan.py`, `/api/sms/hold-plan`) |
+| Every SMS also as a call | Built (dry run until `VOICEBLAST_LIVE=1`; the call limits apply) | Partner screens → Cold storage: "The farmer cannot read an SMS"; then the receipt, the bank's decision and every price alert also call him (`contacts.prefers_voice`, `notify_farmer` in `src/main.py`). Same box on Store or sell and the loan application |
 | Price-window alerts | Built (demo partners; SMS dry run; or a voice call within the call limits) | Partner screens → Field agent (helper): "Check price windows and SMS farmers" with the season "In store: October 2026" |
 | Group selling | Built (demo buyers) | Group storage page → "Sell together"; "Send the group lot to the buyers' screen" |
 | Government screen | Built (glut warning real; fill demo) | Partner screens → Government |

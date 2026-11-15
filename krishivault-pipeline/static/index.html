@@ -654,6 +654,7 @@
       <div class="form">
         <div><label class="f" for="aName">Farmer</label><input id="aName" value="Demo farmer"></div>
         <div><label class="f" for="aPhone">Phone</label><input id="aPhone" placeholder="01XXXXXXXXX"></div>
+        <div class="wide"><label class="small"><input id="aVoice" type="checkbox"> The farmer cannot read an SMS: also call with the bank's decision</label></div>
         <div><label class="f" for="aReceipt">Cold-storage receipt no.</label><input id="aReceipt" placeholder="e.g. CSA-0001 (Partner screens → Cold storage)"></div>
         <div><label class="f" for="aCs">Cold storage</label><select id="aCs"></select></div>
         <div><label class="f" for="aBank">Lender</label><select id="aBank"></select></div>
@@ -772,6 +773,7 @@
       <div><label class="f" for="rcCs">Cold storage</label><select id="rcCs"></select></div>
       <div><label class="f" for="rcName">Farmer</label><input id="rcName" value="Demo farmer"></div>
       <div><label class="f" for="rcPhone">Phone (SMS)</label><input id="rcPhone" placeholder="01XXXXXXXXX"></div>
+      <div class="wide"><label class="small"><input id="rcVoice" type="checkbox"> The farmer cannot read an SMS: call with this receipt, the loan decision and every price alert</label></div>
       <div><label class="f" for="rcSacks">Sacks</label><input id="rcSacks" type="number" min="1" value="36"></div>
       <div><label class="f" for="rcKg">Weighed (kg)</label><input id="rcKg" type="number" min="1" placeholder="sacks × 84"></div>
       <div><label class="f" for="rcGrade">Grade</label><select id="rcGrade"><option value="table">Table potato</option><option value="seed">Seed potato</option></select></div>
@@ -1183,7 +1185,7 @@ async function runPlan() {
       ${floor ? `<p class="note ${floor.below_cost_today ? 'honest' : ''}">Own cost ৳${num(floor.production_cost_per_kg, 1)}/kg: ${floor.below_cost_today ? 'selling today is below cost, a loss of ৳' + num(floor.loss_per_kg_if_sold_now, 1) + ' a kg.' : 'today\'s price covers it.'}</p>` : ''}
       </div></div>` : ''}
     <div class="panel" style="margin-top:14px"><h2>Act on it <span class="bn">পরবর্তী ধাপ</span></h2><div class="panel-body">
-      <div class="form"><div><label class="f" for="actName">Farmer</label><input id="actName" value="Demo farmer"></div><div><label class="f" for="actPhone">Phone (for SMS)</label><input id="actPhone" placeholder="01XXXXXXXXX (or comma-separated)"></div></div>
+      <div class="form"><div><label class="f" for="actName">Farmer</label><input id="actName" value="Demo farmer"></div><div class="wide"><label class="small"><input id="actVoice" type="checkbox"> The farmer cannot read an SMS: also call with the same words</label></div><div><label class="f" for="actPhone">Phone (for SMS)</label><input id="actPhone" placeholder="01XXXXXXXXX (or comma-separated)"></div></div>
       <div class="row" style="margin-top:8px"><button class="btn primary" id="actSms" type="button">Send this advice by SMS</button>${plan.hold_plan ? '<button class="btn" id="actHold" type="button">Send the hold plan by SMS</button>' : ''}${inp.stored === 'no' ? '<button class="btn" id="actCure" type="button">Send the curing reminder</button>' : ''}
         ${rec.key !== 'sell_now' && inp.stored === 'no' ? `<button class="btn" id="actBook" type="button">Ask the cold storage for ${rec.key === 'sell_part' ? opts.sell_part.store_sacks : inp.sacks} sacks</button>` : ''}
         <a class="btn" href="#buyers" style="text-decoration:none;text-align:center">Compare buyers</a><a class="btn" href="#loan" style="text-decoration:none;text-align:center">Loan against the sacks</a></div>
@@ -1197,25 +1199,19 @@ async function runPlan() {
       o.innerHTML = `<span class="err">Enter a phone number to send SMS.</span>`;
       return;
     }
-    try { const r = await api('/api/sms/advice', Object.assign({}, body, {phone}));
-      o.innerHTML = r.error ? `<span class="err">${esc(r.error)}</span>` : `${r.dry_run ? '<span class="tag info">DRY RUN</span> not sent; this is the SMS that would go out:' : '<span class="tag real">SENT</span>'}<pre class="req bn">${esc(r.text)}</pre>`;
-    } catch (e) { o.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+    await sendToFarmer('/api/sms/advice', Object.assign({}, body, {phone}), o);
   };
   const holdBtn = $('#actHold');
   if (holdBtn) holdBtn.onclick = async () => {
     const o = $('#actOut'), phone = $('#actPhone').value.trim();
     if (!phone) { o.innerHTML = `<span class="err">Enter a phone number to send SMS.</span>`; return; }
-    try { const r = await api('/api/sms/hold-plan', Object.assign({}, body, {phone}));
-      o.innerHTML = r.error ? `<span class="err">${esc(r.error)}</span>` : `${r.dry_run ? '<span class="tag info">DRY RUN</span> not sent; this is the SMS that would go out:' : '<span class="tag real">SENT</span>'}<pre class="req bn">${esc(r.text)}</pre>`;
-    } catch (e) { o.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+    await sendToFarmer('/api/sms/hold-plan', Object.assign({}, body, {phone}), o);
   };
   const cureBtn = $('#actCure');
   if (cureBtn) cureBtn.onclick = async () => {
     const o = $('#actOut'), phone = $('#actPhone').value.trim();
     if (!phone) { o.innerHTML = `<span class="err">Enter a phone number to send SMS.</span>`; return; }
-    try { const r = await api('/api/sms/curing', {phone});
-      o.innerHTML = r.error ? `<span class="err">${esc(r.error)}</span>` : `${r.dry_run ? '<span class="tag info">DRY RUN</span> not sent; this is the SMS that would go out:' : '<span class="tag real">SENT</span>'}<pre class="req bn">${esc(r.text)}</pre>`;
-    } catch (e) { o.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+    await sendToFarmer('/api/sms/curing', {phone}, o);
   };
   const bookBtn = $('#actBook');
   if (bookBtn) bookBtn.onclick = async () => {
@@ -1228,6 +1224,13 @@ async function runPlan() {
   };
 }
 const best = plan => plan.best_month ? plan.best_month.h : -1;
+// What happened to a message: the SMS, and the call when the farmer cannot read one
+const callNote = c => !c ? '' : c.error ? ` <span class="err">Call not placed: ${esc(c.error)}</span>` : c.dry_run ? ' <span class="tag info">CALL DRY RUN</span> the same words would be read out in a call.' : ' <span class="tag real">CALLED</span>';
+async function sendToFarmer(path, payload, o) {
+  try { const r = await api(path, Object.assign({}, payload, {voice: $('#actVoice').checked}));
+    o.innerHTML = (r.error ? `<span class="err">${esc(r.error)}</span>` : `${r.dry_run ? '<span class="tag info">DRY RUN</span> not sent; this is the SMS that would go out:' : '<span class="tag real">SENT</span>'}<pre class="req bn">${esc(r.text)}</pre>`) + callNote(r.call_result);
+  } catch (e) { o.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+}
 function holdPanel(plan) {
   // The hold plan: the farmer's promise against selling in fear after a month or two (the field notes)
   const h = plan.hold_plan;
@@ -1573,7 +1576,7 @@ async function loadPartners() {
     }
     if (role === 'cold_storage') {
       const p = await partnersData(), recs = await api('/api/receipts');
-      side.insertAdjacentHTML('afterbegin', `<h3 style="font-size:.92rem;margin:0 0 6px">Receipts issued <span class="bn">দেওয়া রসিদ</span></h3>${recs.length ? recs.slice(0, 8).map(r => `<div class="event"><b>${esc(r.no)}</b> · ${esc(r.farmer)} · ${r.sacks} sacks, ${num(r.kg)} kg, ${esc(r.grade)} · ${esc(r.cold_storage.name)}<div class="small">${esc(r.status)}${r.hold ? ' (' + esc(r.hold.bank) + ', loan ' + tk(r.hold.loan) + ')' : ''}</div></div>`).join('') : '<p class="muted">None yet.</p>'}
+      side.insertAdjacentHTML('afterbegin', `<h3 style="font-size:.92rem;margin:0 0 6px">Receipts issued <span class="bn">দেওয়া রসিদ</span></h3>${recs.length ? recs.slice(0, 8).map(r => `<div class="event"><b>${esc(r.no)}</b> · ${esc(r.farmer)} · ${r.sacks} sacks, ${num(r.kg)} kg, ${esc(r.grade)} · ${esc(r.cold_storage.name)}${r.by_call ? ' · <span class="tag info">BY CALL</span>' : ''}<div class="small">${esc(r.status)}${r.hold ? ' (' + esc(r.hold.bank) + ', loan ' + tk(r.hold.loan) + ')' : ''}</div></div>`).join('') : '<p class="muted">None yet.</p>'}
         <h3 style="font-size:.92rem;margin:14px 0 6px">Receipts to confirm for banks</h3>`);
       if (!$('#rcCs').options.length) $('#rcCs').innerHTML = p.cold_storages.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
       const pools = await api('/api/groups');
@@ -1591,7 +1594,7 @@ async function loadPartners() {
       const sent = (r, what) => !r ? '' : r.error ? esc(r.error) : (r.dry_run ? what + ' dry run: nothing sent' : what + ' sent');
       const runAlerts = channel => async () => { const s = season(); try {
         const list = await api('/api/alerts/price-window', {month: s.month, year: s.year, price_today: s.price, send: true, channel});
-        $('#alOut').innerHTML = list.length ? `<p>${esc(list[0].when)}, ৳${num(s.price, 1)}/kg (the season above).</p>` + list.map(a => `<div class="event"><b>${esc(a.receipt)}</b> · ${esc(a.farmer)} · ${a.sacks} sacks: <b>${a.action === 'sell' ? 'sell ' + a.sell_sacks + ' now' + (a.buyer ? ' → ' + esc(a.buyer.name) + ' (' + tk(a.buyer.money_total) + ')' : '') : 'hold until ' + esc(a.hold_until || '')}</b>${a.held_for_bank ? ' · held for the bank' : ''}<div class="bn small">${esc(a.sms)}</div><div class="small">${channel === 'voice' ? sent(a.call_result, 'Call') : sent(a.sms_result, 'SMS')}</div></div>`).join('')
+        $('#alOut').innerHTML = list.length ? `<p>${esc(list[0].when)}, ৳${num(s.price, 1)}/kg (the season above).</p>` + list.map(a => `<div class="event"><b>${esc(a.receipt)}</b> · ${esc(a.farmer)} · ${a.sacks} sacks: <b>${a.action === 'sell' ? 'sell ' + a.sell_sacks + ' now' + (a.buyer ? ' → ' + esc(a.buyer.name) + ' (' + tk(a.buyer.money_total) + ')' : '') : 'hold until ' + esc(a.hold_until || '')}</b>${a.held_for_bank ? ' · held for the bank' : ''}<div class="bn small">${esc(a.sms)}</div><div class="small">${channel === 'voice' ? sent(a.call_result, 'Call') : sent(a.sms_result, 'SMS') + (a.call_result ? '; ' + sent(a.call_result, 'Call') + ' (the farmer asked for calls)' : '')}</div></div>`).join('')
           : '<p class="muted">No receipts in store. Issue one on the Cold storage screen first.</p>';
       } catch (e) { $('#alOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
       $('#alGo').onclick = runAlerts('sms');
@@ -1599,8 +1602,8 @@ async function loadPartners() {
     }
   }
 }
-$('#rcGo').onclick = async () => { try { const r = await api('/api/receipts', {cold_storage_id: $('#rcCs').value, farmer_name: $('#rcName').value || 'Demo farmer', phone: $('#rcPhone').value.trim() || null, sacks: val('#rcSacks'), kg_weighed: val('#rcKg'), grade: $('#rcGrade').value, advance_per_sack: val('#rcAdv') || 0, month: season().stored === 'cold' ? 3 : season().month, year: season().year});
-  $('#rcOut').innerHTML = `Receipt <b>${esc(r.receipt.no)}</b> issued. SMS ${r.sms_result ? (r.sms_result.error ? '<span class="err">not sent: ' + esc(r.sms_result.error) + '</span>' : r.sms_result.dry_run ? '(dry run)' : 'sent') : '(no phone given)'}: <span class="bn">${esc(r.receipt.sms)}</span> Use the number on the Bank loan page.`;
+$('#rcGo').onclick = async () => { try { const r = await api('/api/receipts', {cold_storage_id: $('#rcCs').value, farmer_name: $('#rcName').value || 'Demo farmer', phone: $('#rcPhone').value.trim() || null, sacks: val('#rcSacks'), kg_weighed: val('#rcKg'), grade: $('#rcGrade').value, advance_per_sack: val('#rcAdv') || 0, voice: $('#rcVoice').checked, month: season().stored === 'cold' ? 3 : season().month, year: season().year});
+  $('#rcOut').innerHTML = `Receipt <b>${esc(r.receipt.no)}</b> issued. SMS ${r.sms_result ? (r.sms_result.error ? '<span class="err">not sent: ' + esc(r.sms_result.error) + '</span>' : r.sms_result.dry_run ? '(dry run)' : 'sent') : '(no phone given)'}: <span class="bn">${esc(r.receipt.sms)}</span>${callNote(r.call_result)} Use the number on the Bank loan page.`;
   loadPartners(); } catch (e) { $('#rcOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
 $$('#roleTabs button').forEach(b => b.onclick = () => { role = b.dataset.role; $$('#roleTabs button').forEach(x => x.setAttribute('aria-pressed', x === b)); loadPartners(); });
 
@@ -1616,7 +1619,7 @@ $('#bGo').onclick = runOffers;
 $('#bSend').onclick = async () => { try { const r = await api('/api/market/lot', {kg: val('#bQty'), price_today: val('#bPrice'), farmer_name: $('#bName').value || 'Demo farmer', phone: $('#bPhone').value.trim() || null}); $('#bSendOut').innerHTML = `Sent to the buyers' screen, no. <b>${esc(r.ref)}</b>.`; } catch (e) { $('#bSendOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
 $('#lGo').onclick = runLoan;
 $('#dGo').onclick = runDadon;
-$('#aGo').onclick = async () => { const s = season(); try { const r = await api('/api/finance/apply', {sacks: val('#lSacks'), price_today: val('#lPrice'), month: s.month, year: s.year, months: val('#lMonths'), amount: val('#lAmount') || null, bank_id: $('#aBank').value, farmer_name: $('#aName').value || 'Demo farmer', phone: $('#aPhone').value.trim() || null, cold_storage_id: $('#aCs').value, receipt_no: $('#aReceipt').value.trim() || 'not given'});
+$('#aGo').onclick = async () => { const s = season(); try { const r = await api('/api/finance/apply', {sacks: val('#lSacks'), price_today: val('#lPrice'), month: s.month, year: s.year, months: val('#lMonths'), amount: val('#lAmount') || null, bank_id: $('#aBank').value, farmer_name: $('#aName').value || 'Demo farmer', phone: $('#aPhone').value.trim() || null, voice: $('#aVoice').checked, cold_storage_id: $('#aCs').value, receipt_no: $('#aReceipt').value.trim() || 'not given'});
   $('#aOut').innerHTML = `Application no. <b>${esc(r.ref)}</b>: ${esc(r.status)}. See Partner screens → Cold storage, then Bank.`; } catch (e) { $('#aOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };
 $('#gGo').onclick = runGroupCompare; $('#gPool').onchange = runGroupCompare;
 $('#gLot').onclick = async () => { try { const r = await api(`/api/groups/${encodeURIComponent($('#gPool').value)}/lot?price_today=${season().price}`, {}); $('#gLotOut').innerHTML = `Sent, no. <b>${esc(r.ref)}</b> (Partner screens → Buyer).`; } catch (e) { $('#gLotOut').innerHTML = `<span class="err">${esc(e.message)}</span>`; } };

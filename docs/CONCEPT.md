@@ -28,7 +28,7 @@ can afford to follow it and keeps following it for nine months. So the product i
 |---|---|---|---|
 | **The cash trap**: debts and dadon due at harvest | Bank loan against the digital receipt; cold-storage advance | **What the trader's advance really costs** | Cash within 48 hours of the receipt |
 | **Fear and flat rent**: selling after 1-3 months | Price-window alerts | **The hold plan**: "do not sell before", and the price that makes an earlier sale pay | A monthly check-in call |
-| **He cannot read the SMS** (the farmer in our field video) | Call preview; outbound "Call me" | **Price-window alerts by voice call** | Every SMS also as a call |
+| **He cannot read the SMS** (the farmer in our field video) | Call preview; outbound "Call me" | **"Call me, I cannot read SMS", chosen once**: every message to him also goes as a call | A call he can answer with the keypad |
 | **Information gap with traders** | Buyers ranked by money in hand | | Farm-gate price board from farmers' own reports |
 | **The blind bet**: glut or normal year | Crop-size outlook; "sell now" in a glut; 50% loan cap | | Forward sale of part of the crop to a processor |
 | **Trust**: why believe a phone line? | Fair replays; backtest; number lock | The whole loop in one click | Advice ledger: what happened after each advice |
@@ -54,14 +54,19 @@ the same words and numbers as the SMS, as an outbound call, within the same limi
 daily cap, calls per address). The farmer in our own field video uses a button phone and cannot read an SMS.
 Until now, every message after the call reached him only as text.
 
+**Every SMS also as a call, chosen once.** At the cold storage, the receipt form has a box: "The farmer cannot
+read an SMS". It is kept with his number (never shown), and from then on every message to him also goes as a
+call with the same words and numbers: the receipt, the bank's decision, and every price-window alert. The
+same box sits beside "Send this advice / the hold plan / the curing reminder" on Store or sell, and on the
+loan application. Every call goes through the same limits as "Call me", and every text is built by the server.
+
 **Also:** `SMS_ALLOWED_NUMBERS` keeps live SMS to listed phones on a public server. The field agent's button
 no longer says "dry run" when the SMS is live.
 
 ## 5. Next, in recommended order (not built)
 
-1. **Every SMS also as a call.** The receipt, the hold plan and the loan decision should go out as calls,
-   not only the alerts. It is the same code path, and the call line exists. This is cheap and matters most
-   to the farmers who need KrishiVault most.
+1. **A call he can answer.** Today's calls are one-way. The next step is an alert call that ends "press 1 to
+   sell through KrishiVault, 2 to hold", which needs a voice line that takes key presses (the plan's IVR).
 2. **The farm-gate price board ("অন্যরা কত পাচ্ছে").** The call already asks the price he is offered. With
    his consent (press 8), keep the offer by district and week, and show the median once 5 or more farmers
    have reported, the same rule as the government figures. In the call: "This week in Shibganj, farmers

@@ -144,3 +144,72 @@ def test_live_sms_only_to_allowed_numbers(monkeypatch):
         monkeypatch.setenv(k, v)
     r = sms.send_sms("01711998877", "কৃষিভল্ট পরীক্ষা")                  # refused before any network call
     assert r["dry_run"] is False and "restricted" in r["error"]
+
+
+# ------------------------------------------------------------------ every message also as a call
+
+def test_sms_becomes_speech_with_the_same_numbers():
+    from src.notify.call_audio import call_text, sms_speech
+    sms = "কৃষিভল্ট: রসিদ CSA-0004। এখন দাম ভালো: ৮ বস্তা বেচুন; প্রায় ১৪,৬০০ টাকা। (ডেমো)"
+    spoken = sms_speech(sms)
+    assert spoken == "রসিদ CSA-0004। এখন দাম ভালো: ৮ বস্তা বেচুন; প্রায় ১৪,৬০০ টাকা। এটি ডেমো বার্তা।"
+    assert call_text(spoken).startswith("আসসালামু আলাইকুম, কৃষিভল্ট থেকে বলছি।")
+
+
+def test_call_me_choice_follows_the_farmer_from_receipt_to_loan_to_alert():
+    from unittest.mock import patch
+    from src import contacts
+    from src.main import app, reset_call_limits
+    reset_call_limits()
+    c = TestClient(app, client=("127.0.0.1", 50000))
+    calls = []
+    with patch("src.main.dispatch_call", side_effect=lambda phone, text: calls.append((phone, text)) or
+               {"success": True, "dry_run": True}):
+        r = c.post("/api/receipts", json={"cold_storage_id": "cs-a", "farmer_name": "Rahim", "phone": "01711998877",
+                                          "sacks": 17, "month": 3, "year": 2027, "voice": True}).json()
+        no = r["receipt"]["no"]
+        assert r["receipt"]["by_call"] is True and r["call_result"]["success"] is True
+        assert contacts.prefers_voice(f"receipt:{no}") and "পরিকল্পনা" not in calls[-1][1]
+        assert no in calls[-1][1] and "এটি ডেমো বার্তা" in calls[-1][1]              # the receipt, read out
+
+        app_ = c.post("/api/finance/apply", json={"sacks": 17, "price_today": 16, "month": 3, "year": 2027,
+                                                  "months": 9, "farmer_name": "Rahim", "receipt_no": no}).json()
+        c.post(f"/api/finance/applications/{app_['id']}/receipt", json={"sacks_found": 17})
+        d = c.post(f"/api/finance/applications/{app_['id']}/decision", json={"approve": True}).json()
+        assert d["call_result"]["success"] is True and "ঋণ অনুমোদন" in calls[-1][1]   # the decision, read out
+
+        reset_call_limits()
+        a = c.post("/api/alerts/price-window", json={"month": 12, "year": 2027, "price_today": 26,
+                                                      "send": True}).json()
+        assert a[0]["sms_result"]["dry_run"] is True and a[0]["call_result"]["success"] is True
+    assert all(phone == "01711998877" for phone, _ in calls) and len(calls) == 3
+
+
+def test_no_call_for_a_farmer_who_reads_sms():
+    from src.main import app
+    c = TestClient(app)
+    r = c.post("/api/receipts", json={"cold_storage_id": "cs-a", "farmer_name": "Karim", "phone": "01711998877",
+                                      "sacks": 10}).json()
+    assert r["receipt"]["by_call"] is False and "call_result" not in r
+    a = c.post("/api/alerts/price-window", json={"month": 12, "year": 2027, "price_today": 26, "send": True}).json()
+    assert "call_result" not in a[0]
+
+
+def test_advice_hold_plan_and_curing_by_call():
+    from unittest.mock import patch
+    from src.main import app, reset_call_limits
+    from src.notify.call_audio import sms_speech
+    reset_call_limits()
+    c = TestClient(app, client=("127.0.0.1", 50000))
+    body = {"quantity": 80, "unit": "maund", "price_today": 16, "month": 3, "year": 2027,
+            "cash_needed_tk": 25000, "cash_days": 4, "phone": "01711998877", "voice": True}
+    spoken = []
+    with patch("src.main.dispatch_call", side_effect=lambda phone, text: spoken.append(text) or
+               {"success": True, "dry_run": True}):
+        for path, payload in (("/api/sms/advice", body), ("/api/sms/hold-plan", body),
+                              ("/api/sms/curing", {"phone": "01711998877", "voice": True})):
+            r = c.post(path, json=payload).json()
+            assert r["dry_run"] is True and r["call_result"]["success"] is True
+            assert spoken[-1] == sms_speech(r["text"])                    # the SMS's own words
+        r = c.post("/api/sms/advice", json={**body, "voice": False}).json()
+    assert "call_result" not in r and len(spoken) == 3

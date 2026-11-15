@@ -339,20 +339,20 @@ class ReceiptIn(BaseModel):
     advance_per_sack: float = Field(0, ge=0, le=2000)
     month: int = Field(3, ge=1, le=12)            # when the sacks went in (the season on the dashboard)
     year: int = Field(2027, ge=2013, le=2035)
+    voice: bool = False      # "I cannot read an SMS, call me": kept for every later message to this farmer
 
 
 @app.post("/api/receipts")
-def receipt_issue(req: ReceiptIn):
+def receipt_issue(req: ReceiptIn, request: Request):
     """The cold storage weighs and grades the sacks and issues a digital receipt; the farmer gets it by SMS."""
     try:
         r = receipts.issue(req.cold_storage_id, req.farmer_name, req.phone, req.sacks, req.kg_weighed,
-                           req.grade, req.advance_per_sack, req.month, req.year)
+                           req.grade, req.advance_per_sack, req.month, req.year, voice=req.voice)
     except KeyError:
         raise HTTPException(status_code=404, detail="No such cold storage")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    sent = sms_client.send_sms(req.phone, r["sms"]) if req.phone else None
-    return {"receipt": r, "sms_result": sent}
+    return {"receipt": r, **notify_farmer(req.phone, r["sms"], req.voice, request)}
 
 
 @app.get("/api/receipts")
@@ -426,6 +426,7 @@ class ApplyIn(LoanIn):
     district: str = "Bogura"
     cold_storage_id: str = "cs-a"
     receipt_no: str = Field(..., min_length=1, max_length=40)
+    voice: bool = False      # also call with the bank's decision (the receipt's choice counts too)
 
 
 class DadonIn(BaseModel):
@@ -452,7 +453,8 @@ def finance_dadon(req: DadonIn):
 def finance_apply(req: ApplyIn):
     try:
         return financing.apply(req.farmer_name, req.phone, req.district, req.cold_storage_id, req.receipt_no,
-                               req.sacks, req.price_today, req.month, req.year, req.months, req.bank_id, req.amount)
+                               req.sacks, req.price_today, req.month, req.year, req.months, req.bank_id, req.amount,
+                               voice=req.voice)
     except (KeyError, StopIteration):
         raise HTTPException(status_code=404, detail="Unknown bank or cold storage")
 
@@ -484,16 +486,16 @@ class SaleIn(BaseModel):
 
 
 @app.post("/api/finance/applications/{app_id}/decision")
-def finance_decision(app_id: str, req: DecisionIn):
+def finance_decision(app_id: str, req: DecisionIn, request: Request):
     try:
         out = financing.bank_decision(app_id, req.approve)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     if not out:
         raise HTTPException(status_code=404, detail="No such application")
-    phone = contacts.get(f"application:{app_id}")
+    key = f"application:{app_id}"
     text = financing.decision_sms(out)
-    return {**out, "sms_text": text, "sms_result": sms_client.send_sms(phone, text) if phone else None}
+    return {**out, "sms_text": text, **notify_farmer(contacts.get(key), text, contacts.prefers_voice(key), request)}
 
 
 @app.post("/api/finance/applications/{app_id}/sale")
@@ -524,9 +526,10 @@ def price_window_alerts(req: AlertsIn, request: Request):
     found = alerts.price_window(req.month, req.year, req.price_today)
     if not req.send:
         return found
+    dial = lambda phone, text: place_call(phone, text, request)     # noqa: E731
     if req.channel == "voice":
-        return alerts.call(found, lambda phone, text: place_call(phone, text, request))
-    return alerts.send(found, sms_client.send_sms)
+        return alerts.call(found, dial)
+    return alerts.send(found, sms_client.send_sms, dial)       # and a call to those who asked for calls
 
 
 # ============================================================ group storage
@@ -649,36 +652,54 @@ def profit_calculate(req: ProfitIn):
 
 # ============================================================ SMS (dry run unless SMS_LIVE=1)
 
+def notify_farmer(phone: Optional[str], text: str, voice: bool, request: Request) -> dict:
+    """
+    An SMS to the farmer; for a farmer who cannot read one, the same words and numbers as a call, within
+    the call limits (allow-list, daily cap, calls per address). The text is always built by this server.
+    """
+    out = {"sms_result": sms_client.send_sms(phone, text) if phone else None}
+    if voice and phone:
+        out["call_result"] = place_call(phone, call_audio.sms_speech(text), request)
+    return out
+
+
+def _sent(text: str, sent: dict) -> dict:
+    """The answer of the SMS endpoints: the text and the SMS result, plus the call's when one was placed."""
+    return {"text": text, **(sent["sms_result"] or {}), **({"call_result": sent["call_result"]} if "call_result" in sent else {})}
+
+
 class AdviceSmsIn(PlanIn):
     phone: str = Field(..., max_length=200)
+    voice: bool = False      # the farmer cannot read an SMS: also call with the same words
 
 
 @app.post("/api/sms/advice")
-def sms_advice(req: AdviceSmsIn):
+def sms_advice(req: AdviceSmsIn, request: Request):
     """Send the store-or-sell advice by SMS. The text is built here from the engine, never sent from the page."""
     plan = planner.plan(req.lot())
     text = advice_sms(plan)
-    return {"text": text, **sms_client.send_sms(req.phone, text)}
+    return _sent(text, notify_farmer(req.phone, text, req.voice, request))
 
 
 @app.post("/api/sms/hold-plan")
-def sms_hold_plan(req: AdviceSmsIn):
+def sms_hold_plan(req: AdviceSmsIn, request: Request):
     """The hold plan by SMS: the month to sell, "do not sell before", and the price that makes an early sale pay."""
     hold = hold_plan.build(planner.plan(req.lot()))
     if not hold:
         raise HTTPException(status_code=400, detail="The advice is to sell everything now: there is nothing to hold.")
-    return {"text": hold["sms"], **sms_client.send_sms(req.phone, hold["sms"])}
+    return _sent(hold["sms"], notify_farmer(req.phone, hold["sms"], req.voice, request))
 
 
 class PhoneIn(BaseModel):
     phone: str = Field(..., max_length=200)
+    voice: bool = False
 
 
 @app.post("/api/sms/curing")
-def sms_curing(req: PhoneIn):
+def sms_curing(req: PhoneIn, request: Request):
     """The reminder before the harvest: cure the potatoes in shade before cold storage."""
     text = curing_sms()
-    return {"text": text, **sms_client.send_sms(req.phone, text)}
+    return _sent(text, notify_farmer(req.phone, text, req.voice, request))
 
 
 # ============================================================ the business plan

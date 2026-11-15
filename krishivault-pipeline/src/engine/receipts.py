@@ -57,7 +57,7 @@ def partner_check(cs: dict) -> list[str]:
 
 def issue(cold_storage_id: str, farmer_name: str, phone: Optional[str], sacks: int,
           kg_weighed: Optional[float] = None, grade: str = "table", advance_per_sack: float = 0.0,
-          month: int = 3, year: int = 2027) -> dict:
+          month: int = 3, year: int = 2027, voice: bool = False) -> dict:
     """The cold storage records weighed and graded sacks; returns the receipt with its SMS text."""
     cs = demo_data.cold_storage(cold_storage_id)
     missing = partner_check(cs)
@@ -84,7 +84,8 @@ def issue(cold_storage_id: str, farmer_name: str, phone: Optional[str], sacks: i
                           {"receipt": no, "sacks": int(sacks), "kg": round(kg), "grade": grade,
                            "cold_storage": cs["name"]}, district=cs["district"], phone=phone)
     record["ref"] = event["ref"]
-    contacts.save(f"receipt:{no}", phone)        # for the loan and price-window SMS later; never shown
+    contacts.save(f"receipt:{no}", phone, voice)  # for the loan and price-window messages later; never shown
+    record["by_call"] = bool(voice and phone)     # the farmer asked for calls: shown, the number never is
     return demo_data.append("storage_receipts", record)
 
 

@@ -79,7 +79,8 @@ def price_window(month: int, year: int, price_today: float, receipt_no: Optional
 
 def voice_text(a: dict) -> str:
     """The alert as speech for an outbound call: the same words and numbers as the SMS."""
-    return a["sms"].replace("কৃষিভল্ট: ", "").replace(" (ডেমো)", " এটি ডেমো বার্তা।")
+    from src.notify.call_audio import sms_speech
+    return sms_speech(a["sms"])
 
 
 def call(alerts: list[dict], dial) -> list[dict]:
@@ -94,11 +95,17 @@ def call(alerts: list[dict], dial) -> list[dict]:
     return alerts
 
 
-def send(alerts: list[dict], send_sms) -> list[dict]:
-    """Send each alert by SMS to the number the farmer gave at the cold storage (dry run unless SMS_LIVE=1)."""
+def send(alerts: list[dict], send_sms, dial=None) -> list[dict]:
+    """
+    Send each alert by SMS to the number the farmer gave at the cold storage (dry run unless SMS_LIVE=1);
+    a farmer who asked for calls ("I cannot read an SMS") also gets it as a call, through `dial`.
+    """
     for a in alerts:
-        phone = contacts.get(f"receipt:{a['receipt']}")
+        key = f"receipt:{a['receipt']}"
+        phone = contacts.get(key)
         a["sms_result"] = send_sms(phone, a["sms"]) if phone else {"error": "no phone number on the receipt"}
+        if dial and phone and contacts.prefers_voice(key):
+            a["call_result"] = dial(phone, voice_text(a))
     return alerts
 
 
