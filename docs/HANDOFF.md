@@ -2,6 +2,8 @@
 
 The project's main plan document: start here in every session. **The team's plan document is the main model**: where it and older notes differ, the repository follows the plan document. Details that support it are in `PLAN_DETAILS.md`, the data in `DATA_SOURCES.md`, the screens in `SCREENS.md`.
 
+**Review of 15 November 2026:** `docs/PRODUCT_REVIEW.md`: what was fixed for the live site (call-line abuse, the 4-worker signing key, slow first answers, the alert's weight loss), the one-click loop, what to do before the next round, and the plan figures judges will test.
+
 **The team's plan document** is the Google Doc "Krishi Vault" (`https://docs.google.com/document/d/1C0Pk6GlYDNaAy5TH6EU6t3VfRdoLo2idiwT59-bgnck/edit`). It has the problem with a value-chain study's figures, how KrishiVault is different, the execution and feasibility plan for Round 2 of **Grameenphone FutureMakers**, the ground-level challenges, the money (start-up capital, income, a 3-year projection) and the seven parts in Bangla. On 15 October the repository was brought in line with it; section 13 lists what changed and what the team still has to decide. When the Google Doc changes, update this file first.
 
 **The plan changed on 14 October 2026.** KrishiVault no longer tries to cover everything (fertilizer, seed and machinery marketplace, weather alerts). It focuses on one sector: **potato after the harvest: when and how much to sell, cold storage, loans against stored potatoes, buyers, export and group storage.** The earlier four-pillar plan is in the git history (commit `cd84b32`).
@@ -210,13 +212,15 @@ The six biggest districts (Rangpur, Dinajpur, Bogura, Joypurhat, Munshiganj, Raj
 | Call preview (`/call`) | Built | Keypad or speech in the browser; the same engine; requests reach the partner screens; press 8 to be counted |
 | USSD preview (`/ussd`) | Built | A button phone in the browser: the plan's two numbers (sacks, cash needed) → the split and the net profit; SMS, a space request or press 8; gateway format (CON/END) |
 | Digital storage receipt, bank hold, payout, split at sale | Built (demo partners) | Partner screens → Cold storage (issue), Bank loan (apply with the number), Bank (approve: payout and SMS; record the sale) |
-| Price-window alerts | Built (demo partners; SMS dry run) | Partner screens → Field agent (helper): "Check price windows and SMS farmers" with the season "Today: October 2026" |
+| Price-window alerts | Built (demo partners; SMS dry run) | Partner screens → Field agent (helper): "Check price windows and SMS farmers" with the season "In store: October 2026" |
 | Group selling | Built (demo buyers) | Group storage page → "Sell together"; "Send the group lot to the buyers' screen" |
 | Government screen | Built (glut warning real; fill demo) | Partner screens → Government |
 | SMS: advice, receipt, curing reminder | Ported to Python; dry run | "SMS me" on `/call`; "Send this advice by SMS" and "Send the curing reminder" on the dashboard; receipts SMS on issue |
 | Business plan sums | Built | `/api/business/plan` |
+| The whole loop in one click | Built (demo partners; nothing sent) | Season overview → "Run the loop": harvest call → receipt → bank loan and hold → price-window alert → the split at sale, with the bad case (`src/engine/demo_loop.py`, `/api/demo/loop`) |
 | AI and voice architecture | Written | `docs/ai_architecture.html`: what runs today, the conversation system after the pilot, the judges' questions |
-| Phone line, USSD code | Not in the prototype | No phone line or short code; the Awaj port stays in `src/notify/awaj.py` for later |
+| Outbound phone call | Built (VoiceBlast; dry run until `VOICEBLAST_LIVE=1`) | `/call` → "Call me": rings the number and reads that call's signed answer from the engine, never text from the page; limits in `.env.example` |
+| Inbound phone line, USSD code | Not in the prototype | No inbound number or short code; the Awaj port stays in `src/notify/awaj.py` for later |
 
 **The season selector** replays real seasons: **March 2025** (big crop: the engine says sell now), **March 2024** (normal crop: sell 30% now, store the rest until December), plus **March 2027** (the next harvest, forecast) and **October 2026** (potatoes already in store).
 

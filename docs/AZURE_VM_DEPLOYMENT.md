@@ -139,7 +139,7 @@ Group=azureuser
 WorkingDirectory=/opt/krishivault/krishivault-pipeline
 Environment="PATH=/opt/krishivault/krishivault-pipeline/venv/bin"
 ExecStart=/opt/krishivault/krishivault-pipeline/venv/bin/gunicorn \
-    -w 4 \
+    -w 1 \
     -k uvicorn.workers.UvicornWorker \
     src.main:app \
     --bind 127.0.0.1:8000 \
@@ -152,6 +152,13 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 ```
+
+**Why one worker (`-w 1`):** the call limits (calls a day, calls per address) are counted in the server's
+memory, so with 4 workers the daily cap is really 4 times higher. One worker is plenty for a demo: each
+request still runs in its own thread. If you ever need more workers, set `KV_STATE_SECRET` in `.env` too.
+
+**Before the server is public, lock the call line** in `.env`: `CALL_ALLOWED_NUMBERS=` the team's and the
+judges' numbers, and `CALL_DAILY_CAP=` a small number. Anyone who opens the site can press "Call me".
 
 Enable and start the service:
 ```bash

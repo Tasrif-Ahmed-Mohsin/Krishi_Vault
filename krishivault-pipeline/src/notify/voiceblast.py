@@ -532,10 +532,14 @@ _voiceblast_instance: Optional[VoiceBlastClient] = None
 _broadcast_api_instance: Optional[BroadcastApiClient] = None
 
 
+# The live switch is read again on every use: switching a line off in the environment takes effect at
+# once, and an instance made while a switch was on never keeps ringing phones after it is turned off.
+
 def get_voiceblast_client() -> VoiceBlastClient:
     global _voiceblast_instance
     if _voiceblast_instance is None:
         _voiceblast_instance = VoiceBlastClient()
+    _voiceblast_instance.live = os.getenv("VOICEBLAST_LIVE", "0") == "1"
     return _voiceblast_instance
 
 
@@ -543,4 +547,5 @@ def get_broadcast_api_client() -> BroadcastApiClient:
     global _broadcast_api_instance
     if _broadcast_api_instance is None:
         _broadcast_api_instance = BroadcastApiClient()
+    _broadcast_api_instance.live = os.getenv("BROADCAST_LIVE", "0") == "1"
     return _broadcast_api_instance

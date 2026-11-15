@@ -57,7 +57,7 @@ The demo is the proof that this is not a slide-ware idea. Speaker B drives; one 
 4. **1:05–1:25, the receipt and the bank (Partner screens).** The cold storage issues a digital receipt (his name, the weight, by SMS); the bank approves, the sacks are held for the bank, the payout SMS goes. Say: "The ministry found stock hidden behind slips with no name. This one has his."
 5. **1:25–1:45, a judge's own numbers on USSD (`/ussd`).** Ask one judge: "How many sacks, and how much cash does he need?" Dial, enter the two numbers, read the answer screen. Say: "Two numbers, any phone, no internet."
 
-**If there is time left:** season "Today: October 2026", Field agent → "Check price windows": the SMS says how many sacks to sell and to which buyer.
+**If there is time left:** season "In store: October 2026", Field agent → "Check price windows": the SMS says how many sacks to sell and to which buyer.
 
 **Fallback:** a 90-second screen recording of the same run, open in a second tab. If anything stalls for more than 5 seconds, switch without comment and keep talking.
 

@@ -335,7 +335,7 @@
           <label>মৌসুম <span class="en small">Season</span>
             <select id="season">
               <option value="3-2027">Next harvest: March 2027 (forecast)</option>
-              <option value="10-2026">Today: October 2026 (potatoes in store)</option>
+              <option value="10-2026">October 2026 (potatoes in store)</option>
               <option value="3-2025">Replay March 2025: big crop</option>
               <option value="3-2024">Replay March 2024: normal crop</option>
             </select>
@@ -423,13 +423,14 @@ function loadDefaultScenario() {
   heardDiv2.innerHTML = "বোঝা গেছে: হ্যাঁ <span class=\"src parser\">Parser</span>";
   fMsg2.appendChild(heardDiv2);
   // 5. KrishiVault calculated advice
-  addMsg("kv", t3.say, "KrishiVault", true);
+  const adviceMsg = addMsg("kv", t3.say, "KrishiVault", true);
 
   // Set internal state
   state = t3.state;
   expects = t3.expects;
   allowedKeys = t3.keys || [];
   lastSay = t3.say;
+  scenarioReady = refreshDefaultScenario(adviceMsg);
 
   // Render components
   renderHint();
@@ -446,6 +447,31 @@ function loadDefaultScenario() {
   if (!$("phone").value) {
     $("phone").value = store.get("phone") || "";
   }
+}
+
+// The snapshot above shows at once. The server then gives the same answer, freshly signed: the SMS and
+// the phone call accept only text this server signed, and a snapshot's signature is from another start.
+let scenarioReady = Promise.resolve();
+async function refreshDefaultScenario(adviceMsg) {
+  const snapshot = state;
+  try {
+    const res = await fetch("/api/call/turn", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "keypad", digits: "1", state: DEFAULT_SCENARIO.turn2.state,
+                             phone: $("phone").value.trim() || null }),
+    });
+    if (!res.ok) return;
+    const r = await res.json();
+    if (state !== snapshot || busy) return;          // the caller has already moved on
+    state = r.state; expects = r.expects; allowedKeys = r.keys || []; lastSay = r.say;
+    adviceMsg.querySelector(".text").textContent = r.say;
+    adviceMsg.querySelector(".play").onclick = () => speak(r.say, true);
+    if (r.result) renderResult(r.result);
+    if (r.narration) renderNumberCheck(r.narration);
+    if (r.sms_text) $("smsPreview").innerHTML = `<div class="small en">SMS receipt</div>${esc(r.sms_text)}`;
+    $("smsBtn").disabled = !r.sms_text;
+    renderHint();
+  } catch { /* the snapshot stays on screen */ }
 }
 
 // ---------------------------------------------------------------- setup
@@ -858,6 +884,7 @@ async function notify() {
     return;
   }
   if (!state) return;
+  await scenarioReady;
   try {
     const res = await fetch("/api/call/sms", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state, phone }),
@@ -884,12 +911,14 @@ async function dialVoiceCall() {
   const origText = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = "📞 Dialing...";
-  const adviceText = (typeof lastSay !== 'undefined' && lastSay) ? lastSay : "";
+  await scenarioReady;
+  // The server reads out this call's own answer (signed in the state), never text sent from the page
+  const answered = state && state.call_sig ? state : null;
   try {
     const res = await fetch("/api/call/dial", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: valid[0], text: adviceText })
+      body: JSON.stringify({ phone: valid[0], state: answered })
     });
     let data = null;
     try {
@@ -902,7 +931,12 @@ async function dialVoiceCall() {
       throw new Error(errMsg);
     }
     const audioNote = data.audio_file_id ? ` (Audio ID: ${data.audio_file_id})` : "";
-    showNotify(`✅ OUTBOUND VOICE CALL DISPATCHED!\n\nTarget Mobile: ${data.phone}\nCaller DID: ${data.caller_id}${audioNote}\nStatus: ${data.message || 'Call queued'}\n\nPhone should ring shortly. Listen for the customized advice!`);
+    const what = answered ? "this call's answer from the engine" : "the KrishiVault welcome (no answer yet in this call)";
+    if (data.dry_run) {
+      showNotify(`DRY RUN: no call was placed (the server's call line is off).\n\nIt would ring ${data.phone} from ${data.caller_id}${audioNote} and read ${what}.`);
+      return;
+    }
+    showNotify(`✅ OUTBOUND VOICE CALL DISPATCHED!\n\nTarget Mobile: ${data.phone}\nCaller DID: ${data.caller_id}${audioNote}\nStatus: ${data.message || 'Call queued'}\n\nThe phone should ring shortly and read ${what}.`);
 
     setTimeout(loadCallHistory, 3000);
     setTimeout(loadCallHistory, 8000);

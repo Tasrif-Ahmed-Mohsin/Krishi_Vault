@@ -148,6 +148,16 @@ def settle(no: str, price_per_kg: float, kg_sold: Optional[float] = None, months
     r = get(no)
     if not r:
         return None
+    out = sale_split(r, price_per_kg, kg_sold, months_stored, bank)
+    demo_data.update("storage_receipts", "no", r["no"], {
+        "status": "sold; the cold storage and bank paid from the sale (demo)" if out["bank_owed"] else "sold (demo)",
+        "hold": None, "settlement": out})
+    return out
+
+
+def sale_split(r: dict, price_per_kg: float, kg_sold: Optional[float] = None, months_stored: int = 9,
+               bank: Optional[dict] = None) -> dict:
+    """The split if the receipt's potatoes sold at this price; nothing is recorded (settle() records it)."""
     t = StorageTerms()
     kg = float(kg_sold) if kg_sold else r["kg"] * (1 - t.season_loss())
     cold = {"Rent": 0 if r["rent_paid"] else r["sacks"] * r["rent_per_sack"]}
@@ -158,8 +168,5 @@ def settle(no: str, price_per_kg: float, kg_sold: Optional[float] = None, months
     if bank and bank.get("loan"):
         owed = {"Bank loan": bank["loan"], "Bank interest": bank.get("interest", 0)}
     out = split_sale(kg * price_per_kg, r["sacks"] * t.sell_from_store_per_sack, cold, owed)
-    out.update({"receipt": r["no"], "kg_sold": round(kg), "price_per_kg": price_per_kg})
-    demo_data.update("storage_receipts", "no", r["no"], {
-        "status": "sold; the cold storage and bank paid from the sale (demo)" if owed else "sold (demo)",
-        "hold": None, "settlement": out})
+    out.update({"receipt": r["no"], "kg_sold": round(kg), "price_per_kg": price_per_kg, "bank_owed": bool(owed)})
     return out

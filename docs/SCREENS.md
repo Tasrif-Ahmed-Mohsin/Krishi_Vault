@@ -19,7 +19,7 @@ For helpers, partners, judges and the team. Pick a **season** at the top; every 
 | Season | What it shows |
 |---|---|
 | Next harvest: March 2027 | A forecast: the crop size is not known, so the price range is wide |
-| Today: October 2026 | Potatoes already in cold storage since March; two months left |
+| In store: October 2026 | Potatoes already in cold storage since March; two months left |
 | Replay March 2025 | The big crop (6% above trend): real prices stayed flat afterwards. A fair replay: only what was known in March 2025, then what really happened |
 | Replay March 2024 | A normal crop: real prices nearly doubled by November. A fair replay: only what was known in March 2024, then what really happened |
 
@@ -27,7 +27,7 @@ For helpers, partners, judges and the team. Pick a **season** at the top; every 
 
 | Page | What it does |
 |---|---|
-| Season overview | The crop, the price outlook with its range, what storing 36 sacks gains or loses month by month, and why farmers lose money in cold storage; in a replay, what really happened and the net profit against selling everything at the harvest |
+| Season overview | **The whole loop in one click:** one demo farmer goes from the harvest call to the digital receipt, the bank loan with its hold, the price-window alert and the sale that pays the cold storage, the bank, then the farmer, with the bad-case price beside it (the records then appear on the partner screens; in the 2025 glut replay it stops at "sell now"). Below it: the crop, the price outlook with its range, what storing 36 sacks gains or loses month by month, and why farmers lose money in cold storage; in a replay, what really happened and the net profit against selling everything at the harvest |
 | Store or sell | The engine: the farmer's quantity, price, cash need and costs → sell now, sell part and store the rest, or store until a month (already stored); the plan's staggered exit beside it; the chance, the bad case, the price at which storing pays; the net profit after the growing cost (own or the ৳14 benchmark); the glut cap on loans; send the advice by SMS; send the curing reminder; ask the cold storage for space; a box to count the farmer (with consent) in the district figures |
 | Forecasts | Production by district (BBS) with a range; the price outlook table; WFP prices so far; how the model works and its limits; the backtest (the outlook on past seasons it had not seen, against the usual seasonal shape); regional price levels and the biggest districts |
 | Buyers | Offers ranked by money in the farmer's hand; add the farmer's own offers; send the lot to the buyers' screen |
@@ -50,6 +50,8 @@ A farmer's phone call, played in the browser, because the prototype has no phone
 7. **Every answer ends with** "১ = আবার শুনুন, ০ = মূল মেনু, ৯ = সহকারী".
 
 **SMS me** sends the receipt (REVE). It is a **dry run** unless the server has `SMS_LIVE=1` and the keys: the screen then shows the exact request that would go out. The SMS text is signed by the server, so the page cannot change what is sent.
+
+**Call me** rings the number and reads this call's answer from the engine (VoiceBlast). It is a **dry run** unless the server has `VOICEBLAST_LIVE=1`. Like the SMS, the answer is signed by the server: the page cannot make the line say anything else, and before an answer the call reads only a fixed welcome. On a public server set `CALL_ALLOWED_NUMBERS` and `CALL_DAILY_CAP` (`krishivault-pipeline/.env.example`).
 
 ### Speaking to it
 
@@ -79,7 +81,7 @@ Set before starting the server (names in `krishivault-pipeline/.env.example`; va
 | Gemini | Tried with the real key (14 October): understanding and rewording, number-checked |
 | Speech, Google voice | Work with keys; not yet tried with real keys here |
 | SMS | Dry run until switched on |
-| Phone calls | Preview only |
+| Phone calls | Outbound "Call me" reads the engine's answer; dry run until `VOICEBLAST_LIVE=1`. No inbound line yet |
 | USSD | Preview only (no short code); the handler speaks the gateway format |
 | Price-window alerts, group selling, the bank's payout | Real code; demo partners; SMS dry run; no money moves |
 
@@ -96,7 +98,7 @@ The plan's text menu for any phone, played on a button phone drawn in the browse
 
 - `krishivault-pipeline/static/index.html` (dashboard), `static/call.html` (call preview).
 - `src/main.py`: the API.
-- `src/engine/`: `storage_plan.py`, `market_access.py`, `financing.py`, `receipts.py` (digital receipts, the bank's hold, the split at sale), `farmer_signals.py` (the government screen), `group_storage.py`, `export_intel.py`, `profit.py`, `business_model.py` (the plan's income and projection), `facts.py`.
+- `src/engine/`: `storage_plan.py`, `demo_loop.py` (the whole loop in one click), `market_access.py`, `financing.py`, `receipts.py` (digital receipts, the bank's hold, the split at sale), `farmer_signals.py` (the government screen), `group_storage.py`, `export_intel.py`, `profit.py`, `business_model.py` (the plan's income and projection), `facts.py`.
 - `src/models/`: `production_forecast.py`, `price_outlook.py`.
 - `src/voice/`: `conversation.py` (the call), `ussd.py` (the USSD menu), `understanding.py`, `intent_parser.py`, `bangla_numbers.py`, `number_lock.py`, `gemini.py`, `tts_generator.py`.
-- `src/notify/sms.py` (REVE), `src/notify/awaj.py` (calls, for later); `src/events.py`, `src/demo_data.py`.
+- `src/notify/sms.py` (REVE), `src/notify/voiceblast.py` and `call_audio.py` (outbound calls and their audio), `src/notify/awaj.py` (kept for later); `src/events.py`, `src/demo_data.py`.

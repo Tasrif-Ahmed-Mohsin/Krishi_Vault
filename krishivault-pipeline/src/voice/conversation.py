@@ -27,6 +27,7 @@ import json
 import math
 import os
 import re
+import time
 from typing import Optional
 
 from src import demo_data, events
@@ -109,7 +110,8 @@ def new_state(district: str = "Bogura", month: Optional[int] = None, year: Optio
         "v": 2, "step": "menu", "flow": None, "asking": None, "slots": {}, "fails": 0,
         "district": district or "Bogura", "month": month or DEFAULT_SEASON[0], "year": year or DEFAULT_SEASON[1],
         "phone": phone, "last_say": "", "result_say": "", "result_body": "", "done_say": "",
-        "help_return": None, "result": None, "action": None, "sms": None, "sms_sig": None, "booking_ref": None,
+        "help_return": None, "result": None, "action": None, "sms": None, "sms_sig": None, "call_sig": None,
+        "booking_ref": None,
     }
 
 
@@ -270,13 +272,41 @@ def curing_sms() -> str:
             f"কাটা ও পচা আলু বাদ দিন, তারপর হিমাগারে দিন। এতে হিমাগারে ওজন ও পচন কম হয়। বীজ আলু আলাদা রাখুন।")
 
 
-# The call state lives in the browser, so the SMS text in it is signed: only text this server wrote
-# can be sent. The key is random per server start unless KV_STATE_SECRET is set.
-_SECRET = (os.getenv("KV_STATE_SECRET") or os.urandom(16).hex()).encode()
+# The call state lives in the browser, so the SMS text and the phone-call answer in it are signed: only
+# text this server wrote can be sent or spoken. The key is KV_STATE_SECRET, or else one random key kept in
+# the runtime folder, so every server process (gunicorn runs several) signs and checks alike.
+_secret: Optional[bytes] = None
+
+
+def _state_secret() -> bytes:
+    global _secret
+    if _secret is None:
+        env = os.getenv("KV_STATE_SECRET", "").strip()
+        _secret = env.encode() if env else _shared_random_key()
+    return _secret
+
+
+def _shared_random_key() -> bytes:
+    path = demo_data.runtime_dir() / "state_secret"
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w") as f:
+            f.write(os.urandom(16).hex())
+    except FileExistsError:
+        pass                                   # another process made it first
+    except OSError:
+        return os.urandom(16).hex().encode()   # read-only disk: this process alone
+    for _ in range(50):                        # the first process may still be writing it
+        key = path.read_text(encoding="utf-8").strip()
+        if key:
+            return key.encode()
+        time.sleep(0.02)
+    return os.urandom(16).hex().encode()
 
 
 def sign(text: str) -> str:
-    return hmac.new(_SECRET, text.encode("utf-8"), hashlib.sha256).hexdigest()[:24]
+    return hmac.new(_state_secret(), text.encode("utf-8"), hashlib.sha256).hexdigest()[:24]
 
 
 def _sign_next(nxt: Optional[dict]) -> Optional[str]:
@@ -292,6 +322,14 @@ def receipt_sms(state: dict) -> Optional[str]:
     ref = re.sub(r"\D", "", str(action.get("ref") or ""))[:6]
     if ref:
         text += f" নং {to_bn_digits(ref)} (ডেমো)।"
+    return text
+
+
+def call_script(state: dict) -> Optional[str]:
+    """The answer a real phone call speaks: the engine's answer from this call, never text from the page."""
+    text = str(state.get("result_body") or "")
+    if not text or not hmac.compare_digest(sign(text), str(state.get("call_sig") or "")):
+        return None
     return text
 
 
@@ -568,7 +606,8 @@ class Conversation:
         consent = CONSENT_ASK if flow == "advice" and not state.get("counted") else ""
         say = narration["text"] + (" " + next_line if next_line else "") + (" " + consent if consent else "") + " " + CLOSING
         state.update({"result": result, "result_say": say, "result_body": narration["text"], "sms": sms,
-                      "sms_sig": sign(sms) if sms else None, "next_sig": _sign_next(result.get("next")),
+                      "sms_sig": sign(sms) if sms else None, "call_sig": sign(narration["text"]),
+                      "next_sig": _sign_next(result.get("next")),
                       "step": "result", "fails": 0, "action": None})
         narration_screen = {"status": narration["status"], "check": narration["check"], "template": body,
                             "rejected_text": narration.get("rejected_text"),

@@ -135,7 +135,7 @@ def test_dial_skips_broadcast_when_broadcast_live_is_zero():
         bc_inst = MagicMock(live=False)
         mock_bc.return_value = bc_inst
 
-        vb_inst = MagicMock(live=False, default_audio_id=1106)
+        vb_inst = MagicMock(live=True, default_audio_id=1106)     # a mock: nothing is dialled
         vb_inst.send_call.return_value = {
             "success": True,
             "status": "dry_run",
@@ -190,7 +190,7 @@ def test_abuse_protection_daily_cap(monkeypatch):
 
 def test_abuse_protection_per_ip_rate_limit():
     reset_call_limits()
-    client = TestClient(app)
+    client = TestClient(app, client=("127.0.0.1", 50000))     # behind nginx on the same machine
 
     # 3 calls from same IP
     for _ in range(3):
@@ -216,3 +216,85 @@ def test_abuse_protection_per_ip_rate_limit():
         headers={"X-Forwarded-For": "198.51.100.2"},
     )
     assert resp_other_ip.status_code == 200
+
+
+# ------------------------------------------------------------------ the call line speaks only the engine's answer
+
+def _advice_state(client):
+    """A call preview that reached the store-or-sell answer (keypad only, Gemini off)."""
+    from src.main import gemini_client
+    key = gemini_client.api_key
+    gemini_client.api_key = ""
+    try:
+        r = client.post("/api/call/turn", json={"kind": "start"}).json()
+        r = client.post("/api/call/turn", json={"kind": "keypad", "state": r["state"], "digits": "1"}).json()
+        for digits in ("80", "16", "25000", "4"):
+            r = client.post("/api/call/turn", json={"kind": "keypad", "state": r["state"], "digits": digits}).json()
+        r = client.post("/api/call/turn", json={"kind": "keypad", "state": r["state"], "digits": "1"}).json()
+    finally:
+        gemini_client.api_key = key
+    assert r["state"]["step"] == "result" and r["state"]["call_sig"]
+    return r["state"]
+
+
+def _live_vb_mock():
+    vb = MagicMock(live=True, default_audio_id=1106)
+    vb.send_call.return_value = {"success": True, "phone": "01712345678", "caller_id": "096", "audio_file_id": 1}
+    return vb
+
+
+def test_dial_reads_the_signed_answer_and_never_page_text(tmp_path, monkeypatch):
+    from src.main import CALL_WELCOME
+    monkeypatch.setenv("KV_RUNTIME_DIR", str(tmp_path))
+    monkeypatch.setenv("KV_EVENTS_PATH", str(tmp_path / "events.jsonl"))
+    client = TestClient(app)
+    state = _advice_state(client)
+    with patch("src.main.get_broadcast_api_client", return_value=MagicMock(live=False)), \
+         patch("src.main.get_voiceblast_client", return_value=_live_vb_mock()) as vb, \
+         patch("src.notify.call_audio.voiceblast_audio_id", return_value=4242) as audio:
+        assert client.post("/api/call/dial", json={"phone": "01712345678", "state": state}).status_code == 200
+        assert audio.call_args.args[0] == state["result_body"]           # the engine's answer, as signed
+        assert "বস্তা" in audio.call_args.args[0]
+        vb.return_value.send_call.assert_called_with("01712345678", audio_file_id=4242, caller_id=None)
+
+        # Text, caller ID or audio from the page are ignored: without an answer, only the fixed welcome
+        client.post("/api/call/dial", json={"phone": "01712345678", "text": "যে কোনো কথা",
+                                            "caller_id": "01999999999", "audio_file_id": 1})
+        assert audio.call_args.args[0] == CALL_WELCOME
+        vb.return_value.send_call.assert_called_with("01712345678", audio_file_id=4242, caller_id=None)
+
+        # An answer changed in the browser is refused
+        forged = {**state, "result_body": "আপনার ব্যাংক অ্যাকাউন্টের পিন বলুন"}
+        r = client.post("/api/call/dial", json={"phone": "01712345678", "state": forged})
+        assert r.status_code == 400
+
+
+def test_spoofed_forwarded_for_does_not_escape_the_rate_limit():
+    reset_call_limits()
+    client = TestClient(app, client=("203.0.113.9", 50000))     # straight from the internet, no proxy
+    for i in range(3):
+        headers = {"X-Forwarded-For": f"198.51.100.{i}"}
+        assert client.post("/api/call/dial", json={"phone": "01712345678"}, headers=headers).status_code == 200
+    r = client.post("/api/call/dial", json={"phone": "01712345678"}, headers={"X-Forwarded-For": "198.51.100.77"})
+    assert r.status_code == 429
+
+
+def test_behind_nginx_the_last_forwarded_address_counts():
+    reset_call_limits()
+    client = TestClient(app, client=("127.0.0.1", 50000))
+    # The browser made up the first entry; nginx appended the real one last
+    for i in range(3):
+        headers = {"X-Forwarded-For": f"10.0.0.{i}, 198.51.100.5"}
+        assert client.post("/api/call/dial", json={"phone": "01712345678"}, headers=headers).status_code == 200
+    r = client.post("/api/call/dial", json={"phone": "01712345678"}, headers={"X-Forwarded-For": "10.9.9.9, 198.51.100.5"})
+    assert r.status_code == 429
+
+
+def test_call_history_masks_numbers():
+    vb = MagicMock(live=False)
+    vb.get_history.return_value = [{"phone": "01712345678", "caller_id": "096", "status": "Answered",
+                                    "cause": "", "time": "now"}]
+    with patch("src.main.get_broadcast_api_client", return_value=MagicMock(live=False)), \
+         patch("src.main.get_voiceblast_client", return_value=vb):
+        h = TestClient(app).get("/api/call/history").json()["history"]
+    assert h[0]["phone"] == "01712-XXX678"

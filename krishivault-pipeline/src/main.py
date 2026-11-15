@@ -30,15 +30,15 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from src import contacts, demo_data, events as event_log
-from src.engine import (alerts, business_model, export_intel, farmer_signals, financing, group_storage,
-                        market_access, profit, receipts)
+from src.engine import (alerts, business_model, demo_loop, export_intel, farmer_signals, financing,
+                        group_storage, market_access, profit, receipts)
 from src.engine.facts import MAUND_KG, SACK_KG, SOURCES, StorageTerms
 from src.engine.storage_plan import FarmerLot, StoragePlanner
 from src.models import backtest as price_backtest, price_outlook, production_forecast
 from src.notify import sms as sms_client, voiceblast as voiceblast_client, call_audio
 from src.notify.voiceblast import get_voiceblast_client, get_broadcast_api_client
 from src.voice import ussd
-from src.voice.conversation import Conversation, advice_sms, curing_sms, receipt_sms
+from src.voice.conversation import Conversation, advice_sms, call_script, curing_sms, receipt_sms
 
 from src.voice.gemini import GeminiClient
 from src.voice.tts_generator import BengaliVoiceSynthesizer
@@ -75,6 +75,20 @@ def reset_call_limits() -> None:
         _ip_call_timestamps.clear()
         _daily_call_date = ""
         _daily_call_count = 0
+
+
+def client_ip(request: Request) -> str:
+    """
+    The caller's address for the rate limit. Behind nginx on the same machine (the Azure set-up),
+    nginx appends the real address as the LAST X-Forwarded-For entry; anything before it was sent
+    by the browser and can be made up, so it is never used. Other peers: their own address.
+    """
+    peer = request.client.host if request.client else "127.0.0.1"
+    trusted = {p.strip() for p in os.getenv("TRUSTED_PROXIES", "127.0.0.1,::1").split(",") if p.strip()}
+    forwarded = [p.strip() for p in request.headers.get("x-forwarded-for", "").split(",") if p.strip()]
+    if peer in trusted and forwarded:
+        return forwarded[-1]
+    return peer
 
 
 def check_and_record_dial(client_ip: str, clean_phone: str) -> None:
@@ -131,31 +145,37 @@ def check_and_record_dial(client_ip: str, clean_phone: str) -> None:
 
 # ============================================================ pages and status
 
+# The browser checks for a newer page on every visit, so a fresh deploy is seen at once
+PAGE_HEADERS = {"Cache-Control": "no-cache"}
+
+
 @app.get("/")
 def dashboard():
-    return FileResponse(static_dir / "index.html")
+    return FileResponse(static_dir / "index.html", headers=PAGE_HEADERS)
 
 
 @app.get("/call")
 def call_preview():
-    return FileResponse(static_dir / "call.html")
+    return FileResponse(static_dir / "call.html", headers=PAGE_HEADERS)
 
 
 @app.get("/ussd")
 def ussd_preview():
-    return FileResponse(static_dir / "ussd.html")
+    return FileResponse(static_dir / "ussd.html", headers=PAGE_HEADERS)
 
 
 @app.get("/api/status")
 def status():
     """What is switched on. Never returns keys."""
     sms_cfg = sms_client.sms_config()
+    calls_live = get_voiceblast_client().live or get_broadcast_api_client().live
     return {
         "status": "operational",
         "gemini": {"on": gemini_client.available, "model": gemini_client.model_used},
         "google_voice": tts_service.status(),
         "sms": {"configured": sms_cfg["configured"], "live": sms_cfg["live"]},
-        "calls": "preview only (no phone line in the prototype)",
+        "calls": ("live: outbound calls that read the engine's answer (no inbound line or USSD code yet)"
+                  if calls_live else "preview only (no phone line switched on)"),
         "data": {"prices": price_outlook.model_card()["trained_on"]["prices"],
                  "production": price_outlook.model_card()["trained_on"]["production"]},
     }
@@ -572,7 +592,7 @@ def export_evaluate(req: ExportIn):
 
 # ============================================================ profit calculator
 
-class SaleIn(BaseModel):
+class ProfitSaleIn(BaseModel):
     month: Optional[str] = Field(None, max_length=20)
     kg: float = Field(..., ge=0)
     price_per_kg: float = Field(..., ge=0, le=500)
@@ -584,7 +604,7 @@ class ProfitIn(BaseModel):
     harvest_kg: float = Field(..., gt=0)
     growing: dict[str, float] = Field(default_factory=dict)
     after: dict[str, float] = Field(default_factory=dict)
-    sales: list[SaleIn] = Field(default_factory=list, max_length=50)
+    sales: list[ProfitSaleIn] = Field(default_factory=list, max_length=50)
     unsold_price_per_kg: Optional[float] = Field(None, ge=0, le=500)
     harvest_price_per_kg: Optional[float] = Field(None, gt=0, le=500)
 
@@ -659,9 +679,13 @@ class SpeakRequest(BaseModel):
 
 class VoiceDialRequest(BaseModel):
     phone: str = Field(..., max_length=20)
-    audio_file_id: Optional[int] = None
-    caller_id: Optional[str] = None
-    text: Optional[str] = None
+    state: Optional[dict] = None       # the call preview's state: the call speaks its signed answer
+    # Nothing else comes from the page: no free text, caller ID or audio file, so the line cannot be
+    # used to ring a stranger with someone else's message (the rule the SMS already follows).
+
+
+CALL_WELCOME = ("কৃষিভল্ট আলু সংরক্ষণ ও বাজারজাতকরণ সেবায় আপনাকে স্বাগতম। "
+                "আপনার এলাকার আলুর বাজার ও হিমাগার তথ্য জানতে সাথেই থাকুন।")
 
 
 @app.get("/api/call/status")
@@ -703,61 +727,54 @@ def call_status():
 
 @app.post("/api/call/dial")
 def call_dial(req: VoiceDialRequest, request: Request):
-    """Trigger a real outbound voice phone call to a Bangladeshi mobile via VoiceBlast/Broadcast API."""
+    """
+    A real outbound call to a Bangladeshi mobile (VoiceBlast, or the Broadcast API) that speaks the
+    answer of this call preview, signed by the server like the SMS; without one, a fixed welcome.
+    """
     vb = get_voiceblast_client()
     bc = get_broadcast_api_client()
 
     clean_phone = voiceblast_client.bd_mobile(req.phone)
     if not clean_phone:
         raise HTTPException(status_code=400, detail="Phone number must be a valid Bangladeshi mobile (01XXXXXXXXX)")
+    text_to_speak = CALL_WELCOME
+    if req.state:
+        text_to_speak = call_script(req.state)
+        if not text_to_speak:
+            raise HTTPException(status_code=400, detail="There is no answer in this call to read out yet.")
 
-    # Client IP resolution for rate limiting
-    client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-    if not client_ip:
-        client_ip = request.client.host if request.client else "127.0.0.1"
+    # Abuse protection (allow-list, daily cap, per-IP rate limit) before anything is spent
+    check_and_record_dial(client_ip(request), clean_phone)
 
-    # Enforce abuse protections (allow-list, daily cap, per-IP rate limit)
-    check_and_record_dial(client_ip, clean_phone)
-
-    text_to_speak = (req.text or "").strip()
-    if not text_to_speak:
-        text_to_speak = "কৃষিভল্ট আলু সংরক্ষণ ও বাজারজাতকরণ সেবায় আপনাকে স্বাগতম। আপনার এলাকার আলুর বাজার ও হিমাগার তথ্য জানতে সাথেই থাকুন।"
-
-    # 1. Primary for cloud deployments ONLY when BROADCAST_LIVE=1: Broadcast REST API
+    # 1. The Broadcast REST API, only when BROADCAST_LIVE=1
     if bc.live:
         wav_path = call_audio.prepare(text_to_speak, tts_service)
         if not wav_path or not wav_path.exists():
             raise HTTPException(status_code=500, detail="Failed to synthesize advice audio for broadcast")
-        res = bc.send_broadcast(clean_phone, audio_file_path=wav_path, caller_id=req.caller_id)
+        res = bc.send_broadcast(clean_phone, audio_file_path=wav_path, caller_id=None)
         if res.get("success"):
             return res
         from loguru import logger
         logger.warning(f"Broadcast API failed: {res.get('error')}")
         raise HTTPException(status_code=400, detail=res.get("error", "Broadcast call dispatch failed"))
 
-    # 2. Main telephony route: VoiceBlast session portal with cached audio ID
-    audio_id = req.audio_file_id
-    if not audio_id:
-        if text_to_speak:
-            audio_id = call_audio.voiceblast_audio_id(text_to_speak, vb, tts_service)
-        if not audio_id:
-            audio_id = vb.default_audio_id
-
-    res = vb.send_call(clean_phone, audio_file_id=audio_id, caller_id=req.caller_id)
+    # 2. VoiceBlast with the cached audio ID (pre-warmed when the answer was given); a dry run spends nothing
+    audio_id = (call_audio.voiceblast_audio_id(text_to_speak, vb, tts_service) if vb.live else None) \
+        or vb.default_audio_id
+    res = vb.send_call(clean_phone, audio_file_id=audio_id, caller_id=None)
     if not res.get("success"):
         raise HTTPException(status_code=400, detail=res.get("error", "Call dispatch failed"))
     return res
 
 
-
 @app.get("/api/call/history")
 def call_history():
-    """Fetch recent outbound phone call logs from VoiceBlast (or Broadcast if active)."""
+    """Recent outbound calls from VoiceBlast (or Broadcast if active); numbers masked, like every screen."""
     bc = get_broadcast_api_client()
     vb = get_voiceblast_client()
-    if bc.live:
-        return {"history": bc.get_history(limit=10), "balance": bc.get_balance()}
-    return {"history": vb.get_history(limit=10), "balance": vb.get_balance()}
+    client = bc if bc.live else vb
+    history = [{**h, "phone": event_log.mask_phone(h.get("phone")) or ""} for h in client.get_history(limit=10)]
+    return {"history": history, "balance": client.get_balance()}
 
 
 @app.post("/api/call/turn")
@@ -771,12 +788,13 @@ def call_turn(req: CallTurnRequest):
         "month": req.month, "year": req.year, "phone": req.phone,
     })
 
-    say = reply.get("say", "")
-    if say and call_audio.is_advice(say):
+    # Pre-warm the phone-call audio with the exact text a call would speak, so "Call me" starts at once
+    answer = call_script(reply.get("state") or {})
+    if answer and call_audio.is_advice(answer):
         vb = get_voiceblast_client()
         bc = get_broadcast_api_client()
         if vb.live or bc.live:
-            call_audio.prewarm(say, vb, tts_service)
+            call_audio.prewarm(answer, vb, tts_service)
 
     return reply
 
@@ -817,6 +835,23 @@ class UssdIn(BaseModel):
 def ussd_turn(req: UssdIn):
     """One USSD turn, in the gateway's format: 'CON <screen>' keeps the session open, 'END <screen>' closes it."""
     return ussd.turn(req.text, req.phone_number, req.month, req.year, req.district, sms_client.send_sms)
+
+
+# ============================================================ the whole loop in one click (demo walkthrough)
+
+class LoopIn(BaseModel):
+    maunds: float = Field(80, gt=0, le=10_000)
+    price_today: float = Field(16, gt=0, le=500)
+    cash_needed_tk: float = Field(25_000, ge=0, le=10_000_000)
+    cash_days: int = Field(4, ge=0, le=365)
+    month: int = Field(3, ge=1, le=12)
+    year: int = Field(2027, ge=2013, le=2035)
+
+
+@app.post("/api/demo/loop")
+def demo_loop_run(req: LoopIn):
+    """The plan's loop for one demo farmer: call, receipt, bank loan, price alert, sale. Demo partners; nothing sent."""
+    return demo_loop.run(req.maunds, req.price_today, req.cash_needed_tk, req.cash_days, req.month, req.year)
 
 
 # ============================================================ partner screens

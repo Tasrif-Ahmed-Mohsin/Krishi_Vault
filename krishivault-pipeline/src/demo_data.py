@@ -61,7 +61,7 @@ def load_list(name: str) -> list:
 def save_list(name: str, items: list) -> None:
     path = runtime_dir() / f"{name}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
+    tmp = path.with_suffix(f".{os.getpid()}.tmp")      # one per process: workers never write the same file
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(items, f, ensure_ascii=False, indent=1)
     tmp.replace(path)
