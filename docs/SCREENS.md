@@ -44,7 +44,7 @@ A farmer's phone call, played in the browser, because the prototype has no phone
 1. **Greeting and menu:** ১ store or sell, ২ price outlook, ৩ group storage, ৪ loan against stored sacks, ৯ a helper calls back. Or just speak.
 2. **Questions,** only for what was not said: how many maunds (or sacks), today's price, whether the potatoes are already in cold storage (not asked at harvest), cash needed and within how many days. One sentence can answer several: "হামার ৮০ মণ আলু উঠছে, ফড়িয়া ১৬ টেকা দিবার চায়, ২৫ হাজার টেকা নাগবে ৪ দিনের মইধ্যে".
 3. **Read-back** of every number; "ঠিক হলে ১, ভুল হলে ২". A spoken correction ("না, ৯০ মণ") is read back again.
-4. **The answer** in taka, with the chance and the bad case.
+4. **The answer** in taka, decision first (about 20 seconds): how many sacks to sell now and the cash in hand, the rest stored until when, the average gain over selling everything now and the bad case. **Press 3** for the full sums and the net profit after the growing cost.
 5. **One action, press 2:** a cold-storage request, a group join, a loan application, or the lot sent to buyers. It appears on the dashboard's partner screens with a number.
 6. **Press 8 to be counted** (after the store-or-sell answer only): the answers go, without name or number, into the district figures on the government screen. Nothing is counted otherwise.
 7. **Every answer ends with** "১ = আবার শুনুন, ০ = মূল মেনু, ৯ = সহকারী".

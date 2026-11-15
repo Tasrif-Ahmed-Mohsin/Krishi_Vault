@@ -66,9 +66,11 @@ year). The single most valuable data task is still the long DAM price history (H
 **d. "A bank lends against potatoes?"** The loop shows it at the bad-case price: the stored sacks still cover
 the loan and the cold storage, and the farmer still gets something. Use that screen.
 
-**e. "Will a farmer listen to a minute of advice?"** The store-or-sell answer is about 110 words (around 50
-seconds of speech). Proposal, not built: say the decision and the cash in hand first ("এখন ১৯ বস্তা বেচুন, হাতে
-২৫,০০০ টাকা; বাকি ১৭ বস্তা ডিসেম্বরে"), then "details: press 3". Test both with the 5 farmers of the field check.
+**e. "Will a farmer listen to a minute of advice?"** No longer asked of him. The store-or-sell answer was
+about 110 words (around 50 seconds). It now leads with the decision, the cash in hand, the average gain over
+selling everything now and the bad case (42 words in the demo call, about 20 seconds); **press 3** for the full
+sums and the net profit. The bad case stays in the short answer: a range, never a promise. Try both versions
+with the 5 farmers of the field check and keep the one they repeat back correctly.
 
 ## 5. What to measure in the pilot
 

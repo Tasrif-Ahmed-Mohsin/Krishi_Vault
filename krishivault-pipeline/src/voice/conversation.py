@@ -63,6 +63,8 @@ CONFIRM_KEYS = "ঠিক হলে ১, ভুল হলে ২ চাপুন
 NOT_UNDERSTOOD = "দুঃখিত, বুঝতে পারিনি।"
 HELP = "দুঃখিত, আমি বুঝতে পারছি না। আবার চেষ্টা করতে ১ চাপুন। আমাদের সহকারী আপনাকে ফোন করবেন, এর জন্য ৯ চাপুন।"
 CLOSING = "আবার শুনতে ১, মূল মেনুতে ০, সহকারীর ফোনের জন্য ৯ চাপুন।"
+# The answer leads with the decision; the full sums wait behind 3 (a minute of numbers loses a caller)
+DETAILS_ASK = "পুরো হিসাব শুনতে ৩ চাপুন।"
 # Asked once after the store-or-sell answer: counting is opt-in, so the greeting's promise stays true
 CONSENT_ASK = "নাম ও নম্বর ছাড়া আপনার উত্তর জেলার হিসাবে গুনতে দিলে ৮ চাপুন।"
 COUNTED = "ধন্যবাদ। নাম ও নম্বর ছাড়া আপনার উত্তর জেলার হিসাবে গোনা হলো।"
@@ -135,8 +137,8 @@ def _clean(state: dict) -> dict:
         state["step"] = "menu"
     if state["step"] == "ask" and state.get("asking") not in SLOT_LABELS:
         state["step"] = "menu"
-    for key in ("result_say", "done_say", "last_say"):
-        state[key] = str(state.get(key) or "")
+    for key in ("result_say", "result_details", "done_say", "last_say"):
+        state[key] = str(state.get(key) or "")[:4000]
     return state
 
 
@@ -248,6 +250,24 @@ def advice_sms(plan: dict) -> str:
         return text + f"খরচ বাদে প্রায় {fmt_taka(chosen['money_mean'])} টাকা।"
     return text + (f"গড়ে প্রায় {fmt_taka(chosen['money_mean'])} টাকা (খারাপ হলে {fmt_taka(chosen['money_low'])})। "
                    f"এখন সব বেচলে {fmt_taka(opts['sell_now']['money_mean'])} টাকা। নিশ্চিত নয়।")
+
+
+def _cash_met(lot: FarmerLot, cash_now: float) -> str:
+    """Ends the cash-in-hand sentence: whether it meets the cash the farmer said they need."""
+    if lot.cash_needed_tk > 0 and cash_now >= lot.cash_needed_tk:
+        return f"; এতে আপনার {fmt_taka(lot.cash_needed_tk, rounded=False)} টাকার দরকার মিটবে।"
+    return "।"
+
+
+def _vs_now(o: dict) -> str:
+    """The average against selling every sack now, and the bad case (1 in 10): a range, never a promise."""
+    gain = o["gain_vs_now"]
+    worst = o.get("worst_case_vs_now", o["money_low"] - (o["money_mean"] - gain))
+    avg = (f"এখন সব বেচার চেয়ে গড়ে প্রায় {fmt_taka(gain)} টাকা বেশি আসতে পারে" if gain >= 0
+           else f"এখন সব বেচার চেয়ে গড়ে প্রায় {fmt_taka(-gain)} টাকা কম আসতে পারে")
+    bad = (f"দাম খারাপ হলে প্রায় {fmt_taka(-worst)} টাকা কম" if worst < 0
+           else f"দাম খারাপ হলেও প্রায় {fmt_taka(worst)} টাকা বেশি")
+    return f"{avg}; {bad}।"
 
 
 def _profit_lines(p: dict, key: str) -> list[str]:
@@ -393,7 +413,8 @@ class Conversation:
     def _result_keys(self, state: dict) -> list:
         result = state.get("result") or {}
         consent = ["8"] if result.get("flow") == "advice" and not state.get("counted") else []
-        return (["2"] if result.get("next") else []) + consent + ["1", "0", "9"]
+        details = ["3"] if state.get("result_details") else []
+        return (["2"] if result.get("next") else []) + details + consent + ["1", "0", "9"]
 
     def _count_me(self, state: dict) -> dict:
         """The farmer pressed 8: count this answer for the district figures, without a name or number."""
@@ -540,6 +561,8 @@ class Conversation:
             return "9"
         if _said_again(heard["text"]):
             return "1"
+        if re.search(r"বিস্তারিত|পুরো হিসাব|পুরা হিসাব", nfc(heard["text"])):
+            return "3"
         if heard["yes_no"] is True:
             return "2"
         return None
@@ -551,6 +574,10 @@ class Conversation:
             return self._next_step(state)
         if key == "8" and "8" in self._result_keys(state):
             return self._count_me(state)
+        if key == "3" and state.get("result_details"):
+            next_line = (result.get("next") or {}).get("line")
+            return self._reply(state, state["result_details"] + (" " + next_line if next_line else "") + " " + CLOSING,
+                               "choice", self._result_keys(state))
         if key == "1":
             return self._reply(state, state["result_say"], "choice", self._result_keys(state))
         if key == "0":
@@ -602,10 +629,13 @@ class Conversation:
         if self.gemini is not None and self.gemini.available:
             rewrite = lambda t: self.gemini.text(REWORD_PROMPT.format(text=t))  # noqa: E731
         narration = narrate(body, rewrite)
+        details = result.pop("details", "")      # the full sums, read on 3 (the engine's template, unchanged)
         next_line = (result.get("next") or {}).get("line")
         consent = CONSENT_ASK if flow == "advice" and not state.get("counted") else ""
-        say = narration["text"] + (" " + next_line if next_line else "") + (" " + consent if consent else "") + " " + CLOSING
-        state.update({"result": result, "result_say": say, "result_body": narration["text"], "sms": sms,
+        say = (narration["text"] + (" " + next_line if next_line else "") + (" " + DETAILS_ASK if details else "")
+               + (" " + consent if consent else "") + " " + CLOSING)
+        state.update({"result": result, "result_say": say, "result_body": narration["text"],
+                      "result_details": details, "sms": sms,
                       "sms_sig": sign(sms) if sms else None, "call_sig": sign(narration["text"]),
                       "next_sig": _sign_next(result.get("next")),
                       "step": "result", "fails": 0, "action": None})
@@ -631,6 +661,11 @@ class Conversation:
         )
 
     def _advice(self, state: dict):
+        """
+        The answer comes in two parts, so a farmer on a button phone hears the decision first:
+        `lines` (spoken at once): what to do, the cash in hand, and the average gain with the bad case;
+        `more` (press 3): the totals, the reasons, and the net profit after the growing cost.
+        """
         lot = self.lot(state)
         plan = self.planner.plan(lot)
         rec = plan["recommendation"]
@@ -639,59 +674,60 @@ class Conversation:
         now = opts["sell_now"]
         sacks = lot.sacks
         price, assumed = self._price(state)
-        lines = []
+        lines, more = [], []
         if assumed:
             lines.append(f"আজকের দাম জানা না থাকায় নমুনা হিসেবে কেজি {fmt_num(price)} টাকা ধরা হলো।")
         if rec["key"] == "sell_now":
             lines.append(f"পরামর্শ: এখনই সব {fmt_num(sacks, 0)} বস্তা আলু বেচুন।")
-            lines.append(f"কেজিতে {fmt_num(price)} টাকা দরে খরচ বাদে হাতে আসবে প্রায় {fmt_taka(now['money_mean'])} টাকা।")
+            lines.append(f"কেজিতে {fmt_num(price)} টাকা দরে খরচ বাদে হাতে আসবে প্রায় {fmt_taka(now['money_mean'])} টাকা"
+                         + _cash_met(lot, now["money_mean"]))
+            reasons = []
+            if plan["outlook"]["k"] <= 0.3:
+                reasons.append("এবার ফলন বেশি, তাই দাম তেমন বাড়ার সম্ভাবনা কম।")
             store = opts.get("store")
             if store and store["gain_vs_now"] < 0:
-                lines.append(f"হিমাগারে রাখলে ভাড়া আর খরচ বাদে সবচেয়ে ভালো মাসেও গড়ে প্রায় "
-                             f"{fmt_taka(abs(store['gain_vs_now']))} টাকা কম আসতে পারে।")
+                reasons.append(f"হিমাগারে রাখলে ভাড়া আর খরচ বাদে সবচেয়ে ভালো মাসেও গড়ে প্রায় "
+                               f"{fmt_taka(abs(store['gain_vs_now']))} টাকা কম আসতে পারে।")
             elif plan["months_left"] == 0:
-                lines.append("এ মৌসুমে হিমাগারে রাখার সময় আর নেই।")
+                reasons.append("এ মৌসুমে হিমাগারে রাখার সময় আর নেই।")
             else:
-                lines.append("রাখলে লাভের সম্ভাবনা কম, ঝুঁকি বেশি।")
-            if plan["outlook"]["k"] <= 0.3:
-                lines.append("এবার ফলন বেশি, তাই দাম তেমন বাড়ার সম্ভাবনা কম।")
-            if lot.cash_needed_tk > 0 and now["money_mean"] >= lot.cash_needed_tk:
-                lines.append(f"এতে আপনার {fmt_taka(lot.cash_needed_tk, rounded=False)} টাকার দরকার মিটবে।")
+                reasons.append("রাখলে লাভের সম্ভাবনা কম, ঝুঁকি বেশি।")
+            lines.append(reasons[0])           # one reason now, the rest on 3
+            more.extend(reasons[1:])
             nxt = {"kind": "buyer_lot", "sacks": sacks,
                    "line": "আমাদের ক্রেতাদের দর তুলনা করে জানাতে ২ চাপুন।"}
         elif rec["key"] == "store":
             lines.append(f"পরামর্শ: সব {fmt_num(sacks, 0)} বস্তা হিমাগারে রেখে {chosen['sell_month_bn']} মাসে বেচুন।")
-            lines.append(f"গড়ে হাতে আসতে পারে প্রায় {fmt_taka(chosen['money_mean'])} টাকা, "
-                         f"এখন বেচার চেয়ে প্রায় {fmt_taka(chosen['gain_vs_now'])} টাকা বেশি।")
-            lines.append(f"দাম খারাপ হলে প্রায় {fmt_taka(chosen['money_low'])} টাকা। "
-                         f"১০০ বারের হিসাবে {fmt_num(round(chosen['chance_beats_now'] * 100), 0)} বার রাখাটাই ভালো হয়।")
-            if lot.stored == "no":
-                lines.append(f"ভাড়া এক মাস রাখলেও বস্তায় {fmt_num(lot.terms.rent_per_sack, 0)} টাকা, "
-                             f"{fmt_num(lot.terms.season_months, 0)} মাস রাখলেও একই, তাই আগেভাগে বেচবেন না।")
+            lines.append(_vs_now(chosen))
             if chosen.get("loan"):
                 loan = chosen["loan"]
                 lines.append(f"টাকার দরকার মেটাতে বস্তার জামানতে প্রায় {fmt_taka(loan['amount'])} টাকা ঋণ লাগবে, "
                              f"সুদ প্রায় {fmt_taka(loan['interest'])} টাকা।")
+            more.append(f"গড়ে হাতে আসতে পারে প্রায় {fmt_taka(chosen['money_mean'])} টাকা, দাম খারাপ হলে প্রায় "
+                        f"{fmt_taka(chosen['money_low'])} টাকা। ১০০ বারের হিসাবে "
+                        f"{fmt_num(round(chosen['chance_beats_now'] * 100), 0)} বার রাখাটাই ভালো হয়।")
+            if lot.stored == "no":
+                more.append(f"ভাড়া এক মাস রাখলেও বস্তায় {fmt_num(lot.terms.rent_per_sack, 0)} টাকা, "
+                            f"{fmt_num(lot.terms.season_months, 0)} মাস রাখলেও একই, তাই আগেভাগে বেচবেন না।")
             nxt = None if lot.stored == "cold" else {
                 "kind": "cold_storage_booking", "sacks": sacks,
                 "line": f"হিমাগারে {fmt_num(sacks, 0)} বস্তার জায়গা চাইতে ২ চাপুন।"}
         else:  # sell_part (or the staggered exit)
             lines.append(f"পরামর্শ: এখন {fmt_num(chosen['sell_sacks_now'], 0)} বস্তা বেচুন, "
-                         f"হাতে আসবে প্রায় {fmt_taka(chosen['cash_now'])} টাকা।")
+                         f"হাতে আসবে প্রায় {fmt_taka(chosen['cash_now'])} টাকা" + _cash_met(lot, chosen["cash_now"]))
             if rec["key"] == "staggered":
                 lines.append(f"বাকি {fmt_num(chosen['store_sacks'], 0)} বস্তা হিমাগারে রাখুন: {chosen['title_bn'].split(': ', 1)[1]}।")
             else:
                 lines.append(f"বাকি {fmt_num(chosen['store_sacks'], 0)} বস্তা হিমাগারে রেখে {chosen['sell_month_bn']} মাসে বেচুন।")
-            lines.append(f"সব মিলিয়ে গড়ে প্রায় {fmt_taka(chosen['money_mean'])} টাকা, এখন সব বেচার চেয়ে প্রায় "
-                         f"{fmt_taka(chosen['gain_vs_now'])} টাকা বেশি; দাম খারাপ হলে প্রায় {fmt_taka(chosen['money_low'])} টাকা।")
-            if lot.cash_needed_tk > 0 and chosen["cash_now"] >= lot.cash_needed_tk:
-                lines.append(f"এতে আপনার {fmt_taka(lot.cash_needed_tk, rounded=False)} টাকার দরকার মিটবে।")
-            lines.append("দাম বাড়বেই এমন কথা নেই, তাই কিছুটা এখনই বেচা নিরাপদ।")
+            lines.append(_vs_now(chosen))
+            more.append(f"সব মিলিয়ে গড়ে প্রায় {fmt_taka(chosen['money_mean'])} টাকা, দাম খারাপ হলে প্রায় "
+                        f"{fmt_taka(chosen['money_low'])} টাকা; এখন সব বেচলে প্রায় {fmt_taka(now['money_mean'])} টাকা।")
+            more.append("দাম বাড়বেই এমন কথা নেই, তাই কিছুটা এখনই বেচা নিরাপদ।")
             nxt = None if lot.stored == "cold" else {
                 "kind": "cold_storage_booking", "sacks": chosen["store_sacks"],
                 "line": f"হিমাগারে {fmt_num(chosen['store_sacks'], 0)} বস্তার জায়গা চাইতে ২ চাপুন।"}
 
-        lines.extend(_profit_lines(plan["net_profit"], rec["key"]))
+        more.extend(_profit_lines(plan["net_profit"], rec["key"]))
         result = {
             "flow": "advice", "title_bn": rec["title_bn"], "title_en": rec["title_en"], "key": rec["key"],
             "net_profit": plan["net_profit"],
@@ -701,7 +737,7 @@ class Conversation:
             "by_month": [{k: r[k] for k in ("h", "month_bn", "month_en", "price_low", "price_mid", "price_high",
                                              "net_mean", "net_low", "net_high", "gain_vs_now", "chance_beats_now",
                                              "break_even_price")} for r in plan["by_month"]],
-            "sacks": sacks, "next": nxt,
+            "sacks": sacks, "next": nxt, "details": " ".join(more),
         }
         return " ".join(lines), result, advice_sms(plan)
 
